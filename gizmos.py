@@ -56,9 +56,10 @@ def open_gl_draw(func):
     return wrapper
 
 
-def generate_preview_bincodes(context):
+def generate_preview_bincodes(self, context):
     images = bpy.data.images
     count = len(images)
+
     if not count:
         return
 
@@ -70,7 +71,9 @@ def generate_preview_bincodes(context):
         pixels = list(preview.image_pixels)
         if not len(pixels):
             context.window.cursor_set('WAIT')
-            bpy.ops.wm.previews_ensure()
+            self.report(type = {'INFO'}, message = "Refreshing data previews")
+            bpy.ops.wm.previews_ensure('INVOKE_DEFAULT')
+            self.report(type = {'INFO'}, message = "Data previews refreshed, save a file to store")
             context.window.cursor_set('DEFAULT')
             break
 
@@ -183,7 +186,6 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
             mpr.use_event_handle_all = False
             mpr.use_grab_cursor = True
             mpr.update_camera(context)
-        generate_preview_bincodes(context)
 
     def refresh(self, context):
         for mpr in self.gizmos:
@@ -313,7 +315,7 @@ class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        if not utils_poll.tool_setup_poll(context):
+        if not utils_poll.full_poll(context):
             return False
         scene = context.scene
         return scene.cpp.use_current_image_preview and scene.cpp.current_image_alpha

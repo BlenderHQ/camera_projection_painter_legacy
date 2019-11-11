@@ -50,7 +50,10 @@ class CPP_OT_camera_projection_painter(Operator):
 
     def invoke(self, context, event):
         utils_state.state.operator = self
-        # common.check_images_startup(self, context)
+
+        if utils_poll.tool_setup_poll(context):
+            generate_preview_bincodes(self, context)
+
         wm = context.window_manager
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
         wm.event_timer_add(time_step = 0.25, window = context.window)
@@ -172,7 +175,7 @@ class CPP_OT_bind_camera_image(Operator):
             self.report(type = {'WARNING'}, message = "Images not found!")
 
         if utils_poll.tool_setup_poll(context):
-            generate_preview_bincodes(context)
+            generate_preview_bincodes(self, context)
 
         return {'FINISHED'}
 

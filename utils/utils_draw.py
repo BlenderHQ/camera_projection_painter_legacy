@@ -92,29 +92,31 @@ def get_curr_img_pos_from_context(context):
 @full_poll_decorator
 def draw_projection_preview(self, context):
     scene = context.scene
+
     if not scene.cpp.use_projection_preview:
         return
     if not self.draw_preview:
         return
-    ob = context.active_object
+
+    preferences = context.preferences.addons[addon_pkg].preferences
+    ob = context.image_paint_object
     image_paint = scene.tool_settings.image_paint
     image = image_paint.clone_image
+    brush = image_paint.brush
+    brush_radius = scene.tool_settings.unified_paint_settings.size
+
     if image.gl_load():
         raise Exception()
 
     shader = shaders.mesh_preview
     batch = self.mesh_batch
-
     if not batch:
         return
 
     mouse_position = self.mouse_position
-
     active_rv3d = get_active_rv3d(context, mouse_position)
     current_rv3d = context.area.spaces.active.region_3d
 
-    # Get values from user preferences
-    preferences = context.preferences.addons[addon_pkg].preferences
     outline_type = 0
     if scene.cpp.use_projection_outline:
         outline_type = {
@@ -123,7 +125,7 @@ def draw_projection_preview(self, context):
             'CHECKER': 2
         }[preferences.outline_type]
 
-    outline_width = preferences.outline_width / 10.0
+    outline_width = preferences.outline_width * 0.1
     outline_scale = preferences.outline_scale
     outline_color = preferences.outline_color
     normal_highlight_color = preferences.normal_highlight_color
@@ -131,52 +133,43 @@ def draw_projection_preview(self, context):
     # OpenGL setup
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-
     bgl.glEnable(bgl.GL_MULTISAMPLE)
-
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
-
     bgl.glEnable(bgl.GL_DEPTH_TEST)
+    # Bind textures
+    bgl.glTexParameteri(
+        bgl.GL_TEXTURE_2D,
+        bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T,
+        bgl.GL_REPEAT)  # GL_CLAMP_TO_BORDER
 
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_CLAMP_TO_BORDER)  # GL_REPEAT
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
+    bgl.glActiveTexture(bgl.GL_TEXTURE0)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+    bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
 
     # Set shader uniforms
     shader.bind()
 
     shader.uniform_float("ModelMatrix", ob.matrix_world)
-
-    bgl.glActiveTexture(bgl.GL_TEXTURE0)
-    bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
     shader.uniform_int("sourceImage", 0)
-
-    bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
-    bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
     shader.uniform_int("brushImage", 1)
-
     shader.uniform_int("outlineType", outline_type)
     shader.uniform_float("outlineWidth", outline_width)
     shader.uniform_float("outlineScale", outline_scale)
     shader.uniform_float("outlineColor", outline_color)
-
     shader.uniform_int("useNormalInspection", scene.cpp.use_normal_highlight)
     shader.uniform_float("normalHighlightColor", normal_highlight_color)
 
     use_brush = False
-    brush_radius = scene.tool_settings.unified_paint_settings.size
     if active_rv3d == current_rv3d:
         use_brush = True
-
         mx, my = mouse_position
         mx -= context.area.x
         my -= context.area.y
         shader.uniform_float("mousePos", (mx, my))
-
-        strength = scene.tool_settings.unified_paint_settings.strength
         shader.uniform_float("brushRadius", brush_radius)
-        shader.uniform_float("brushStrength", strength)
-
+        shader.uniform_float("brushStrength", brush.strength)
     shader.uniform_int("useBrush", use_brush)
 
     warning = 0
@@ -184,22 +177,17 @@ def draw_projection_preview(self, context):
         view_distance = current_rv3d.view_distance
         sx, sy = image_paint.canvas.size
         canvas_size = (sx + sy) / 2
-
         distance_warning = scene.cpp.distance_warning
         brush_radius_warning = scene.cpp.brush_radius_warning
         canvas_size_warning = scene.cpp.canvas_size_warning
-
         dist_fac = abs((view_distance / distance_warning))
         brad_fac = (brush_radius / brush_radius_warning) - 1
         canv_fac = (canvas_size / canvas_size_warning) - 1
-
         warning_factor = (dist_fac + brad_fac + canv_fac)
-
         if warning_factor > 0.95:
             warning = 1
-
+        shader.uniform_float("warningColor", preferences.warning_color)
     shader.uniform_int("warning", warning)
-    shader.uniform_float("warningColor", preferences.warning_color)
 
     # Finally, draw
     batch.draw(shader)

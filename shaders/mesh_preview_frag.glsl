@@ -70,6 +70,7 @@ void main()
         {
             brushMask = texture(brushImage, brushCoord).r;
             textureSource = texture(sourceImage, posInterp);
+            //textureSource *= imageFrameMask;
         }
     }
 
@@ -119,7 +120,7 @@ void main()
             {
                 float opacity = clamp(brushStrength * brushMask, 0.0, 1.0);
                 vec4 texture = textureSource;
-                texture.a = opacity;
+                texture.a *= opacity;
                 overlay *= 1.0 - opacity;
                 fragColor = texture + overlay;
             }
