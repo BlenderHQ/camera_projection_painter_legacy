@@ -58,9 +58,9 @@ class CPP_OT_camera_projection_painter(Operator):
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        # if utils_poll.tool_setup_poll(context):
-        self.cleanup_required = True
-        utils_base.cleanup(self, context)
+        if utils_poll.base_poll(context):
+            self.cleanup_required = True
+            utils_base.cleanup(self, context)
 
     def modal(self, context, event):
         scene = context.scene
