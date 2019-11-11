@@ -136,14 +136,6 @@ class CPP_OT_bind_camera_image(Operator):
         name = "Mode",
         default = 'ACTIVE')
 
-    enable_cpp: BoolProperty(
-        name = "Enable Camera Paint", default = True,
-        description = "Enable camera as projector if image found")
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(self, "enable_cpp")
-
     def execute(self, context):
         scene = context.scene
         file_path = scene.cpp.source_images_path
@@ -161,7 +153,7 @@ class CPP_OT_bind_camera_image(Operator):
                 cameras = [cam]
         count = 0
         for ob in cameras:
-            res = utils_camera.bind_camera_image_by_name(ob, file_path, self.enable_cpp)
+            res = utils_camera.bind_camera_image_by_name(ob, file_path)
             if res:
                 count += 1
                 print(res)  # Also print list of successfully binded cameras to console

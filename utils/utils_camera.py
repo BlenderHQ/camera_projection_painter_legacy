@@ -38,7 +38,7 @@ def get_camera_attributes(context, ob):
     return camera_pos, camera_forward, camera_up, camera_scale
 
 
-def bind_camera_image_by_name(ob, file_path, enable_projector = True):
+def bind_camera_image_by_name(ob, file_path):
     ob_name, ob_ext = os.path.splitext(ob.name)
 
     image = None
@@ -61,7 +61,7 @@ def bind_camera_image_by_name(ob, file_path, enable_projector = True):
                         image = bpy.data.images[file_name]
                         break
     if image:
-        ob.data.cpp.used = enable_projector
+        ob.data.cpp.used = True
         ob.data.cpp.image = image
 
         image.colorspace_settings.name = 'Raw'

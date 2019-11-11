@@ -69,9 +69,9 @@ def generate_preview_bincodes(self, context):
     for image in images:
         preview = image.preview
         pixels = list(preview.image_pixels)
+
         if not len(pixels):
             context.window.cursor_set('WAIT')
-            self.report(type = {'INFO'}, message = "Refreshing data previews")
             bpy.ops.wm.previews_ensure('INVOKE_DEFAULT')
             self.report(type = {'INFO'}, message = "Data previews refreshed, save a file to store")
             context.window.cursor_set('DEFAULT')
@@ -146,14 +146,15 @@ class CPP_GT_camera_gizmo(Gizmo):
 
     def update_camera(self, context):
         camera = self.camera_object.data
-        view_frame = camera.view_frame()
+        view_frame = camera.view_frame(scene = context.scene)
         display_size = camera.display_size
+        asp = view_frame[0].y
         view_frame = [n * display_size for n in view_frame]
 
         self.batch_image_preview = batch_for_shader(
             shaders.camera_image_preview, 'TRI_FAN',
             {"pos": view_frame,
-             "texCoord": ((1, 1), (1, 0), (0, 0), (0, 1))})
+             "texCoord": ((1, 0.5 + asp), (1, 0.5 - asp), (0, 0.5 - asp), (0, 0.5 + asp))})
 
 
 class CPP_GGT_camera_gizmo_group(GizmoGroup):
