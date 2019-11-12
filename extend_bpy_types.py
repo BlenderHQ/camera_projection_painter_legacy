@@ -113,7 +113,7 @@ class SceneProperties(PropertyGroup):
                       "Warning! Using this option with large images may be laggy")
 
     use_auto_set_image: BoolProperty(
-        name = "Use Automatic Image", default = False,
+        name = "Use Automatic Image", default = True,
         description = "Automatic/User image selection",
         update = _use_auto_set_image_update)
 
