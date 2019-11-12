@@ -126,7 +126,7 @@ class CPP_OT_bind_camera_image(Operator):
     bl_label = "Bind Image By Name"
     bl_description = "Find image with equal name to camera name.\n" \
                      "If no image packed into .blend, search in Source Images path. (See Scene tab)"
-    bl_options = {'REGISTER', 'UNDO'}
+    bl_options = {'REGISTER'}
 
     mode: EnumProperty(
         items = [('ACTIVE', "Active", ""),

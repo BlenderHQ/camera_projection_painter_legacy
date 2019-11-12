@@ -24,7 +24,7 @@ import gpu
 import bgl
 
 from gpu_extras.batch import batch_for_shader
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from mathutils.geometry import intersect_point_quad_2d
 from bpy.types import Gizmo, GizmoGroup
 
@@ -41,7 +41,6 @@ def open_gl_draw(func):
         bgl.glEnable(bgl.GL_DEPTH_TEST)
         bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
         bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glEnable(bgl.GL_MULTISAMPLE)
         bgl.glPolygonOffset(0.1, 0.9)
         # bgl.glPointSize(3.0)
 
@@ -73,7 +72,7 @@ def generate_preview_bincodes(self, context):
         if not len(pixels):
             context.window.cursor_set('WAIT')
             bpy.ops.wm.previews_ensure('INVOKE_DEFAULT')
-            self.report(type = {'INFO'}, message = "Data previews refreshed, save a file to store")
+            # self.report(type = {'INFO'}, message = "Data previews refreshed, save a file to store")
             context.window.cursor_set('DEFAULT')
             break
 
@@ -124,11 +123,9 @@ class CPP_GT_camera_gizmo(Gizmo):
     def draw(self, context):
         cpp_data = self.camera_object.data.cpp
         preferences = context.preferences.addons[__package__].preferences
-
-        self.draw_custom_shape(self.shape)
-        if not cpp_data.available:
-            self.color = preferences.gizmo_passive_color
-        else:
+        if self.is_highlight and preferences.camera_use_draw_hover:
+            self.draw_custom_shape(self.shape)
+        if cpp_data.available:
             self.color = preferences.gizmo_color
             if cpp_data.image in _preview_bindcodes:
                 shader = shaders.camera_image_preview
@@ -177,12 +174,12 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
             mpr.matrix_basis = ob.matrix_world.normalized()
             mpr.camera_object = ob
             mpr.color = preferences.gizmo_color
-            mpr.color_highlight = preferences.gizmo_highlight_color
             mpr.alpha = preferences.gizmo_alpha
             mpr.alpha_highlight = preferences.gizmo_alpha
+
             mpr.use_draw_scale = True
-            mpr.select_bias = 0.02
-            mpr.scale_basis = 0.01
+            mpr.scale_basis = 0.1
+            mpr.use_draw_modal = False
             mpr.use_select_background = True
             mpr.use_event_handle_all = False
             mpr.use_grab_cursor = True
@@ -191,7 +188,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
     def refresh(self, context):
         for mpr in self.gizmos:
             try:
-                mpr.matrix_basis = mpr.camera_object.matrix_world.normalized()
+                mpr.matrix_basis = mpr.camera_object.matrix_world.normalized() @ Matrix.Translation((0.0, 0.0, 0.1))
                 mpr.update_camera(context)
             except ReferenceError:
                 self.gizmos.remove(mpr)
@@ -324,8 +321,6 @@ class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
     def setup(self, context):
         mpr = self.gizmos.new(CPP_GT_current_image_preview.bl_idname)
         mpr.use_draw_scale = True
-        mpr.color = 1, 0, 0
-        mpr.color_highlight = 0.4, 0.4, 0.7
         mpr.alpha_highlight = 1.0
         mpr.use_draw_modal = True
         mpr.use_select_background = True

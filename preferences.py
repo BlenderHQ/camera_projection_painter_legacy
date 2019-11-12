@@ -25,8 +25,8 @@ from .utils.utils_state import state
 from .operators import CPP_OT_set_camera_by_view
 
 WEB_LINKS = [
-    ("Help", "https://github.com/ivan-perevala/"),
-    ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk")
+    ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
+    ("GitHub", "https://github.com/ivan-perevala")
 ]
 
 
@@ -52,10 +52,10 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     tab: EnumProperty(
         items = [
-            ('DRAW', "Draw", 'Viewport draw preferences', 'VIEW3D', 0),
-            ('KEYMAP', "Keymap", 'Operators key bindings', 'KEYINGSET', 1),
-            ('HELP', "Help", 'Links to documentation and tutorials', 'QUESTION', 2)],
-        name = "Tab", default = "HELP")
+            ('DRAW', "Draw", 'Viewport draw preferences'),
+            ('KEYMAP', "Keymap", 'Operators key bindings'),
+            ('INFO', "Info", 'Links to documentation and tutorials')],
+        name = "Tab", default = "INFO")
 
     # Preview draw
     outline_type: EnumProperty(
@@ -86,7 +86,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         description = "Outline color")
 
     normal_highlight_color: FloatVectorProperty(
-        name = "Normal Highlight Color",
+        name = "Normal Highlight",
         default = (0.281741, 0.533584, 1.000000, 0.609286),
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Highlight stretched projection color")
@@ -104,22 +104,15 @@ class CppPreferences(bpy.types.AddonPreferences):
         subtype = "COLOR", size = 3, min = 0.0, max = 1.0,
         description = "Gizmo color")
 
-    gizmo_highlight_color: FloatVectorProperty(
-        name = "Highlight Color",
-        default = (0.95, 0.95, 0.95),
-        subtype = "COLOR", size = 3, min = 0.0, max = 1.0,
-        description = "Gizmo highlight color")
-
-    gizmo_passive_color: FloatVectorProperty(
-        name = "Passive Color",
-        default = (0.5, 0.5, 0.5),
-        subtype = "COLOR", size = 3, min = 0.0, max = 1.0,
-        description = "Gizmo passive color")
-
     gizmo_alpha: FloatProperty(
         name = "Alpha",
         default = 1.0, soft_min = 0.1, soft_max = 1.0,
         description = "Gizmo alpha")
+
+    camera_use_draw_hover: BoolProperty(
+        name = "Use Draw Hover",
+        default = False,
+        description = "Display point on hover or everytime")
 
     border_empty_space: IntProperty(
         name = "Border Empty Space",
@@ -134,52 +127,49 @@ class CppPreferences(bpy.types.AddonPreferences):
             col = layout.column(align = True)
             col.use_property_split = True
             col.use_property_decorate = False
-            self._draw_help(col)
+            self._draw_info(col)
         else:
             row = layout.row()
             row.prop(self, "tab", expand = True)
 
-            col = layout.column(align = True)
-            col.use_property_split = True
-            col.use_property_decorate = False
-
-            if self.tab == 'HELP':
-                self._draw_help(col)
+            if self.tab == 'INFO':
+                self._draw_info(layout)
             elif self.tab == 'DRAW':
-                self._draw_draw(col)
+                self._draw_draw(layout)
             elif self.tab == 'KEYMAP':
-                self._draw_keymap(col)
+                self._draw_keymap(layout)
 
-    def _draw_help(self, layout):
+    def _draw_info(self, layout):
+        col = layout.column(align = True)
         for name, url in WEB_LINKS:
-            layout.operator("wm.url_open", text = name, icon = 'URL').url = url
+            col.operator("wm.url_open", text = name, icon = 'URL').url = url
 
     def _draw_draw(self, layout):
-        # Outline
-        layout.label(text = "Outline:")
-        layout.prop(self, "outline_type")
-        scol = layout.column(align = True)
+        col = layout.column(align = True)
+
+        col.use_property_split = True
+        col.use_property_decorate = False
+
+        col.label(text = "Viewport Projection Border Outline:")
+        col.prop(self, "outline_type")
+        scol = col.column(align = True)
         if self.outline_type == 'NO_OUTLINE':
             scol.enabled = False
         scol.prop(self, "outline_width")
         scol.prop(self, "outline_scale")
         scol.prop(self, "outline_color")
 
-        # Outline text
-        layout.label(text = "Inspection:")
-        layout.prop(self, "normal_highlight_color")
-        layout.prop(self, "warning_color")
+        col.label(text = "Viewport Inspection:")
+        col.prop(self, "normal_highlight_color")
+        col.prop(self, "warning_color")
 
-        layout.separator()
-        # Gizmos
-        layout.label(text = "Gizmo:")
-        scol = layout.column(align = True)
-        scol.prop(self, "gizmo_color")
-        scol.prop(self, "gizmo_highlight_color")
-        scol.prop(self, "gizmo_alpha")
+        col.label(text = "Camera Gizmos:")
+        col.prop(self, "camera_use_draw_hover")
+        col.prop(self, "gizmo_color")
+        col.prop(self, "gizmo_alpha")
 
-        layout.label(text = "Current Image Preview:")
-        scol = layout.column(align = True)
+        col.label(text = "Current Image Preview Gizmo:")
+        scol = col.column(align = True)
         scol.prop(self, "border_empty_space")
 
     def _draw_keymap(self, layout):
@@ -187,11 +177,8 @@ class CppPreferences(bpy.types.AddonPreferences):
         kc = wm.keyconfigs.addon
         km = kc.keymaps["3D View"]
 
-        layout.context_pointer_set("keymap", km)
-
         col = layout.column()
-        col.use_property_split = False
-        col.use_property_decorate = True
+        col.context_pointer_set("keymap", km)
 
         kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname)
         draw_kmi(kmi, col)
@@ -200,9 +187,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         draw_kmi(kmi, col)
 
 
-def register():
-    bpy.utils.register_class(CppPreferences)
-
-
-def unregister():
-    bpy.utils.unregister_class(CppPreferences)
+_classes = [
+    CppPreferences,
+]
+register, unregister = bpy.utils.register_classes_factory(_classes)
