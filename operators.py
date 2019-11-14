@@ -292,7 +292,8 @@ class CPP_OT_set_camera_calibration_from_file(Operator):
     def execute(self, context):
         scene = context.scene
         file_path = bpy.path.abspath(scene.cpp.calibration_source_file)
-        cameras = scene.cpp.visible_camera_objects
+
+        count = 0
 
         with open(file_path) as file:
             csv_reader = csv.reader(file, delimiter = ',')
@@ -300,10 +301,32 @@ class CPP_OT_set_camera_calibration_from_file(Operator):
             for line in csv_reader:
                 if line[0][0] in ('#',):
                     continue
+                csv_name = line[0]
+                x, y, alt, heading, pitch, roll, f, px, py, k1, k2, k3, k4, t1, t2 = (float(n) for n in line[1:])
 
-                name, x, y, alt, heading, pitch, roll, f, px, py, k1, k2, k3, k4, t1, t2 = line
+                name, ext = os.path.splitext(csv_name)
+                for ob in scene.cpp.visible_camera_objects:
+                    ob_name, ob_ext = os.path.splitext(ob.name)
 
-                print(name)
+                    if name == ob_name:
+                        count += 1
+                        camera = ob.data
+                        camera.cpp.use_calibration = True
+                        camera.lens_unit = 'MILLIMETERS'
+                        camera.lens = float(f)
+                        camera.cpp.calibration_principal_point = (px, py)
+                        # camera.cpp.calibration_skew = float()
+                        # camera.cpp.calibration_aspect_ratio = float()
+                        camera.cpp.lens_distortion_radial_1 = k2
+                        camera.cpp.lens_distortion_radial_2 = k3
+                        camera.cpp.lens_distortion_radial_3 = k4
+                        camera.cpp.lens_distortion_tangential_1 = t1
+                        camera.cpp.lens_distortion_tangential_2 = t2
+
+        if count:
+            self.report(type = {'INFO'}, message = "Calibrated %d cameras" % count)
+        else:
+            self.report(type = {'WARNING'}, message = "No data in file for calibration")
 
         return {'FINISHED'}
 

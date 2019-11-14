@@ -37,8 +37,8 @@ class CPP_PT_path(Panel, SceneButtonsPanel):
         col = layout.column(align = True)
 
         scene = context.scene
-        col.prop(scene.cpp, "source_images_path")
-        col.prop(scene.cpp, "calibration_source_file")
+        col.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
+        col.prop(scene.cpp, "calibration_source_file", icon = 'FILE_CACHE')
 
 
 class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
@@ -72,5 +72,6 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
             icon_value = get_icon_id("bind_image"))
         operator.mode = 'ALL'
 
+        scol = col.column()
         scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
             icon_value = get_icon_id("calibration"))

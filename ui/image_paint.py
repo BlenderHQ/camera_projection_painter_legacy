@@ -2,7 +2,10 @@ import bpy
 from bpy.types import Panel
 
 from ..icons import get_icon_id
-from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_by_view
+from ..operators import (
+    CPP_OT_bind_camera_image,
+    CPP_OT_set_camera_by_view,
+    CPP_OT_set_camera_calibration_from_file)
 from ..utils import utils_poll
 
 
@@ -47,6 +50,12 @@ class CPP_PT_scene_options(Panel, CPPOptionsPanel):
             text = "Bind All",
             icon_value = get_icon_id("bind_image"))
         operator.mode = 'ALL'
+
+        col.separator()
+
+        col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
+        col.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+                     icon_value = get_icon_id("calibration"))
 
 
 class CPP_PT_camera_options(bpy.types.Panel, CPPOptionsPanel):
@@ -198,5 +207,3 @@ class CPP_PT_current_warnings_options(Panel, CPPOptionsPanel):
         col.prop(scene.cpp, "use_warning_action_draw")
         col.prop(scene.cpp, "use_warning_action_popup")
         col.prop(scene.cpp, "use_warning_action_lock")
-
-
