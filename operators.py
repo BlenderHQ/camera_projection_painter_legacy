@@ -227,8 +227,7 @@ class CPP_OT_bind_camera_image(Operator):
         else:
             self.report(type = {'WARNING'}, message = "Images not found!")
 
-        if utils_poll.tool_setup_poll(context):
-            generate_preview_bincodes(self, context)
+        generate_preview_bincodes(self, context)
 
         return {'FINISHED'}
 
