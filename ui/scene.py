@@ -2,7 +2,7 @@ from bpy.types import Panel
 
 from ..icons import get_icon_id
 from ..utils.utils_state import state
-from ..operators import CPP_OT_bind_camera_image
+from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_calibration_from_file
 
 
 class SceneButtonsPanel:
@@ -38,6 +38,7 @@ class CPP_PT_path(Panel, SceneButtonsPanel):
 
         scene = context.scene
         col.prop(scene.cpp, "source_images_path")
+        col.prop(scene.cpp, "calibration_source_file")
 
 
 class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
@@ -70,3 +71,6 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
             text_ctxt = "CPP",
             icon_value = get_icon_id("bind_image"))
         operator.mode = 'ALL'
+
+        scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+            icon_value = get_icon_id("calibration"))

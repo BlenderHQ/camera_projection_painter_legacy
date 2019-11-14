@@ -32,6 +32,9 @@ from .utils import (
     utils_draw,
     utils_warning)
 
+import os
+import csv
+
 TIME_STEP = 1 / 24
 
 
@@ -269,6 +272,42 @@ class CPP_OT_set_camera_active(Operator):
         return {'FINISHED'}
 
 
+class CPP_OT_set_camera_calibration_from_file(Operator):
+    bl_idname = "cpp.set_camera_calibration_from_file"
+    bl_label = "Set Calibration Parameters"
+    bl_description = "Set cameras calibration parameters from file"
+
+    @classmethod
+    def poll(cls, context):
+        scene = context.scene
+        file_path = scene.cpp.calibration_source_file
+        if file_path:
+            path = bpy.path.abspath(file_path)
+            if os.path.isfile(path):
+                name, ext = os.path.splitext(path)
+                if ext in ('.csv',):
+                    return True
+        return False
+
+    def execute(self, context):
+        scene = context.scene
+        file_path = bpy.path.abspath(scene.cpp.calibration_source_file)
+        cameras = scene.cpp.visible_camera_objects
+
+        with open(file_path) as file:
+            csv_reader = csv.reader(file, delimiter = ',')
+
+            for line in csv_reader:
+                if line[0][0] in ('#',):
+                    continue
+
+                name, x, y, alt, heading, pitch, roll, f, px, py, k1, k2, k3, k4, t1, t2 = line
+
+                print(name)
+
+        return {'FINISHED'}
+
+
 _classes = [
     CPP_OT_event_listener,
     CPP_OT_image_paint,
@@ -276,5 +315,6 @@ _classes = [
     CPP_OT_bind_camera_image,
     CPP_OT_set_camera_by_view,
     CPP_OT_set_camera_active,
+    CPP_OT_set_camera_calibration_from_file,
 ]
 register, unregister = bpy.utils.register_classes_factory(_classes)

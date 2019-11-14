@@ -21,7 +21,9 @@
 
 import bpy
 
-from .camera import CPP_PT_cpp_camera_options
+from .camera import (
+    CPP_PT_cpp_camera_options,
+    CPP_PT_cpp_camera_calibration)
 from .scene import (
     CPP_PT_camera_projection_painter,
     CPP_PT_path,
@@ -48,6 +50,7 @@ _classes = [
 
     CPP_PT_options,
     CPP_PT_cpp_camera_options,
+    CPP_PT_cpp_camera_calibration,
     CPP_PT_scene_options,
     CPP_PT_camera_options,
     CPP_PT_camera_background_images_options,

@@ -35,6 +35,7 @@ import numpy as np
 from .icons import get_icon_id
 from .utils import utils_base, utils_camera
 
+
 class CameraProperties(PropertyGroup):
     @property
     def available(self):
@@ -45,6 +46,63 @@ class CameraProperties(PropertyGroup):
     image: PointerProperty(
         type = bpy.types.Image, name = "Image",
         description = "Image for texture paint from this camera")
+
+    use_calibration: BoolProperty(
+        name = "Calibration", default = False,
+        description = "Use camera calibration")
+
+    calibration_principal_point: FloatVectorProperty(
+        name = "Principal Point",
+        size = 2,
+        default = (0.0, 0.0),
+        step = 0.0001,
+        precision = 6,
+        subtype = 'TRANSLATION',
+        unit = 'CAMERA',
+        description = "A point at the intersection of the optical axis and the image plane."
+                      "This point is referred to as the principal point or image center")
+
+    calibration_skew: FloatProperty(
+        name = "Skew",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
+
+    calibration_aspect_ratio: FloatProperty(
+        name = "Aspect Ratio",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
+
+    lens_distortion_radial_1: FloatProperty(
+        name = "Radial 1",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
+
+    lens_distortion_radial_2: FloatProperty(
+        name = "Radial 2",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
+
+    lens_distortion_radial_3: FloatProperty(
+        name = "Radial 3",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
+
+    lens_distortion_tangential_1: FloatProperty(
+        name = "Tangential 1",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
+
+    lens_distortion_tangential_2: FloatProperty(
+        name = "Tangential 2",
+        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
+        subtype = 'FACTOR',
+        description = "")
 
 
 class SceneProperties(PropertyGroup):
@@ -96,6 +154,11 @@ class SceneProperties(PropertyGroup):
         description = "Path to source images used. "
                       "If image named same as object not found in packed images, "
                       "operator search images there and open them automatically")
+
+    calibration_source_file: StringProperty(
+        name = "Camera Calibration File", subtype = 'FILE_PATH',
+        description = "Path to third-party application *.csv file."
+                      "Used for automatic setup camera calibration parameters")
 
     # Tool relative
     mapping: EnumProperty(
