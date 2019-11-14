@@ -29,6 +29,7 @@ __all__ = ["register", "unregister"]
 
 @handlers.persistent
 def load_handler(dummy):
+    bpy.ops.cpp.event_listener('INVOKE_DEFAULT')
     bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
     overwrite_ui.register()
 

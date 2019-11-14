@@ -48,6 +48,7 @@ if "bpy" in locals():
 
     register()
 
+    bpy.ops.cpp.event_listener('INVOKE_DEFAULT')
     bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
 
     del import_module

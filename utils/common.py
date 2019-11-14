@@ -1,7 +1,7 @@
 import bpy
 from mathutils import Vector
 
-import os
+from .utils_state import event
 
 
 def fclamp(value: float, min_value: float, max_value: float):
@@ -31,57 +31,27 @@ def iter_curve_values(curve_mapping, steps: int):
         yield fclamp(value, clip_min_y, clip_max_y)
 
 
-def check_images_startup(self, context):
-    scene = context.scene
-    cameras = scene.cpp.available_camera_objects
-    missing_count = 0
-    for ob in cameras:
-        camera = ob.data
-        image = camera.cpp.image
-        if image.filepath == "":
-            continue
-        fp = bpy.path.abspath(image.filepath)
-
-        if not os.path.isfile(fp):
-            camera.cpp.used = False
-            camera.cpp.image = None
-            missing_count += 1
-            print("Camera: %s\nMissing file path: %s\n" % (ob.name, fp))
-    if missing_count:
-        self.report(type = {'WARNING'}, message = "Missing data for %d cameras!" % missing_count)
-
-
-def get_active_rv3d(context, mouse_position):
+def get_hovered_region_3d(context):
+    mouse_x, mouse_y = event.mouse_position
     for area in context.screen.areas:
         if area.type == 'VIEW_3D':
-            mouse_x, mouse_y = mouse_position
+            header = next(r for r in area.regions if r.type == 'HEADER')
+            tools = next(r for r in area.regions if r.type == 'TOOLS')  # N-panel
+            ui = next(r for r in area.regions if r.type == 'UI')  # T-panel
 
-            if (area.x <= mouse_x < (area.x + area.width) and
-                    area.y <= mouse_y < (area.y + area.height)):
-                if len(area.spaces.active.region_quadviews) > 0:
-                    header = next(r for r in area.regions if r.type == 'HEADER')
+            min_x = area.x + tools.width
+            max_x = area.x + area.width - ui.width
+            min_y = area.y
+            max_y = area.y + area.height
 
-                    quad_w = area.width / 2
-                    quad_h = (area.height - header.height) / 2
-                    quad_0_x = area.x
-                    quad_0_y = area.y + header.height
-                    quad_1_x = area.x
-                    quad_1_y = area.y + quad_h + header.height
-                    quad_2_x = area.x + quad_w
-                    quad_2_y = area.y + header.height
+            if header.alignment == 'TOP':
+                max_y -= header.height
+            elif header.alignment == 'BOTTOM':
+                min_y += header.height
 
-                    if (quad_0_x <= mouse_x < (quad_0_x + quad_w) and
-                            quad_0_y <= mouse_y < (quad_0_y + quad_h)):
-                        return area.spaces.active.region_quadviews[0]
-
-                    if (quad_1_x <= mouse_x < (quad_1_x + quad_w) and
-                            quad_1_y <= mouse_y < (quad_1_y + quad_h)):
-                        return area.spaces.active.region_quadviews[1]
-
-                    if (quad_2_x <= mouse_x < (quad_2_x + quad_w) and
-                            quad_2_y <= mouse_y < (quad_2_y + quad_h)):
-                        return area.spaces.active.region_quadviews[2]
-
-                    return area.spaces.active.region_quadviews[3]
-                else:
+            if min_x <= mouse_x < max_x and min_y <= mouse_y < max_y:
+                if len(area.spaces.active.region_quadviews) == 0:
                     return area.spaces.active.region_3d
+                else:
+                    # Not sure quadview support required?
+                    pass

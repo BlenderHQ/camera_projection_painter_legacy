@@ -3,11 +3,14 @@ import bgl
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 
-from .common import get_active_rv3d, iter_curve_values, flerp
-from .utils_camera import get_camera_attributes
-from .utils_poll import full_poll_decorator
-from ..shaders import shaders
+from . import utils_state
 
+from .utils_warning import get_warning_status
+from .utils_poll import full_poll_decorator
+from .utils_camera import get_camera_attributes
+from .common import get_hovered_region_3d, iter_curve_values, flerp
+
+from ..shaders import shaders
 from .. import __package__ as addon_pkg
 
 
@@ -95,7 +98,7 @@ def draw_projection_preview(self, context):
 
     if not scene.cpp.use_projection_preview:
         return
-    if not self.draw_preview:
+    if self.suspended:
         return
 
     preferences = context.preferences.addons[addon_pkg].preferences
@@ -113,8 +116,8 @@ def draw_projection_preview(self, context):
     if not batch:
         return
 
-    mouse_position = self.mouse_position
-    active_rv3d = get_active_rv3d(context, mouse_position)
+    mouse_position = utils_state.event.mouse_position
+    active_rv3d = get_hovered_region_3d(context)
     current_rv3d = context.area.spaces.active.region_3d
 
     outline_type = 0
@@ -170,24 +173,15 @@ def draw_projection_preview(self, context):
         shader.uniform_float("mousePos", (mx, my))
         shader.uniform_float("brushRadius", brush_radius)
         shader.uniform_float("brushStrength", brush.strength)
+
     shader.uniform_int("useBrush", use_brush)
 
-    warning = 0
-    if scene.cpp.use_warnings:
-        view_distance = current_rv3d.view_distance
-        sx, sy = image_paint.canvas.size
-        canvas_size = (sx + sy) / 2
-        distance_warning = scene.cpp.distance_warning
-        brush_radius_warning = scene.cpp.brush_radius_warning
-        canvas_size_warning = scene.cpp.canvas_size_warning
-        dist_fac = abs((view_distance / distance_warning))
-        brad_fac = (brush_radius / brush_radius_warning) - 1
-        canv_fac = (canvas_size / canvas_size_warning) - 1
-        warning_factor = (dist_fac + brad_fac + canv_fac)
-        if warning_factor > 0.95:
-            warning = 1
+    if scene.cpp.use_warnings and scene.cpp.use_warning_action_draw:
+        danger_zone = get_warning_status(context, active_rv3d)
+        shader.uniform_int("warning", danger_zone)
         shader.uniform_float("warningColor", preferences.warning_color)
-    shader.uniform_int("warning", warning)
+    else:
+        shader.uniform_int("warning", 0)
 
     # Finally, draw
     batch.draw(shader)

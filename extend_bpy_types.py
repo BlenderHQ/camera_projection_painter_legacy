@@ -35,7 +35,6 @@ import numpy as np
 from .icons import get_icon_id
 from .utils import utils_base, utils_camera
 
-
 class CameraProperties(PropertyGroup):
     @property
     def available(self):
@@ -197,6 +196,19 @@ class SceneProperties(PropertyGroup):
     use_warnings: BoolProperty(
         name = "Use warnings", default = False,
         description = "Show warning when paint may become laggy")
+
+    use_warning_action_draw: BoolProperty(
+        name = "Brush Preview", default = True,
+        description = "Change brush preview when context out of"
+                      "recommended parameters")
+
+    use_warning_action_popup: BoolProperty(
+        name = "Info popup", default = False,
+        description = "Info popup when context out of recommended parameters")
+
+    use_warning_action_lock: BoolProperty(
+        name = "Lock Paint", default = True,
+        description = "Lock paint when context out of recommended parameters")
 
     distance_warning: FloatProperty(
         name = "View Distance",

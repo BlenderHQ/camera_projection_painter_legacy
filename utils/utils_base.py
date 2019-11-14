@@ -2,7 +2,6 @@ import bpy
 from bpy.types import SpaceView3D
 
 from .utils_draw import draw_projection_preview
-
 from ..constants import TEMP_DATA_NAME
 
 

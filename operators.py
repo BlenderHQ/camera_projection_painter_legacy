@@ -20,22 +20,80 @@
 
 import bpy
 from bpy.types import Operator
-from bpy.props import BoolProperty, EnumProperty
+from bpy.props import EnumProperty
 
 from .gizmos import generate_preview_bincodes
 from .utils import (
+    common,
     utils_state,
     utils_camera,
     utils_base,
     utils_poll,
-    utils_draw)
+    utils_draw,
+    utils_warning)
 
-TIME_STEP = 0.01
+TIME_STEP = 1 / 24
+
+
+class CPP_OT_event_listener(Operator):
+    bl_idname = "cpp.event_listener"
+    bl_label = "Event Listener"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        utils_state.event.mouse_position = event.mouse_x, event.mouse_y
+        return {'PASS_THROUGH'}
+
+
+class CPP_OT_image_paint(Operator):
+    bl_idname = "cpp.image_paint"
+    bl_label = "Image Paint"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        scene = context.scene
+        if not scene.cpp.use_warnings:
+            return False
+        return utils_poll.full_poll(context)
+
+    def execute(self, context):
+        scene = context.scene
+        wm = context.window_manager
+        # Danger zone
+        rv3d = common.get_hovered_region_3d(context)
+        if rv3d:
+            warning_status = utils_warning.get_warning_status(context, rv3d)
+            if warning_status:
+                self.report(type = {'WARNING'}, message = "Danger zone!")
+                if scene.cpp.use_warning_action_popup:
+                    wm.popup_menu(utils_warning.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
+                if scene.cpp.use_warning_action_lock:
+                    return {'FINISHED'}
+        bpy.ops.paint.image_paint('INVOKE_DEFAULT')
+        return {'FINISHED'}
 
 
 class CPP_OT_camera_projection_painter(Operator):
     bl_idname = "cpp.camera_projection_painter"
     bl_label = "Camera Projection Painter"
+    bl_options = {'INTERNAL'}
+
+    __slots__ = (
+        "draw_handler",
+        "mesh_batch",
+        "image_batch",
+        "brush_texture_bindcode",
+        "check_brush_curve_tuple",
+        "clone_image",
+        "suspended",
+        "cleanup_required"
+    )
 
     def __init__(self):
         self.draw_handler = None
@@ -44,8 +102,7 @@ class CPP_OT_camera_projection_painter(Operator):
         self.brush_texture_bindcode = None
         self.check_brush_curve_tuple = None
         self.clone_image = None
-        self.mouse_position = (0, 0)
-        self.draw_preview = True
+        self.suspended = True
         self.cleanup_required = None
 
     def invoke(self, context, event):
@@ -56,7 +113,6 @@ class CPP_OT_camera_projection_painter(Operator):
 
         wm = context.window_manager
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
-        wm.event_timer_add(time_step = 0.25, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -77,15 +133,19 @@ class CPP_OT_camera_projection_painter(Operator):
             utils_base.cleanup(self, context)
             return {'PASS_THROUGH'}
 
+        image_paint.clone_image = image_paint.clone_image  # TODO: Find a better way to update viewport
+
+        if self.suspended:
+            return {'PASS_THROUGH'}
+
         ob = context.image_paint_object
         camera = scene.camera
 
-        self.mouse_position = event.mouse_x, event.mouse_y
         utils_draw.gen_brush_texture(self, context)
         utils_draw.gen_mesh_batch(self, context)
 
         if scene.cpp.use_auto_set_camera:
-            utils_camera.set_camera_by_view(context, self.mouse_position)
+            utils_camera.set_camera_by_view(context)
 
         if scene.cpp.use_auto_set_image:
             utils_base.auto_set_image(context)
@@ -115,8 +175,6 @@ class CPP_OT_camera_projection_painter(Operator):
 
         if not self.draw_handler:
             utils_base.set_draw_handlers(self, context, state = True)
-
-        image_paint.clone_image = image_paint.clone_image  # TODO: Find a better way to update viewport
 
         return {'PASS_THROUGH'}
 
@@ -184,7 +242,7 @@ class CPP_OT_set_camera_by_view(Operator):
         return scene.cpp.has_available_camera_objects
 
     def execute(self, context):
-        utils_camera.set_camera_by_view(context, utils_state.state.operator.mouse_position)
+        utils_camera.set_camera_by_view(context)
         return {'FINISHED'}
 
 
@@ -212,6 +270,8 @@ class CPP_OT_set_camera_active(Operator):
 
 
 _classes = [
+    CPP_OT_event_listener,
+    CPP_OT_image_paint,
     CPP_OT_camera_projection_painter,
     CPP_OT_bind_camera_image,
     CPP_OT_set_camera_by_view,

@@ -21,7 +21,7 @@
 
 import bpy
 
-from .operators import CPP_OT_set_camera_by_view
+from .operators import CPP_OT_image_paint, CPP_OT_set_camera_by_view
 
 __all__ = ["register", "unregister"]
 
@@ -31,7 +31,17 @@ _keymaps = []
 def register():
     wm = bpy.context.window_manager
     # "https://developer.blender.org/T60766"
-    km = wm.keyconfigs.addon.keymaps.new(name = "3D View", space_type = 'VIEW_3D')
+    kc = wm.keyconfigs.addon
+
+    km = kc.keymaps.new("Image Paint")
+
+    kmi = km.keymap_items.new(
+        idname = CPP_OT_image_paint.bl_idname,
+        type = 'LEFTMOUSE',
+        value = 'PRESS',
+        head = True
+    )
+    _keymaps.append((km, kmi))
 
     kmi = km.keymap_items.new(CPP_OT_set_camera_by_view.bl_idname, 'X', 'PRESS', alt = True)
     _keymaps.append((km, kmi))

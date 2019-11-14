@@ -188,6 +188,15 @@ class CPP_PT_current_warnings_options(Panel, CPPOptionsPanel):
         scene = context.scene
 
         col.enabled = scene.cpp.use_warnings
+
         col.prop(scene.cpp, "distance_warning")
         col.prop(scene.cpp, "brush_radius_warning")
         col.prop(scene.cpp, "canvas_size_warning")
+
+        col.label(text = "Actions:")
+
+        col.prop(scene.cpp, "use_warning_action_draw")
+        col.prop(scene.cpp, "use_warning_action_popup")
+        col.prop(scene.cpp, "use_warning_action_lock")
+
+

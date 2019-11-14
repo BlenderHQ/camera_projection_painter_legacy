@@ -3,7 +3,7 @@ import os
 import bpy
 from mathutils import Vector
 
-from .common import flerp, get_active_rv3d
+from .common import flerp, get_hovered_region_3d
 
 AUTOCAM_MIN = 0.852
 AUTOCAM_MAX = 0.999
@@ -69,8 +69,8 @@ def bind_camera_image_by_name(ob, file_path):
         return image.name
 
 
-def set_camera_by_view(context, mouse_position):
-    rw3d = get_active_rv3d(context, mouse_position)
+def set_camera_by_view(context):
+    rw3d = get_hovered_region_3d(context)
     if not rw3d:
         return
 

@@ -19,10 +19,11 @@
 # <pep8 compliant>
 
 import bpy
+
 from bpy.props import BoolProperty, FloatProperty, IntProperty, EnumProperty, FloatVectorProperty
 
 from .utils.utils_state import state
-from .operators import CPP_OT_set_camera_by_view
+from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
 
 WEB_LINKS = [
     ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
@@ -175,10 +176,13 @@ class CppPreferences(bpy.types.AddonPreferences):
     def _draw_keymap(self, layout):
         wm = bpy.context.window_manager
         kc = wm.keyconfigs.addon
-        km = kc.keymaps["3D View"]
+        km = kc.keymaps["Image Paint"]
 
         col = layout.column()
         col.context_pointer_set("keymap", km)
+
+        kmi = get_hotkey_entry_item(km, CPP_OT_image_paint.bl_idname)
+        draw_kmi(kmi, col)
 
         kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname)
         draw_kmi(kmi, col)

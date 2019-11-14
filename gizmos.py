@@ -119,10 +119,14 @@ class CPP_GT_camera_gizmo(Gizmo):
         bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
         return {'FINISHED'}
 
+    def test_select(self, context, location):
+        return -1
+
     @open_gl_draw
     def draw(self, context):
         cpp_data = self.camera_object.data.cpp
         preferences = context.preferences.addons[__package__].preferences
+
         if self.is_highlight and preferences.camera_use_draw_hover:
             self.draw_custom_shape(self.shape)
         if cpp_data.available:
@@ -159,7 +163,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
     bl_label = "Camera Painter Widget"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'WINDOW'
-    bl_options = {'3D', 'PERSISTENT', 'DEPTH_3D', 'SELECT'}
+    bl_options = {'3D', 'PERSISTENT', 'DEPTH_3D', 'SCALE'}
 
     @classmethod
     def poll(cls, context):
@@ -272,7 +276,9 @@ class CPP_GT_current_image_preview(Gizmo):
         quad_p4 = mpr_pos + Vector((self.pixel_size.x, 0.0))
         res = intersect_point_quad_2d(mouse_pos, quad_p1, quad_p2, quad_p3, quad_p4)
         if res == -1:
+            utils_state.state.operator.suspended = True
             return 0
+        utils_state.state.operator.suspended = False
         return -1
 
     def invoke(self, context, event):
@@ -280,7 +286,7 @@ class CPP_GT_current_image_preview(Gizmo):
         image_paint = scene.tool_settings.image_paint
         self.restore_show_brush = bool(image_paint.show_brush)
         image_paint.show_brush = False
-        utils_state.state.operator.draw_preview = False
+        utils_state.state.operator.suspended = True
         self.rel_offset = Vector(scene.cpp.current_image_position) - self._get_image_rel_pos(context, event)
         return {'RUNNING_MODAL'}
 
@@ -298,7 +304,7 @@ class CPP_GT_current_image_preview(Gizmo):
     def exit(self, context, cancel):
         image_paint = context.scene.tool_settings.image_paint
         image_paint.show_brush = self.restore_show_brush
-        utils_state.state.operator.draw_preview = True
+        utils_state.state.operator.suspended = False
 
 
 class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
