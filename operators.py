@@ -106,7 +106,7 @@ class CPP_OT_camera_projection_painter(Operator):
         self.check_brush_curve_tuple = None
         self.clone_image = None
         self.suspended = True
-        self.cleanup_required = None
+        self.cleanup_required = False
 
     def invoke(self, context, event):
         utils_state.state.operator = self
@@ -135,6 +135,9 @@ class CPP_OT_camera_projection_painter(Operator):
         else:
             utils_base.cleanup(self, context)
             return {'PASS_THROUGH'}
+
+        if not self.cleanup_required:
+            generate_preview_bincodes(self, context)
 
         image_paint.clone_image = image_paint.clone_image  # TODO: Find a better way to update viewport
 
