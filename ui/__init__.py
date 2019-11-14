@@ -37,7 +37,9 @@ from .image_paint import (
     CPP_PT_camera_autocam_options,
     CPP_PT_view_projection_preview_options,
     CPP_PT_current_image_preview_options,
-    CPP_PT_current_warnings_options
+    CPP_PT_warnings_options,
+    CPP_PT_current_camera,
+    CPP_PT_current_camera_calibration
 )
 from .context_menu import CPP_MT_camera_pie
 
@@ -58,7 +60,10 @@ _classes = [
     CPP_PT_view_options,
     CPP_PT_view_projection_preview_options,
     CPP_PT_current_image_preview_options,
-    CPP_PT_current_warnings_options,
+    CPP_PT_warnings_options,
+
+    CPP_PT_current_camera,
+    CPP_PT_current_camera_calibration,
 
     CPP_MT_camera_pie
 ]

@@ -194,6 +194,7 @@ class CPP_OT_bind_camera_image(Operator):
 
     mode: EnumProperty(
         items = [('ACTIVE', "Active", ""),
+                 ('CONTEXT', "Context", ""),
                  ('SELECTED', "Selected", ""),
                  ('ALL', "All", ""),
                  ('TMP', "Tmp", "")],
@@ -207,6 +208,8 @@ class CPP_OT_bind_camera_image(Operator):
         cameras = []
         if self.mode == 'ACTIVE':
             cameras = [context.active_object]
+        elif self.mode == 'CONTEXT':
+            cameras = [scene.camera]
         elif self.mode == 'SELECTED':
             cameras = scene.cpp.selected_camera_objects
         elif self.mode == 'ALL':

@@ -179,7 +179,7 @@ class CPP_PT_current_image_preview_options(Panel, CPPOptionsPanel):
         col.prop(scene.cpp, "current_image_size")
 
 
-class CPP_PT_current_warnings_options(Panel, CPPOptionsPanel):
+class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
     bl_label = "Warnings"
     bl_parent_id = "CPP_PT_view_options"
 
@@ -207,3 +207,73 @@ class CPP_PT_current_warnings_options(Panel, CPPOptionsPanel):
         col.prop(scene.cpp, "use_warning_action_draw")
         col.prop(scene.cpp, "use_warning_action_popup")
         col.prop(scene.cpp, "use_warning_action_lock")
+
+
+class CPP_PT_current_camera(Panel, CPPOptionsPanel):
+    bl_label = "Current Camera"
+    bl_parent_id = "CPP_PT_options"
+    bl_options = set()
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column(align = True)
+        scene = context.scene
+        data = scene.camera.data.cpp
+
+        image = data.image
+
+        col.template_ID(data, "image", open = "image.open")
+        operator = col.operator(CPP_OT_bind_camera_image.bl_idname, icon_value = get_icon_id("bind_image"))
+        operator.mode = 'CONTEXT'
+
+        if image:
+            sx, sy = image.size
+            row = col.row()
+            row.label(text = "Width:")
+            row.label(text = "%d px" % sx)
+
+            row = col.row()
+            row.label(text = "Height:")
+            row.label(text = "%d px" % sy)
+
+            row = col.row()
+            row.label(text = "Pixel Format:")
+            row.label(text = "%d-bit %s" % (image.depth, image.colorspace_settings.name))
+
+
+class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
+    bl_label = "Calibration"
+    bl_parent_id = "CPP_PT_current_camera"
+
+    @classmethod
+    def poll(cls, context):
+        scene = context.scene
+        data = scene.camera.data.cpp
+        image = data.image
+        return True if image else False
+
+    def draw_header(self, context):
+        layout = self.layout
+        scene = context.scene
+        data = scene.camera.data.cpp
+        layout.prop(data, "use_calibration", text = "")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        col = layout.column(align = True)
+
+        scene = context.scene
+        data = scene.camera.data.cpp
+
+        col.enabled = data.use_calibration
+        col.prop(data, "calibration_principal_point")
+        col.separator()
+        col.prop(data, "calibration_skew")
+        col.prop(data, "calibration_aspect_ratio")
+        col.prop(data, "lens_distortion_radial_1")
+        col.prop(data, "lens_distortion_radial_2")
+        col.prop(data, "lens_distortion_radial_3")
+        col.prop(data, "lens_distortion_tangential_1")
+        col.prop(data, "lens_distortion_tangential_2")
