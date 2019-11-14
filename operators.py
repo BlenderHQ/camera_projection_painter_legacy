@@ -107,6 +107,7 @@ class CPP_OT_camera_projection_painter(Operator):
         self.clone_image = None
         self.suspended = True
         self.cleanup_required = False
+        self.camera = None
 
     def invoke(self, context, event):
         utils_state.state.operator = self
