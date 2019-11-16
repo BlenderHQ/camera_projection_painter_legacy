@@ -104,7 +104,6 @@ class CameraProjectionPainterBaseUtils:
 
         size_x, size_y = clone_image.size
 
-        print(time.time() - dt)  # DEBUG #######################################################
         if size_x > size_y:
             modifier.aspect_x = size_x / size_y
             modifier.aspect_y = 1.0
@@ -114,6 +113,8 @@ class CameraProjectionPainterBaseUtils:
         else:
             modifier.aspect_x = 1.0
             modifier.aspect_y = 1.0
+
+        print(time.time() - dt)  # DEBUG #######################################################
 
         modifier.projector_count = 1
         modifier.projectors[0].object = scene.camera
