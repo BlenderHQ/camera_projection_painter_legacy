@@ -145,10 +145,6 @@ class SceneProperties(PropertyGroup):
     def _cameras_viewport_size_update(self, context):
         utils_camera.resize_cameras_viewport(context, self.cameras_viewport_size)
 
-    def _use_auto_set_image_update(self, context):
-        if self.use_auto_set_image:
-            utils_base.auto_set_image(context)
-
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
         description = "Path to source images used. "
@@ -176,8 +172,7 @@ class SceneProperties(PropertyGroup):
 
     use_auto_set_image: BoolProperty(
         name = "Use Automatic Image", default = True,
-        description = "Automatic/User image selection",
-        update = _use_auto_set_image_update)
+        description = "Automatic/User image selection")
 
     auto_set_camera_method: EnumProperty(
         items = [

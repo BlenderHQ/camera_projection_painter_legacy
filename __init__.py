@@ -46,6 +46,10 @@ if "bpy" in locals():
         module = import_module(name = "." + module_name, package = __package__)
         reload(module)
 
+    for module_name, module_file in bpy.path.module_names(path = os.path.dirname(__file__), recursive = True):
+        module = import_module(name = "." + module_name, package = __package__)
+        reload(module)
+
     register()
 
     bpy.ops.cpp.event_listener('INVOKE_DEFAULT')

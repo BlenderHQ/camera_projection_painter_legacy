@@ -35,7 +35,7 @@ class CPP_PT_scene_options(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        layout.use_property_split = False
         layout.use_property_decorate = False
         col = layout.column(align = False)
 
@@ -65,7 +65,7 @@ class CPP_PT_camera_options(bpy.types.Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        layout.use_property_split = False
         layout.use_property_decorate = False
 
         col = layout.column(align = False)
@@ -84,7 +84,7 @@ class CPP_PT_camera_background_images_options(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        layout.use_property_split = False
         layout.use_property_decorate = False
         col = layout.column(align = False)
 
@@ -104,7 +104,7 @@ class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        layout.use_property_split = False
         layout.use_property_decorate = False
         col = layout.column(align = False)
 
@@ -112,15 +112,15 @@ class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
 
         scol = col.column()
         scol.enabled = not scene.cpp.use_auto_set_camera
-        scol.operator(CPP_OT_set_camera_by_view.bl_idname, icon = 'VIEW_CAMERA')
+        scol.operator(CPP_OT_set_camera_by_view.bl_idname)
 
         col.label(text = "Options:")
 
         row = col.row(align = True)
-        row.use_property_split = False
         row.prop_enum(scene.cpp, "auto_set_camera_method", 'FULL')
         row.prop_enum(scene.cpp, "auto_set_camera_method", 'DIRECTION')
         method = scene.cpp.auto_set_camera_method
+
         if method == 'FULL':
             col.prop(scene.cpp, "tolerance_full")
         elif method == 'DIRECTION':
@@ -168,7 +168,7 @@ class CPP_PT_current_image_preview_options(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        layout.use_property_split = False
         layout.use_property_decorate = False
         col = layout.column(align = False)
 
@@ -190,7 +190,7 @@ class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
+        layout.use_property_split = False
         layout.use_property_decorate = False
         col = layout.column(align = False)
 
@@ -203,6 +203,7 @@ class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
         col.prop(scene.cpp, "canvas_size_warning")
 
         col.label(text = "Actions:")
+        col.use_property_split = True
 
         col.prop(scene.cpp, "use_warning_action_draw")
         col.prop(scene.cpp, "use_warning_action_popup")
@@ -260,9 +261,9 @@ class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
         layout.use_property_decorate = False
         col = layout.column(align = True)
+        col.use_property_split = False
 
         scene = context.scene
         data = scene.camera.data.cpp
@@ -270,6 +271,8 @@ class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
         col.enabled = data.use_calibration
         col.prop(data, "calibration_principal_point")
         col.separator()
+
+        col.use_property_split = True
         col.prop(data, "calibration_skew")
         col.prop(data, "calibration_aspect_ratio")
         col.prop(data, "lens_distortion_radial_1")

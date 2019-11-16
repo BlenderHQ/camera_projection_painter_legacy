@@ -1,5 +1,6 @@
 import bpy
 import bgl
+import gpu
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 
@@ -14,42 +15,41 @@ from ..shaders import shaders
 from .. import __package__ as addon_pkg
 
 
-def gen_brush_texture(self, context):
-    scene = context.scene
-    image_paint = scene.tool_settings.image_paint
-    brush = image_paint.brush
-    pixel_width = scene.tool_settings.unified_paint_settings.size
+class CameraProjectionPainterDrawUtils:
+    mesh_batch: gpu.types.GPUBatch
+    brush_texture_bindcode: int
 
-    check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
-    check_tuple = tuple((n for n in iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
-
-    if self.check_brush_curve_tuple != check_tuple:
-        self.check_brush_curve_tuple = check_tuple
-
-        pixels = [int(n * 255) for n in iter_curve_values(brush.curve, pixel_width)]
-
-        id_buff = bgl.Buffer(bgl.GL_INT, 1)
-        bgl.glGenTextures(1, id_buff)
-
-        bindcode = id_buff.to_list()[0]
-
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
-        image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
-        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
-        bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RED,
-                         pixel_width, 1, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
-
-        self.brush_texture_bindcode = bindcode
-
-
-def gen_mesh_batch(self, context):
-    ob = context.active_object
-    if not self.mesh_batch:
+    def generate_mesh_batch(self, context):
+        ob = context.active_object
         vertices, normals, indices = ob.cpp.generate_batch_attr(context)
         shader = shaders.mesh_preview
         batch = batch_for_shader(shader, 'TRIS', {"pos": vertices, "normal": normals}, indices = indices)
         self.mesh_batch = batch
-    return self.mesh_batch
+
+    def generate_brush_texture(self, context):
+        scene = context.scene
+        image_paint = scene.tool_settings.image_paint
+        brush = image_paint.brush
+        pixel_width = scene.tool_settings.unified_paint_settings.size
+
+        check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
+        check_tuple = tuple((n for n in iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
+
+        if self.check_brush_curve_updated(check_tuple):
+            pixels = [int(n * 255) for n in iter_curve_values(brush.curve, pixel_width)]
+
+            id_buff = bgl.Buffer(bgl.GL_INT, 1)
+            bgl.glGenTextures(1, id_buff)
+
+            bindcode = id_buff.to_list()[0]
+
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+            image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
+            bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
+            bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RED,
+                             pixel_width, 1, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
+
+            self.brush_texture_bindcode = bindcode
 
 
 def base_update_preview(context):

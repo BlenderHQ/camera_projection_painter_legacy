@@ -35,8 +35,6 @@ from .utils import (
 import os
 import csv
 
-TIME_STEP = 1 / 24
-
 
 class CPP_OT_event_listener(Operator):
     bl_idname = "cpp.event_listener"
@@ -82,107 +80,73 @@ class CPP_OT_image_paint(Operator):
         return {'FINISHED'}
 
 
-class CPP_OT_camera_projection_painter(Operator):
+class CPP_OT_camera_projection_painter(Operator,
+                                       utils_base.CameraProjectionPainterBaseUtils,
+                                       utils_draw.CameraProjectionPainterDrawUtils):
     bl_idname = "cpp.camera_projection_painter"
     bl_label = "Camera Projection Painter"
     bl_options = {'INTERNAL'}
 
-    __slots__ = (
-        "draw_handler",
-        "mesh_batch",
-        "image_batch",
-        "brush_texture_bindcode",
-        "check_brush_curve_tuple",
-        "clone_image",
-        "suspended",
-        "cleanup_required"
-    )
-
     def __init__(self):
-        self.draw_handler = None
-        self.mesh_batch = None
-        self.image_batch = None
-        self.brush_texture_bindcode = None
-        self.check_brush_curve_tuple = None
-        self.clone_image = None
-        self.suspended = True
-        self.cleanup_required = False
-        self.camera = None
+        self.set_properties_defaults()
 
     def invoke(self, context, event):
         utils_state.state.operator = self
-
-        if utils_poll.tool_setup_poll(context):
-            generate_preview_bincodes(self, context)
-
-        wm = context.window_manager
-        wm.event_timer_add(time_step = TIME_STEP, window = context.window)
-        wm.modal_handler_add(self)
+        self.register_modal(context)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        if utils_poll.base_poll(context):
-            self.cleanup_required = True
-            utils_base.cleanup(self, context)
+        if not self.setup_required:
+            self.remove_draw_handlers()
+            self.remove_uv_layer(context)
+            self.set_properties_defaults()
 
     def modal(self, context, event):
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
+        clone_image = image_paint.clone_image
+
         if utils_poll.tool_setup_poll(context):
             if not image_paint.clone_image:
                 if scene.cpp.use_auto_set_image:
-                    utils_base.auto_set_image(context)
+                    self.set_clone_image_from_camera_data(context)
                 return {'PASS_THROUGH'}
         else:
-            utils_base.cleanup(self, context)
+            self.cancel(context)
             return {'PASS_THROUGH'}
 
-        if not self.cleanup_required:
+        if self.setup_required:
             generate_preview_bincodes(self, context)
+            self.generate_mesh_batch(context)
 
-        image_paint.clone_image = image_paint.clone_image  # TODO: Find a better way to update viewport
+        image_paint.clone_image = clone_image  # TODO: Find a better way to update
 
         if self.suspended:
             return {'PASS_THROUGH'}
 
-        ob = context.image_paint_object
-        camera = scene.camera
-
-        utils_draw.gen_brush_texture(self, context)
-        utils_draw.gen_mesh_batch(self, context)
+        if scene.cpp.use_projection_preview:
+            self.generate_brush_texture(context)
 
         if scene.cpp.use_auto_set_camera:
             utils_camera.set_camera_by_view(context)
 
         if scene.cpp.use_auto_set_image:
-            utils_base.auto_set_image(context)
+            self.set_clone_image_from_camera_data(context)
 
-        modifier = utils_base.set_modifier(ob, state = True)
+        if self.camera != scene.camera or self.clone_image != clone_image:
+            self.camera = scene.camera
 
-        if modifier.projectors[0].object != camera:
-            modifier.projectors[0].object = camera
+            self.clone_image = clone_image
+
+            self.setup_basis_uv_layer(context)
             utils_draw.base_update_preview(context)
 
-        if image_paint.clone_image != self.clone_image:
-            self.clone_image = image_paint.clone_image
-
-            self.clone_image.colorspace_settings.name = 'Raw'
-
-            size_x, size_y = self.clone_image.size
-            # Modifier aspect
-            modifier_aspect = (size_x / size_y, 1.0) if size_x > size_y else (1.0, size_x / size_y)
-            modifier.aspect_x, modifier.aspect_y = modifier_aspect
-            # Scene resolution for background images
-            scene.render.resolution_x = size_x
-            scene.render.resolution_y = size_y
-
-            utils_draw.base_update_preview(context)
-
-        self.cleanup_required = True
+        #
 
         if not self.draw_handler:
-            utils_base.set_draw_handlers(self, context, state = True)
+            self.add_draw_handlers(context)
 
+        self.setup_required = False
         return {'PASS_THROUGH'}
 
 

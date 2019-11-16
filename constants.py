@@ -1,3 +1,5 @@
+TIME_STEP = 1 / 40
+
 SEPARATOR = "_"
 
 TEMP_DATA_NAME = "cpp_temp_data"
