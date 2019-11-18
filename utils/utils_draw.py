@@ -1,6 +1,5 @@
 import bpy
 import bgl
-import gpu
 from mathutils import Vector
 from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
@@ -28,6 +27,9 @@ class CameraProjectionPainterDrawUtils:
 
     def generate_mesh_batch(self, context):
         ob = context.active_object
+
+        ob.cpp.generate_batch_2(context)
+
         vertices, normals, indices = ob.cpp.generate_batch_attr(context)
         shader = shaders.mesh_preview
         batch = batch_for_shader(shader, 'TRIS', {"pos": vertices, "normal": normals}, indices = indices)

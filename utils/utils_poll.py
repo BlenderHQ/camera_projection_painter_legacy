@@ -27,6 +27,9 @@ def tool_setup_poll(context):
     if TEMP_DATA_NAME in uv_layers:
         uv_layers_count -= 1
 
+        if uv_layers.active.name == TEMP_DATA_NAME:
+            return False
+
     if not uv_layers_count:
         return False
 

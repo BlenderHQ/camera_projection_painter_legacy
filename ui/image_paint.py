@@ -1,6 +1,12 @@
 import bpy
 from bpy.types import Panel
 
+from .templates import (
+    template_camera_image,
+    template_camera_calibration,
+    template_camera_lens_distortion,
+    template_path_with_ops)
+
 from ..icons import get_icon_id
 from ..operators import (
     CPP_OT_bind_camera_image,
@@ -35,27 +41,7 @@ class CPP_PT_scene_options(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = False
-        layout.use_property_decorate = False
-        col = layout.column(align = False)
-
-        scene = context.scene
-
-        col.label(text = "Source Images Directory:")
-        col.prop(scene.cpp, "source_images_path", text = "", icon = 'IMAGE')
-        scol = col.column()
-        scol.enabled = scene.cpp.has_visible_camera_objects
-        operator = scol.operator(
-            CPP_OT_bind_camera_image.bl_idname,
-            text = "Bind All",
-            icon_value = get_icon_id("bind_image"))
-        operator.mode = 'ALL'
-
-        col.separator()
-
-        col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
-        col.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
-                     icon_value = get_icon_id("calibration"))
+        template_path_with_ops(layout, context.scene)
 
 
 class CPP_PT_camera_options(bpy.types.Panel, CPPOptionsPanel):
@@ -71,26 +57,6 @@ class CPP_PT_camera_options(bpy.types.Panel, CPPOptionsPanel):
         col = layout.column(align = False)
         scene = context.scene
         col.prop(scene.cpp, "cameras_viewport_size")
-
-
-class CPP_PT_camera_background_images_options(Panel, CPPOptionsPanel):
-    bl_label = "Background Images"
-    bl_parent_id = "CPP_PT_camera_options"
-
-    def draw_header(self, context):
-        layout = self.layout
-        scene = context.scene
-        layout.prop(scene.cpp, "use_background_images", text = "")
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = False
-        layout.use_property_decorate = False
-        col = layout.column(align = False)
-
-        scene = context.scene
-        col.enabled = scene.cpp.use_background_images
-        col.prop(scene.cpp, "background_images_alpha")
 
 
 class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
@@ -217,29 +183,7 @@ class CPP_PT_current_camera(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        col = layout.column(align = True)
-        scene = context.scene
-        data = scene.camera.data.cpp
-
-        image = data.image
-
-        col.template_ID(data, "image", open = "image.open")
-        operator = col.operator(CPP_OT_bind_camera_image.bl_idname, icon_value = get_icon_id("bind_image"))
-        operator.mode = 'CONTEXT'
-
-        if image:
-            sx, sy = image.size
-            row = col.row()
-            row.label(text = "Width:")
-            row.label(text = "%d px" % sx)
-
-            row = col.row()
-            row.label(text = "Height:")
-            row.label(text = "%d px" % sy)
-
-            row = col.row()
-            row.label(text = "Pixel Format:")
-            row.label(text = "%d-bit %s" % (image.depth, image.colorspace_settings.name))
+        template_camera_image(layout, context.scene.camera)
 
 
 class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
@@ -261,22 +205,13 @@ class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_decorate = False
-        col = layout.column(align = True)
-        col.use_property_split = False
+        template_camera_calibration(layout, context.scene.camera)
 
-        scene = context.scene
-        data = scene.camera.data.cpp
 
-        col.enabled = data.use_calibration
-        col.prop(data, "calibration_principal_point")
-        col.separator()
+class CPP_PT_current_camera_lens_distortion(Panel, CPPOptionsPanel):
+    bl_label = "Lens Distortion"
+    bl_parent_id = "CPP_PT_current_camera_calibration"
 
-        col.use_property_split = True
-        col.prop(data, "calibration_skew")
-        col.prop(data, "calibration_aspect_ratio")
-        col.prop(data, "lens_distortion_radial_1")
-        col.prop(data, "lens_distortion_radial_2")
-        col.prop(data, "lens_distortion_radial_3")
-        col.prop(data, "lens_distortion_tangential_1")
-        col.prop(data, "lens_distortion_tangential_2")
+    def draw(self, context):
+        layout = self.layout
+        template_camera_lens_distortion(layout, context.scene.camera)

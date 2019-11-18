@@ -115,24 +115,6 @@ def set_camera_by_view(context):
     scene.camera = camera_ob
 
 
-def set_background_images(context, state):
-    scene = context.scene
-    for ob in scene.cpp.available_camera_objects:
-        camera = ob.data
-        background_images = camera.background_images
-        if state:
-            camera.show_background_images = True
-            if not len(background_images):
-                background_images.new()
-            camera.background_images[0].display_depth = 'FRONT'
-            camera.background_images[0].alpha = context.scene.cpp.background_images_alpha
-            camera.background_images[0].image = camera.cpp.image
-        else:
-            camera.show_background_images = False
-            if len(background_images):
-                camera.background_images.clear()
-
-
 def resize_cameras_viewport(context, value):
     scene = context.scene
     for ob in scene.cpp.available_camera_objects:

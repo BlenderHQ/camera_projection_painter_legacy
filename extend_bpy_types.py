@@ -36,6 +36,7 @@ import io
 import os
 import numpy as np
 
+from .constants import TEMP_DATA_NAME
 from .icons import get_icon_id
 from .utils import utils_base, utils_camera, utils_image
 
@@ -143,9 +144,6 @@ class SceneProperties(PropertyGroup):
     def selected_camera_objects(self):
         return (ob for ob in self._scene.cpp.visible_camera_objects if ob.select_get())
 
-    def _use_background_images_update(self, context):
-        utils_camera.set_background_images(context, self.use_background_images)
-
     def _cameras_viewport_size_update(self, context):
         utils_camera.resize_cameras_viewport(context, self.cameras_viewport_size)
 
@@ -209,11 +207,6 @@ class SceneProperties(PropertyGroup):
         update = _cameras_viewport_size_update)
 
     # Viewport draw
-    use_background_images: BoolProperty(
-        name = "Background Images", default = False,
-        description = "Show background images for all cameras",
-        update = _use_background_images_update)
-
     use_projection_preview: BoolProperty(
         name = "Projection Preview", default = True,
         description = "Show preview of projection")
@@ -221,13 +214,6 @@ class SceneProperties(PropertyGroup):
     use_projection_outline: BoolProperty(
         name = "Outline", default = True,
         description = "Show projection outline")
-
-    background_images_alpha: FloatProperty(
-        name = "Alpha",
-        default = 0.75, soft_min = 0.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        description = "Alpha value for every background image",
-        update = _use_background_images_update)
 
     use_normal_highlight: BoolProperty(
         name = "Normal Highlight", default = False,
@@ -316,6 +302,27 @@ class ObjectProperties(PropertyGroup):
             indices[index] = triangle_indices
 
         return vertices, normals, indices
+
+    def generate_batch_2(self, context):
+        ob = self.id_data
+        if ob.type != 'MESH':
+            raise TypeError("Available only for Meshes!")
+        bm = bmesh.new()
+        depsgraph = context.evaluated_depsgraph_get()
+        bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
+
+        uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
+        print(uv_layer)
+
+        if uv_layer:
+            print(uv_layer.name)
+
+        ## adjust uv coordinates
+        #for face in bm.faces:
+        #    for loop in face.loops:
+        #        loop_uv = loop[uv_layer]
+        #        # use xy position of the vertex as a uv coordinate
+        #        loop_uv.uv = loop.vert.co.xy
 
 
 class ImageProperties(PropertyGroup):

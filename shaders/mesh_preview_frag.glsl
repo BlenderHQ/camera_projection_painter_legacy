@@ -93,10 +93,9 @@ void main()
             }
             else {
                 textureSource = linearrgb_to_srgb(texture(sourceImage, posInterp));
-                //textureSource.r = 2.0;
             }
 
-            //textureSource *= imageFrameMask;
+            textureSource *= imageFrameMask;
         }
     }
 

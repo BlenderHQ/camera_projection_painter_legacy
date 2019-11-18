@@ -25,7 +25,7 @@ import bpy
 translations_tuple = (
     # bpy.types.Camera.cpp
     (("*", "used"),
-     (("bpy.types.CPP_PT_cpp_camera_options",),
+     (("bpy.types.CPP_PT_active_camera_options",),
       ()),
      ("ru", "Использовать",
       (False, ())),

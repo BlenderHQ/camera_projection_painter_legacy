@@ -1,5 +1,7 @@
 from bpy.types import Panel
 
+from .templates import template_path
+
 from ..icons import get_icon_id
 from ..utils.utils_state import state
 from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_calibration_from_file
@@ -32,13 +34,7 @@ class CPP_PT_path(Panel, SceneButtonsPanel):
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-        col = layout.column(align = True)
-
-        scene = context.scene
-        col.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
-        col.prop(scene.cpp, "calibration_source_file", icon = 'FILE_CACHE')
+        template_path(layout, context.scene)
 
 
 class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
@@ -74,4 +70,4 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
 
         scol = col.column()
         scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
-            icon_value = get_icon_id("calibration"))
+                      icon_value = get_icon_id("calibration"))

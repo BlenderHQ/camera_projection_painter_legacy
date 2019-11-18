@@ -97,7 +97,6 @@ class CPP_OT_camera_projection_painter(Operator,
 
     def cancel(self, context):
         if not self.setup_required:
-            print("Cleeeeeeeeee")
             self.remove_draw_handlers()
             utils_base.remove_uv_layer(context)
             self.set_properties_defaults()
@@ -118,7 +117,6 @@ class CPP_OT_camera_projection_painter(Operator,
 
         if self.setup_required:
             generate_preview_bincodes(self, context)
-            self.generate_mesh_batch(context)
 
         image_paint.clone_image = clone_image  # TODO: Find a better way to update
 
@@ -137,8 +135,11 @@ class CPP_OT_camera_projection_painter(Operator,
         if self.data_updated((scene.camera, clone_image)):
             utils_base.setup_basis_uv_layer(context)
             utils_draw.base_update_preview(context)
+            if scene.camera.data.cpp.use_calibration:
+                utils_base.deform_uv_layer(context)
 
         if not self.draw_handler:
+            self.generate_mesh_batch(context)
             self.add_draw_handlers(context)
 
         self.setup_required = False

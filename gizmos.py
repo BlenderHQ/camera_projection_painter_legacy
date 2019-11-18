@@ -23,6 +23,7 @@ import bpy
 import gpu
 import bgl
 
+from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector, Matrix
 from mathutils.geometry import intersect_point_quad_2d
@@ -186,7 +187,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
 
             mpr.use_draw_scale = True
             mpr.scale_basis = preferences.gizmo_scale_basis
-            #mpr.use_draw_modal = False
+            # mpr.use_draw_modal = False
             mpr.use_select_background = True
             mpr.use_event_handle_all = False
             mpr.use_grab_cursor = True
@@ -233,25 +234,36 @@ class CPP_GT_current_image_preview(Gizmo):
     @open_gl_draw
     def draw(self, context):
         scene = context.scene
+        camera_ob = scene.camera
         image_paint = scene.tool_settings.image_paint
         image = image_paint.clone_image
 
         shader = shaders.current_image
         batch = self.image_batch
 
-        pos, size, possible = utils_draw.get_curr_img_pos_from_context(context)
+        rv3d = context.region_data
+
+        self.pixel_pos, self.pixel_size, possible = utils_draw.get_curr_img_pos_from_context(context)
+
+        if rv3d.view_perspective == 'CAMERA':
+            view_frame = [camera_ob.matrix_world @ v for v in camera_ob.data.view_frame(scene = scene)]
+            p0 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord = view_frame[2])
+            p1 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord = view_frame[0])
+            pos = p0
+            size = p1.x - p0.x, p1.y - p0.y
+        else:
+            pos = self.pixel_pos
+            size = self.pixel_size
 
         if not possible:
             return
 
-        self.pixel_pos = pos
-        self.pixel_size = size
         self.alpha = scene.cpp.current_image_alpha
 
         bgl.glEnable(bgl.GL_BLEND)
         with gpu.matrix.push_pop():
-            gpu.matrix.translate(self.pixel_pos)
-            gpu.matrix.scale(self.pixel_size)
+            gpu.matrix.translate(pos)
+            gpu.matrix.scale(size)
 
             if image.gl_load():
                 raise Exception()
@@ -268,6 +280,10 @@ class CPP_GT_current_image_preview(Gizmo):
             batch.draw(shader)
 
     def test_select(self, context, location):
+        rv3d = context.region_data
+        if rv3d.view_perspective == 'CAMERA':
+            return -1
+
         pos, size, possible = utils_draw.get_curr_img_pos_from_context(context)
         if not possible:
             return -1

@@ -50,6 +50,26 @@ class CameraProjectionPainterBaseUtils:
         wm.modal_handler_add(self)
 
 
+def remove_uv_layer(context):
+    ob = context.active_object
+    if ob:
+        if ob.type == 'MESH':
+            uv_layers = ob.data.uv_layers
+            if TEMP_DATA_NAME in uv_layers:
+                uv_layers.remove(uv_layers[TEMP_DATA_NAME])
+
+
+def set_clone_image_from_camera_data(context):
+    scene = context.scene
+    camera = scene.camera.data
+    image_paint = scene.tool_settings.image_paint
+    if camera.cpp.available:
+        image = camera.cpp.image
+        if image:
+            if image_paint.clone_image != image:
+                image_paint.clone_image = image
+
+
 def setup_basis_uv_layer(context):
     scene = context.scene
     image_paint = scene.tool_settings.image_paint
@@ -102,21 +122,5 @@ def setup_basis_uv_layer(context):
     scene.render.resolution_y = size_y
 
 
-def remove_uv_layer(context):
-    ob = context.active_object
-    if ob:
-        if ob.type == 'MESH':
-            uv_layers = ob.data.uv_layers
-            if TEMP_DATA_NAME in uv_layers:
-                uv_layers.remove(uv_layers[TEMP_DATA_NAME])
-
-
-def set_clone_image_from_camera_data(context):
-    scene = context.scene
-    camera = scene.camera.data
-    image_paint = scene.tool_settings.image_paint
-    if camera.cpp.available:
-        image = camera.cpp.image
-        if image:
-            if image_paint.clone_image != image:
-                image_paint.clone_image = image
+def deform_uv_layer(context):
+    print("deform")
