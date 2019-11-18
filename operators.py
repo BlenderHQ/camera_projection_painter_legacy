@@ -132,16 +132,29 @@ class CPP_OT_camera_projection_painter(Operator,
         if scene.cpp.use_auto_set_image:
             utils_base.set_clone_image_from_camera_data(context)
 
+        ob = context.image_paint_object
         if self.data_updated((scene.camera, clone_image)):
             utils_base.setup_basis_uv_layer(context)
             if scene.camera.data.cpp.use_calibration:
                 utils_base.deform_uv_layer(context)
             if self.ob_bmesh:
-                self.update_batch_uv(self.ob_bmesh)
+                bm = self.ob_bmesh
+                bm = ob.cpp.generate_bmesh(context)
+                #unique_uv = utils_draw.generate_updated_unique_uv(bm)
+                self.vertices, self.normals, unique_uv, indices = utils_draw.generate_batch_attributes(bm)
+                self.vbo = utils_draw.generate_vbo(self.fmt, self.vertices, self.normals, unique_uv)
+                self.mesh_batch = utils_draw.generate_batch(self.vbo, self.ibo)
 
         if not self.draw_handler:
-            self.ob_bmesh = utils_base.generate_bmesh(context)
-            self.generate_mesh_batch(self.ob_bmesh)
+            bm = ob.cpp.generate_bmesh(context)
+            self.ob_bmesh = bm
+
+            self.fmt = utils_draw.generate_fmt()
+            self.vertices, self.normals, unique_uv, indices = utils_draw.generate_batch_attributes(bm)
+            self.vbo = utils_draw.generate_vbo(self.fmt, self.vertices, self.normals, unique_uv)
+            self.ibo = utils_draw.generate_ibo(indices)
+
+            self.mesh_batch = utils_draw.generate_batch(self.vbo, self.ibo)
             self.add_draw_handlers(context)
 
         self.setup_required = False

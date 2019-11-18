@@ -48,18 +48,16 @@ class CameraProjectionPainterBaseUtils:
         self.data_updated = PropertyTracker()
         self.check_brush_curve_updated = PropertyTracker()
 
+        self.fmt = None
+        self.vbo = None
+        self.ibo = None
+        self.vertices = None
+        self.normals = None
+
     def register_modal(self, context):
         wm = context.window_manager
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
-
-
-def generate_bmesh(context):
-    ob = context.image_paint_object
-    bm = bmesh.new()
-    depsgraph = context.evaluated_depsgraph_get()
-    bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
-    return bm
 
 
 def remove_uv_layer(context):

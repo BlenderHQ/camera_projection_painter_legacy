@@ -17,8 +17,11 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
+import time
 
 import bpy
+import gpu
+import bmesh
 from bpy.types import PropertyGroup
 from bpy.props import (
     BoolProperty,
@@ -29,11 +32,17 @@ from bpy.props import (
     StringProperty,
     PointerProperty
 )
+from gpu_extras.batch import batch_for_shader
+
+from .icons import get_icon_id
+from .utils import utils_camera, utils_image
+from .constants import TEMP_DATA_NAME
+
+from .shaders import shaders
 
 import io
 import os
-from .icons import get_icon_id
-from .utils import utils_camera, utils_image
+import numpy as np
 
 
 class CameraProperties(PropertyGroup):
@@ -290,10 +299,21 @@ class ImageProperties(PropertyGroup):
         return image_metadata_size
 
 
+class ObjectProperties(PropertyGroup):
+    def generate_bmesh(self, context):
+        ob = self.id_data
+        if ob.type == 'MESH':
+            bm = bmesh.new()
+            depsgraph = context.evaluated_depsgraph_get()
+            bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
+            return bm
+
+
 classes = [
     CameraProperties,
     SceneProperties,
-    ImageProperties
+    ImageProperties,
+    ObjectProperties
 ]
 
 _register, _unregister = bpy.utils.register_classes_factory(classes)
@@ -305,6 +325,7 @@ def register():
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
+    bpy.types.Object.cpp = PointerProperty(type = ObjectProperties)
 
 
 def unregister():
@@ -313,3 +334,4 @@ def unregister():
     del bpy.types.Camera.cpp
     del bpy.types.Scene.cpp
     del bpy.types.Image.cpp
+    del bpy.types.Object.cpp

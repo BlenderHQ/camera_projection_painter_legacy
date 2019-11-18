@@ -1,8 +1,8 @@
 import bpy
 import bgl
+import gpu
 from mathutils import Vector
 from bpy.types import SpaceView3D
-from gpu_extras.batch import batch_for_shader
 
 from . import utils_state
 
@@ -27,19 +27,6 @@ class CameraProjectionPainterDrawUtils:
     def remove_draw_handlers(self):
         if self.draw_handler:
             SpaceView3D.draw_handler_remove(self.draw_handler, 'WINDOW')
-
-    def generate_mesh_batch(self, bm):
-        vertices, normals, unique_uv, indices = generate_batch_attributes(bm)
-        shader = shaders.mesh_preview
-        batch = batch_for_shader(
-            shader, 'TRIS',
-            {"pos": vertices, "normal": normals, "unique_uv": unique_uv},
-            indices = indices)
-        self.mesh_batch = batch
-
-    def update_batch_uv(self, bm):
-        unique_uv = get_updated_uv(bm)
-        print(unique_uv)
 
     def generate_brush_texture(self, context):
         scene = context.scene
@@ -67,57 +54,6 @@ class CameraProjectionPainterDrawUtils:
             self.brush_texture_bindcode = bindcode
 
 
-def generate_batch_attributes(bm):
-    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
-    if uv_layer:
-        loop_triangles = bm.calc_loop_triangles()
-        vertices = np.empty((len(bm.verts), 3), dtype = np.float)
-        normals = np.empty((len(bm.verts), 3), dtype = np.float)
-        unique_uv = np.zeros((len(bm.verts), 2), dtype = np.float)
-        indices = np.empty((len(loop_triangles), 3), dtype = np.int)
-
-        for index, vertex in enumerate(bm.verts):
-            vertices[index] = vertex.co
-            normals[index] = vertex.normal
-        triangle_indices = np.empty(3, dtype = np.int)
-        zero_uv = np.zeros(2, dtype = np.float)
-
-        for index, loop_triangles in enumerate(loop_triangles):
-            for loop_index, loop in enumerate(loop_triangles):
-                vertex_index = loop.vert.index
-                triangle_indices[loop_index] = vertex_index
-                if (unique_uv[vertex_index] == zero_uv).all():
-                    unique_uv[vertex_index] = loop[uv_layer].uv
-
-            indices[index] = triangle_indices
-
-        return vertices, normals, unique_uv, indices
-
-
-def get_updated_uv(bm):
-    dt = time.time()
-
-    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
-    if uv_layer:
-        loop_triangles = bm.calc_loop_triangles()
-        unique_uv = np.empty((len(bm.verts), 2), dtype = np.float)
-
-        skip_vert_indices = np.empty(len(bm.verts), dtype = np.bool)
-
-        for loop_triangles in loop_triangles:
-            for loop in loop_triangles:
-                vertex_index = loop.vert.index
-                if skip_vert_indices[vertex_index]:
-                    continue
-
-                skip_vert_indices[vertex_index] = True
-                unique_uv[vertex_index] = loop[uv_layer].uv
-
-        print(time.time() - dt)
-
-        return unique_uv
-
-
 def get_curr_img_pos_from_context(context):
     area = context.area
     scene = context.scene
@@ -142,6 +78,77 @@ def get_curr_img_pos_from_context(context):
     apy = flerp(empty_space, area_size.y - image_size.y, rpy)
 
     return Vector((apx, apy)), image_size, possible
+
+
+def generate_batch_attributes(bm):
+    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
+    if uv_layer:
+        loop_triangles = bm.calc_loop_triangles()
+        vertices = np.empty((len(bm.verts), 3), dtype = np.float32)
+        normals = np.empty((len(bm.verts), 3), dtype = np.float32)
+        unique_uv = np.zeros((len(bm.verts), 2), dtype = np.float32)
+        indices = np.empty((len(loop_triangles), 3), dtype = np.int32)
+
+        for index, vertex in enumerate(bm.verts):
+            vertices[index] = vertex.co
+            normals[index] = vertex.normal
+        triangle_indices = np.empty(3, dtype = np.int32)
+        zero_uv = np.zeros(2, dtype = np.float32)
+
+        for index, loop_triangles in enumerate(loop_triangles):
+            for loop_index, loop in enumerate(loop_triangles):
+                vertex_index = loop.vert.index
+                triangle_indices[loop_index] = vertex_index
+                if (unique_uv[vertex_index] == zero_uv).all():
+                    unique_uv[vertex_index] = loop[uv_layer].uv
+
+            indices[index] = triangle_indices
+
+        return vertices, normals, unique_uv, indices
+
+
+def generate_updated_unique_uv(bm):
+    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
+    if uv_layer:
+        loop_triangles = bm.calc_loop_triangles()
+        unique_uv = np.empty((len(bm.verts), 2), dtype = np.float)
+
+        skip_vert_indices = np.empty(len(bm.verts), dtype = np.bool)
+
+        for loop_triangles in loop_triangles:
+            for loop in loop_triangles:
+                vertex_index = loop.vert.index
+                if skip_vert_indices[vertex_index]:
+                    continue
+
+                skip_vert_indices[vertex_index] = True
+                unique_uv[vertex_index] = loop[uv_layer].uv
+
+        return unique_uv
+
+
+def generate_fmt():
+    fmt = gpu.types.GPUVertFormat()
+    fmt.attr_add(id = "pos", comp_type = 'F32', len = 3, fetch_mode = 'FLOAT')
+    fmt.attr_add(id = "normal", comp_type = 'F32', len = 3, fetch_mode = 'FLOAT')
+    fmt.attr_add(id = "unique_uv", comp_type = 'F32', len = 2, fetch_mode = 'FLOAT')
+    return fmt
+
+
+def generate_ibo(indices):
+    return gpu.types.GPUIndexBuf(type = 'TRIS', seq = indices)
+
+
+def generate_vbo(fmt, vertices, normals, unique_uv):
+    vbo = gpu.types.GPUVertBuf(len = len(vertices), format = fmt)
+    vbo.attr_fill(id = "pos", data = vertices)
+    vbo.attr_fill(id = "normal", data = normals)
+    vbo.attr_fill(id = "unique_uv", data = unique_uv)
+    return vbo
+
+
+def generate_batch(vbo, ibo):
+    return gpu.types.GPUBatch(type = 'TRIS', buf = vbo, elem = ibo)
 
 
 @full_poll_decorator
@@ -207,7 +214,7 @@ def draw_projection_preview(self, context):
     shader.bind()
 
     shader.uniform_float("ModelMatrix", ob.matrix_world)
-    #shader.uniform_float("projectorForward", Vector((0.0, 0.0, 1.0)) @ scene.camera.matrix_world.inverted())
+    # shader.uniform_float("projectorForward", Vector((0.0, 0.0, 1.0)) @ scene.camera.matrix_world.inverted())
     shader.uniform_int("sourceImage", 0)
     shader.uniform_int("brushImage", 1)
     shader.uniform_int("outlineType", outline_type)
