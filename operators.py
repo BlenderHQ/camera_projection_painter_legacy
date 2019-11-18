@@ -97,8 +97,9 @@ class CPP_OT_camera_projection_painter(Operator,
 
     def cancel(self, context):
         if not self.setup_required:
+            print("Cleeeeeeeeee")
             self.remove_draw_handlers()
-            self.remove_uv_layer(context)
+            utils_base.remove_uv_layer(context)
             self.set_properties_defaults()
 
     def modal(self, context, event):
@@ -109,7 +110,7 @@ class CPP_OT_camera_projection_painter(Operator,
         if utils_poll.tool_setup_poll(context):
             if not image_paint.clone_image:
                 if scene.cpp.use_auto_set_image:
-                    self.set_clone_image_from_camera_data(context)
+                    utils_base.set_clone_image_from_camera_data(context)
                 return {'PASS_THROUGH'}
         else:
             self.cancel(context)
@@ -131,16 +132,11 @@ class CPP_OT_camera_projection_painter(Operator,
             utils_camera.set_camera_by_view(context)
 
         if scene.cpp.use_auto_set_image:
-            self.set_clone_image_from_camera_data(context)
+            utils_base.set_clone_image_from_camera_data(context)
 
-        if self.camera != scene.camera or self.clone_image != clone_image:
-            self.camera = scene.camera
-            self.clone_image = clone_image
-
-            self.setup_basis_uv_layer(context)
+        if self.data_updated((scene.camera, clone_image)):
+            utils_base.setup_basis_uv_layer(context)
             utils_draw.base_update_preview(context)
-
-        #
 
         if not self.draw_handler:
             self.add_draw_handlers(context)
@@ -238,7 +234,7 @@ class CPP_OT_set_camera_active(Operator, utils_base.CameraProjectionPainterBaseU
             camera.select_set(False)
         scene.camera.select_set(True)
         if scene.cpp.use_auto_set_image:
-            self.set_clone_image_from_camera_data(context)
+            utils_base.set_clone_image_from_camera_data(context)
         self.report(type = {'INFO'}, message = "%s set active" % scene.camera.name)
         return {'FINISHED'}
 

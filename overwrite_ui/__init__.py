@@ -24,13 +24,12 @@ import bl_ui
 import inspect
 import importlib
 
-from .mesh_data import MESH_UL_uvmaps
-from .modifiers import DATA_PT_modifiers
+from .mesh_data import DATA_PT_uv_texture, MESH_UL_uvmaps
 from .tool_brush_clone import VIEW3D_PT_tools_brush_clone
 
 _classes = [
+    DATA_PT_uv_texture,
     MESH_UL_uvmaps,
-    DATA_PT_modifiers,
     VIEW3D_PT_tools_brush_clone
 ]
 

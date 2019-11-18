@@ -18,7 +18,6 @@
 
 # <pep8 compliant>
 
-
 import bmesh
 import bpy
 from bpy.types import PropertyGroup
@@ -32,9 +31,13 @@ from bpy.props import (
     StringProperty,
     PointerProperty
 )
+
+import io
+import os
 import numpy as np
+
 from .icons import get_icon_id
-from .utils import utils_base, utils_camera
+from .utils import utils_base, utils_camera, utils_image
 
 
 class CameraProperties(PropertyGroup):
@@ -288,7 +291,7 @@ class SceneProperties(PropertyGroup):
         description = "Safe canvas image resolution")
 
 
-class ObjectProperties(bpy.types.PropertyGroup):
+class ObjectProperties(PropertyGroup):
     def generate_batch_attr(self, context):
         ob = self.id_data
         if ob.type != 'MESH':
@@ -315,10 +318,29 @@ class ObjectProperties(bpy.types.PropertyGroup):
         return vertices, normals, indices
 
 
+class ImageProperties(PropertyGroup):
+    @property
+    def static_size(self):
+        image = self.id_data
+        if image.packed_file:
+            data = image.packed_file.data
+            size = image.packed_file.size
+            with io.BytesIO(data) as io_bytes:
+                image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
+        else:
+            file_path = bpy.path.abspath(image.filepath)
+            size = os.path.getsize(file_path)
+            with io.open(file_path, "rb") as io_bytes:
+                image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
+
+        return image_metadata_size
+
+
 classes = [
     ObjectProperties,
     CameraProperties,
-    SceneProperties
+    SceneProperties,
+    ImageProperties
 ]
 
 _register, _unregister = bpy.utils.register_classes_factory(classes)
@@ -330,6 +352,7 @@ def register():
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Object.cpp = PointerProperty(type = ObjectProperties)
+    bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
 
 
 def unregister():
@@ -338,3 +361,4 @@ def unregister():
     del bpy.types.Camera.cpp
     del bpy.types.Scene.cpp
     del bpy.types.Object.cpp
+    del bpy.types.Image.cpp

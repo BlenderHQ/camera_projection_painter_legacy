@@ -2,6 +2,7 @@ import bpy
 import bgl
 import gpu
 from mathutils import Vector
+from bpy.types import SpaceView3D
 from gpu_extras.batch import batch_for_shader
 
 from . import utils_state
@@ -16,8 +17,14 @@ from .. import __package__ as addon_pkg
 
 
 class CameraProjectionPainterDrawUtils:
-    mesh_batch: gpu.types.GPUBatch
-    brush_texture_bindcode: int
+    def add_draw_handlers(self, context):
+        args = (self, context)
+        callback = draw_projection_preview
+        self.draw_handler = SpaceView3D.draw_handler_add(callback, args, 'WINDOW', 'PRE_VIEW')
+
+    def remove_draw_handlers(self):
+        if self.draw_handler:
+            SpaceView3D.draw_handler_remove(self.draw_handler, 'WINDOW')
 
     def generate_mesh_batch(self, context):
         ob = context.active_object
