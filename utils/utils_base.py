@@ -1,6 +1,8 @@
 import bpy
 import gpu
 
+import bmesh
+
 from ..constants import TEMP_DATA_NAME, TIME_STEP
 
 
@@ -21,6 +23,7 @@ class CameraProjectionPainterBaseUtils:
     clone_image: bpy.types.Image
     camera: bpy.types.Object
     image_batch: gpu.types.GPUBatch
+    ob_bmesh: bmesh.types.BMesh
     mesh_batch: gpu.types.GPUBatch
     suspended: bool
     draw_handler: object
@@ -32,6 +35,7 @@ class CameraProjectionPainterBaseUtils:
 
     def set_properties_defaults(self):
         self.suspended = False
+        self.ob_bmesh = None
         self.mesh_batch = None
         self.image_batch = None
         self.draw_handler = None
@@ -48,6 +52,14 @@ class CameraProjectionPainterBaseUtils:
         wm = context.window_manager
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
+
+
+def generate_bmesh(context):
+    ob = context.image_paint_object
+    bm = bmesh.new()
+    depsgraph = context.evaluated_depsgraph_get()
+    bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
+    return bm
 
 
 def remove_uv_layer(context):

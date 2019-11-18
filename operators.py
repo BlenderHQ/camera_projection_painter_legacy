@@ -134,12 +134,14 @@ class CPP_OT_camera_projection_painter(Operator,
 
         if self.data_updated((scene.camera, clone_image)):
             utils_base.setup_basis_uv_layer(context)
-            utils_draw.base_update_preview(context)
             if scene.camera.data.cpp.use_calibration:
                 utils_base.deform_uv_layer(context)
+            if self.ob_bmesh:
+                self.update_batch_uv(self.ob_bmesh)
 
         if not self.draw_handler:
-            self.generate_mesh_batch(context)
+            self.ob_bmesh = utils_base.generate_bmesh(context)
+            self.generate_mesh_batch(self.ob_bmesh)
             self.add_draw_handlers(context)
 
         self.setup_required = False

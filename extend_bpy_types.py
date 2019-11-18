@@ -18,13 +18,11 @@
 
 # <pep8 compliant>
 
-import bmesh
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import (
     BoolProperty,
     IntProperty,
-    IntVectorProperty,
     FloatProperty,
     FloatVectorProperty,
     EnumProperty,
@@ -34,11 +32,8 @@ from bpy.props import (
 
 import io
 import os
-import numpy as np
-
-from .constants import TEMP_DATA_NAME
 from .icons import get_icon_id
-from .utils import utils_base, utils_camera, utils_image
+from .utils import utils_camera, utils_image
 
 
 class CameraProperties(PropertyGroup):
@@ -277,54 +272,6 @@ class SceneProperties(PropertyGroup):
         description = "Safe canvas image resolution")
 
 
-class ObjectProperties(PropertyGroup):
-    def generate_batch_attr(self, context):
-        ob = self.id_data
-        if ob.type != 'MESH':
-            raise TypeError("Available only for Meshes!")
-        bm = bmesh.new()
-        depsgraph = context.evaluated_depsgraph_get()
-        bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
-
-        loop_triangles = bm.calc_loop_triangles()
-        vertices = np.empty((len(bm.verts), 3), 'f')
-        normals = np.empty((len(bm.verts), 3), 'f')
-        indices = np.empty((len(loop_triangles), 3), 'i')
-
-        for index, vertex in enumerate(bm.verts):
-            vertices[index] = vertex.co
-            normals[index] = vertex.normal
-
-        triangle_indices = np.empty(3, "i")
-        for index, loop_triangles in enumerate(loop_triangles):
-            for loop_index, loop in enumerate(loop_triangles):
-                triangle_indices[loop_index] = loop.vert.index
-            indices[index] = triangle_indices
-
-        return vertices, normals, indices
-
-    def generate_batch_2(self, context):
-        ob = self.id_data
-        if ob.type != 'MESH':
-            raise TypeError("Available only for Meshes!")
-        bm = bmesh.new()
-        depsgraph = context.evaluated_depsgraph_get()
-        bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
-
-        uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
-        print(uv_layer)
-
-        if uv_layer:
-            print(uv_layer.name)
-
-        ## adjust uv coordinates
-        #for face in bm.faces:
-        #    for loop in face.loops:
-        #        loop_uv = loop[uv_layer]
-        #        # use xy position of the vertex as a uv coordinate
-        #        loop_uv.uv = loop.vert.co.xy
-
-
 class ImageProperties(PropertyGroup):
     @property
     def static_size(self):
@@ -344,7 +291,6 @@ class ImageProperties(PropertyGroup):
 
 
 classes = [
-    ObjectProperties,
     CameraProperties,
     SceneProperties,
     ImageProperties
@@ -358,7 +304,6 @@ def register():
 
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
-    bpy.types.Object.cpp = PointerProperty(type = ObjectProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
 
 
@@ -367,5 +312,4 @@ def unregister():
 
     del bpy.types.Camera.cpp
     del bpy.types.Scene.cpp
-    del bpy.types.Object.cpp
     del bpy.types.Image.cpp

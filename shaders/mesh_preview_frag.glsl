@@ -10,9 +10,6 @@ uniform vec4 outlineColor;
 uniform float outlineWidth;
 uniform float outlineScale;
 
-uniform int useOutlineText;
-uniform float outlineTextAspect;
-uniform float outlineTextScale;
 
 uniform int useNormalInspection;
 uniform vec4 normalHighlightColor;
