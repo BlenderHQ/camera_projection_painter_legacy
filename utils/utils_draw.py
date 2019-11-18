@@ -104,11 +104,11 @@ def draw_projection_preview(self, context):
     preferences = context.preferences.addons[addon_pkg].preferences
     ob = context.image_paint_object
     image_paint = scene.tool_settings.image_paint
-    image = image_paint.clone_image
+    clone_image = image_paint.clone_image
     brush = image_paint.brush
     brush_radius = scene.tool_settings.unified_paint_settings.size
 
-    if image.gl_load():
+    if clone_image.gl_load():
         raise Exception()
 
     shader = shaders.mesh_preview
@@ -147,7 +147,7 @@ def draw_projection_preview(self, context):
         bgl.GL_REPEAT)  # GL_CLAMP_TO_BORDER
 
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
-    bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, clone_image.bindcode)
     bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
 
@@ -182,6 +182,8 @@ def draw_projection_preview(self, context):
         shader.uniform_float("warningColor", preferences.warning_color)
     else:
         shader.uniform_int("warning", 0)
+
+    shader.uniform_bool("colorspace_srgb", (clone_image.colorspace_settings.name == 'sRGB',))
 
     # Finally, draw
     batch.draw(shader)

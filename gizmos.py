@@ -42,14 +42,14 @@ def open_gl_draw(func):
         bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
         bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
         bgl.glPolygonOffset(0.1, 0.9)
-        # bgl.glPointSize(3.0)
+        bgl.glPointSize(3.0)
 
         ret = func(self, context)
 
         bgl.glDisable(bgl.GL_BLEND)
         bgl.glDisable(bgl.GL_DEPTH_TEST)
         bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
-        # bgl.glPointSize(1.0)
+        bgl.glPointSize(1.0)
         return ret
 
     return wrapper
@@ -127,7 +127,10 @@ class CPP_GT_camera_gizmo(Gizmo):
         cpp_data = self.camera_object.data.cpp
         preferences = context.preferences.addons[__package__].preferences
 
-        if self.is_highlight and preferences.camera_use_draw_hover:
+        if not preferences.always_draw_gizmo_point:
+            if self.is_highlight:
+                self.draw_custom_shape(self.shape)
+        else:
             self.draw_custom_shape(self.shape)
         if cpp_data.available:
             self.color = preferences.gizmo_color
@@ -182,8 +185,8 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
             mpr.alpha_highlight = preferences.gizmo_alpha
 
             mpr.use_draw_scale = True
-            mpr.scale_basis = 0.1
-            mpr.use_draw_modal = False
+            mpr.scale_basis = preferences.gizmo_scale_basis
+            #mpr.use_draw_modal = False
             mpr.use_select_background = True
             mpr.use_event_handle_all = False
             mpr.use_grab_cursor = True

@@ -25,6 +25,7 @@ from bpy.types import PropertyGroup
 from bpy.props import (
     BoolProperty,
     IntProperty,
+    IntVectorProperty,
     FloatProperty,
     FloatVectorProperty,
     EnumProperty,

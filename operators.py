@@ -22,6 +22,9 @@ import bpy
 from bpy.types import Operator
 from bpy.props import EnumProperty
 
+import os
+import csv
+
 from .gizmos import generate_preview_bincodes
 from .utils import (
     common,
@@ -31,9 +34,6 @@ from .utils import (
     utils_poll,
     utils_draw,
     utils_warning)
-
-import os
-import csv
 
 
 class CPP_OT_event_listener(Operator):
@@ -135,7 +135,6 @@ class CPP_OT_camera_projection_painter(Operator,
 
         if self.camera != scene.camera or self.clone_image != clone_image:
             self.camera = scene.camera
-
             self.clone_image = clone_image
 
             self.setup_basis_uv_layer(context)
@@ -219,7 +218,7 @@ class CPP_OT_set_camera_by_view(Operator):
         return {'FINISHED'}
 
 
-class CPP_OT_set_camera_active(Operator):
+class CPP_OT_set_camera_active(Operator, utils_base.CameraProjectionPainterBaseUtils):
     bl_idname = "cpp.set_camera_active"
     bl_label = "Set Active"
     bl_description = "Set camera as active projector"
@@ -238,6 +237,8 @@ class CPP_OT_set_camera_active(Operator):
                 continue
             camera.select_set(False)
         scene.camera.select_set(True)
+        if scene.cpp.use_auto_set_image:
+            self.set_clone_image_from_camera_data(context)
         self.report(type = {'INFO'}, message = "%s set active" % scene.camera.name)
         return {'FINISHED'}
 

@@ -55,8 +55,9 @@ class CppPreferences(bpy.types.AddonPreferences):
         items = [
             ('DRAW', "Draw", 'Viewport draw preferences'),
             ('KEYMAP', "Keymap", 'Operators key bindings'),
-            ('INFO', "Info", 'Links to documentation and tutorials')],
-        name = "Tab", default = "INFO")
+            ('INFO', "Info", 'Links to documentation and tutorials'),
+            ('ADVANCED', "Advanced", 'Advanced Options')],
+        name = "Tab", default = "DRAW")
 
     # Preview draw
     outline_type: EnumProperty(
@@ -110,10 +111,16 @@ class CppPreferences(bpy.types.AddonPreferences):
         default = 1.0, soft_min = 0.1, soft_max = 1.0,
         description = "Gizmo alpha")
 
-    camera_use_draw_hover: BoolProperty(
-        name = "Use Draw Hover",
-        default = False,
+    always_draw_gizmo_point: BoolProperty(
+        name = "Always Draw Point",
+        default = True,
         description = "Display point on hover or everytime")
+
+    gizmo_scale_basis: FloatProperty(
+        name = "Scale Basis (DEV)",
+        default = 0.1,
+        soft_min = 0.0,
+        soft_max = 1.0)
 
     border_empty_space: IntProperty(
         name = "Border Empty Space",
@@ -139,6 +146,8 @@ class CppPreferences(bpy.types.AddonPreferences):
                 self._draw_draw(layout)
             elif self.tab == 'KEYMAP':
                 self._draw_keymap(layout)
+            elif self.tab == 'ADVANCED':
+                self._draw_advanced(layout)
 
     def _draw_info(self, layout):
         col = layout.column(align = True)
@@ -165,7 +174,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "warning_color")
 
         col.label(text = "Camera Gizmos:")
-        col.prop(self, "camera_use_draw_hover")
+        col.prop(self, "always_draw_gizmo_point")
         col.prop(self, "gizmo_color")
         col.prop(self, "gizmo_alpha")
 
@@ -189,6 +198,21 @@ class CppPreferences(bpy.types.AddonPreferences):
 
         kmi = get_hotkey_entry_item(km, "view3d.view_center_pick")
         draw_kmi(kmi, col)
+
+    def _draw_advanced(self, layout):
+        col = layout.column(align = True)
+
+        col.use_property_split = True
+        col.use_property_decorate = False
+
+        box = col.box()
+        box.label(text = "This tab for dev purposes only.", icon = 'QUESTION')
+        box.label(text = "Changing this options required restart!", icon = 'ERROR')
+        col.separator()
+
+        col.label(text = "Gizmos:")
+        col.prop(self, "gizmo_scale_basis")
+
 
 
 _classes = [

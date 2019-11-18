@@ -7,6 +7,8 @@ from ..constants import TEMP_DATA_NAME, TIME_STEP
 
 import time
 
+from .utils_image import get_image_size
+
 
 class PropertyTracker(object):
     __slots__ = ("value",)
@@ -68,7 +70,8 @@ class CameraProjectionPainterBaseUtils:
         if camera.cpp.available:
             image = camera.cpp.image
             if image:
-                image_paint.clone_image = image
+                if image_paint.clone_image != image:
+                    image_paint.clone_image = image
 
     @staticmethod
     def setup_basis_uv_layer(context):
@@ -102,7 +105,10 @@ class CameraProjectionPainterBaseUtils:
         modifier.scale_x = 1.0
         modifier.scale_y = 1.0
 
-        size_x, size_y = clone_image.size
+        path = bpy.path.abspath(clone_image.filepath)
+
+        #size_x, size_y = clone_image.size
+        size_x, size_y = get_image_size(path)
 
         if size_x > size_y:
             modifier.aspect_x = size_x / size_y
@@ -114,16 +120,18 @@ class CameraProjectionPainterBaseUtils:
             modifier.aspect_x = 1.0
             modifier.aspect_y = 1.0
 
-        print(time.time() - dt)  # DEBUG #######################################################
-
         modifier.projector_count = 1
         modifier.projectors[0].object = scene.camera
+
+        #print(time.time() - dt)
+
+        print(clone_image.packed_file.data[0:50])
 
         # Scene resolution for background images
         # TODO: Remove next 3 lines
         scene.render.resolution_x = size_x
         scene.render.resolution_y = size_y
-        clone_image.colorspace_settings.name = 'Raw'
+        # clone_image.colorspace_settings.name = 'Raw'
 
     @staticmethod
     def remove_uv_layer(context):

@@ -25,32 +25,50 @@ uniform float brushStrength;
 uniform int warning;
 uniform vec4 warningColor;
 
+uniform bool colorspace_srgb;
+
 in vec2 posInterp;
 in vec3 nrmInterp;
 
 out vec4 fragColor;// Output
 
 
-float inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right)
-{
+float inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right) {
     vec2 st = step(_bottom_left, _coo) - step(_top_right, _coo);
     return st.x * st.y;
 }
 
-float inside_outline(in vec2 _coo, in float _width, in vec2 _scale)
-{
+float inside_outline(in vec2 _coo, in float _width, in vec2 _scale) {
     float inside_image = inside_rect(_coo, vec2(0.0), vec2(1.0));
     vec2 sw = _scale * vec2(_width);
     float inside = inside_rect(_coo, -sw, vec2(1.0) + sw);
     return (1.0 - inside_image) * inside;
 }
 
-float checker_pattern(in vec2 _coo, in vec2 _scale, in float _check_size)
-{
+float checker_pattern(in vec2 _coo, in vec2 _scale, in float _check_size) {
     float fmod_result = (mod(floor(_check_size * _scale.y * _coo.x) +
     floor(_check_size * _scale.x * _coo.y), 2.0));
     float checker = clamp(fmod_result, 0.0, 1.0);
     return checker;
+}
+
+float linearrgb_to_srgb(float c)
+{
+  if (c < 0.0031308) {
+    return (c < 0.0) ? 0.0 : c * 12.92;
+  }
+  else {
+    return 1.055 * pow(c, 1.0 / 2.4) - 0.055;
+  }
+}
+
+vec4 linearrgb_to_srgb(vec4 col_from)
+{
+    return vec4(
+        linearrgb_to_srgb(col_from.r),
+        linearrgb_to_srgb(col_from.g),
+        linearrgb_to_srgb(col_from.b),
+        col_from.a);
 }
 
 
@@ -69,7 +87,15 @@ void main()
         if (dist <= 1.0)
         {
             brushMask = texture(brushImage, brushCoord).r;
-            textureSource = texture(sourceImage, posInterp);
+
+            if (colorspace_srgb == false) {
+                textureSource = texture(sourceImage, posInterp);
+            }
+            else {
+                textureSource = linearrgb_to_srgb(texture(sourceImage, posInterp));
+                //textureSource.r = 2.0;
+            }
+
             //textureSource *= imageFrameMask;
         }
     }
