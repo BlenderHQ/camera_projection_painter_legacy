@@ -118,10 +118,10 @@ class CPP_OT_camera_projection_painter(Operator):
         if self.setup_required:
             generate_preview_bincodes(self, context)
 
+        image_paint.clone_image = clone_image  # TODO: Find a better way to update
+
         if self.suspended:
             return {'PASS_THROUGH'}
-
-        image_paint.clone_image = clone_image  # TODO: Find a better way to update
 
         if scene.cpp.use_projection_preview:
             utils_draw.update_brush_texture_bindcode(self, context)
