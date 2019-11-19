@@ -1,8 +1,5 @@
 import bpy
-import gpu
-
 import bmesh
-
 from ..constants import TEMP_DATA_NAME, TIME_STEP
 
 
@@ -19,49 +16,57 @@ class PropertyTracker(object):
         return False
 
 
-class CameraProjectionPainterBaseUtils:
-    clone_image: bpy.types.Image
-    camera: bpy.types.Object
-    image_batch: gpu.types.GPUBatch
-    ob_bmesh: bmesh.types.BMesh
-    mesh_batch: gpu.types.GPUBatch
-    suspended: bool
-    draw_handler: object
-    setup_required: bool
-    brush_texture_bindcode: int
+# Operator cls specific func
 
-    data_updated: PropertyTracker
-    check_brush_curve_updated: PropertyTracker
+def set_properties_defaults(self):
+    """
+    Set default values at startup and after exit available context
+    """
+    self.suspended = False
+    self.setup_required = True
 
-    def set_properties_defaults(self):
-        self.suspended = False
-        self.ob_bmesh = None
-        self.mesh_batch = None
-        self.image_batch = None
-        self.draw_handler = None
-        self.setup_required = True
-        self.brush_texture_bindcode = 0
+    self.draw_handler = None
 
-        self.camera = None
-        self.clone_image = None
+    self.bm = None
+    self.mesh_batch = None
 
-        self.data_updated = PropertyTracker()
-        self.check_brush_curve_updated = PropertyTracker()
-
-        self.fmt = None
-        self.vbo = None
-        self.ibo = None
-        self.vertices = None
-        self.normals = None
-
-    def register_modal(self, context):
-        wm = context.window_manager
-        wm.event_timer_add(time_step = TIME_STEP, window = context.window)
-        wm.modal_handler_add(self)
+    self.brush_texture_bindcode = 0
+    self.data_updated = PropertyTracker()
+    self.check_brush_curve_updated = PropertyTracker()
 
 
-def remove_uv_layer(context):
-    ob = context.active_object
+def register_modal(self, context):
+    """
+    Register event timer with constants.TIME_STEP time step,
+    add modal handler to window manager
+    :type context: bpy.types.Context
+    """
+    wm = context.window_manager
+    wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+    wm.modal_handler_add(self)
+
+
+# Base utils
+
+def get_bmesh(context, ob):
+    """
+    Get bmesh from evaluated depsgraph
+    :param context: bpy.types.Context
+    :param ob: bpy.types.Object
+    :return: bmesh.types.Bmesh
+    """
+    bm = bmesh.new()
+    depsgraph = context.evaluated_depsgraph_get()
+    bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
+    return bm
+
+
+def remove_uv_layer(ob):
+    """
+    Remove temporary uv layer from given object
+    :param bpy.types.Object:
+    :return: None
+    """
     if ob:
         if ob.type == 'MESH':
             uv_layers = ob.data.uv_layers

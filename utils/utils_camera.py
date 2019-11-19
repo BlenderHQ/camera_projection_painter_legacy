@@ -7,6 +7,35 @@ from .common import flerp, get_hovered_region_3d
 from ..constants import AUTOCAM_MIN, AUTOCAM_MAX
 
 
+def get_camera_attributes(context, ob):
+    camera_pos = None
+    camera_forward = None
+    camera_up = None
+    camera_scale = None
+
+    if ob:
+        scene = context.scene
+
+        render_width = scene.render.resolution_x
+        render_height = scene.render.resolution_y
+
+        if render_width > render_height:
+            camera_scale = (1.0, render_width / render_height)
+        else:
+            camera_scale = (render_width / render_height, 1.0)
+
+        camera_size = ob.data.sensor_width
+        matrix_world = ob.matrix_world
+        camera_pos = ob.matrix_world.translation
+        camera_forward = (
+                matrix_world.translation + (
+                Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted()))
+
+        camera_up = (Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted())
+
+    return camera_pos, camera_forward, camera_up, camera_scale
+
+
 def bind_camera_image_by_name(ob, file_path):
     ob_name, ob_ext = os.path.splitext(ob.name)
 

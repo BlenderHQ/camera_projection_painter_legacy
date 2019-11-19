@@ -298,22 +298,10 @@ class ImageProperties(PropertyGroup):
 
         return image_metadata_size
 
-
-class ObjectProperties(PropertyGroup):
-    def generate_bmesh(self, context):
-        ob = self.id_data
-        if ob.type == 'MESH':
-            bm = bmesh.new()
-            depsgraph = context.evaluated_depsgraph_get()
-            bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
-            return bm
-
-
 classes = [
     CameraProperties,
     SceneProperties,
-    ImageProperties,
-    ObjectProperties
+    ImageProperties
 ]
 
 _register, _unregister = bpy.utils.register_classes_factory(classes)
@@ -325,7 +313,6 @@ def register():
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
-    bpy.types.Object.cpp = PointerProperty(type = ObjectProperties)
 
 
 def unregister():
@@ -334,4 +321,3 @@ def unregister():
     del bpy.types.Camera.cpp
     del bpy.types.Scene.cpp
     del bpy.types.Image.cpp
-    del bpy.types.Object.cpp

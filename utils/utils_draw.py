@@ -1,6 +1,7 @@
 import bpy
 import bgl
 import gpu
+import bmesh
 from mathutils import Vector
 from bpy.types import SpaceView3D
 
@@ -8,6 +9,7 @@ from . import utils_state
 
 from .utils_warning import get_warning_status
 from .utils_poll import full_poll_decorator
+from .utils_camera import get_camera_attributes
 from .common import get_hovered_region_3d, iter_curve_values, flerp
 
 from ..constants import TEMP_DATA_NAME
@@ -18,40 +20,59 @@ import time
 import numpy as np
 
 
-class CameraProjectionPainterDrawUtils:
-    def add_draw_handlers(self, context):
-        args = (self, context)
-        callback = draw_projection_preview
-        self.draw_handler = SpaceView3D.draw_handler_add(callback, args, 'WINDOW', 'PRE_VIEW')
+# Operator cls specific func
 
-    def remove_draw_handlers(self):
-        if self.draw_handler:
-            SpaceView3D.draw_handler_remove(self.draw_handler, 'WINDOW')
+def add_draw_handlers(self, context):
+    args = (self, context)
+    callback = draw_projection_preview
+    self.draw_handler = SpaceView3D.draw_handler_add(callback, args, 'WINDOW', 'PRE_VIEW')
 
-    def generate_brush_texture(self, context):
-        scene = context.scene
-        image_paint = scene.tool_settings.image_paint
-        brush = image_paint.brush
-        pixel_width = scene.tool_settings.unified_paint_settings.size
 
-        check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
-        check_tuple = tuple((n for n in iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
+def remove_draw_handlers(self):
+    if self.draw_handler:
+        SpaceView3D.draw_handler_remove(self.draw_handler, 'WINDOW')
 
-        if self.check_brush_curve_updated(check_tuple):
-            pixels = [int(n * 255) for n in iter_curve_values(brush.curve, pixel_width)]
 
-            id_buff = bgl.Buffer(bgl.GL_INT, 1)
-            bgl.glGenTextures(1, id_buff)
+# Base utils
 
-            bindcode = id_buff.to_list()[0]
+def update_brush_texture_bindcode(self, context):
+    scene = context.scene
+    image_paint = scene.tool_settings.image_paint
+    brush = image_paint.brush
+    pixel_width = scene.tool_settings.unified_paint_settings.size
 
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
-            image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
-            bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
-            bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RED,
-                             pixel_width, 1, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
+    check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
+    check_tuple = tuple((n for n in iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
 
-            self.brush_texture_bindcode = bindcode
+    if self.check_brush_curve_updated(check_tuple):
+        pixels = [int(n * 255) for n in iter_curve_values(brush.curve, pixel_width)]
+
+        id_buff = bgl.Buffer(bgl.GL_INT, 1)
+        bgl.glGenTextures(1, id_buff)
+
+        bindcode = id_buff.to_list()[0]
+
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+        image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
+        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
+        bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RED,
+                         pixel_width, 1, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
+
+        self.brush_texture_bindcode = bindcode
+
+
+def base_update_preview(context):
+    shader = shaders.mesh_preview
+    scene = context.scene
+    camera = scene.camera
+
+    position, forward, up, scale = get_camera_attributes(context, camera)
+
+    shader.bind()
+    shader.uniform_float("projectorPosition", position)
+    shader.uniform_float("projectorForward", forward)
+    shader.uniform_float("projectorUpAxis", up)
+    shader.uniform_float("sourceScale", scale)
 
 
 def get_curr_img_pos_from_context(context):
@@ -80,34 +101,30 @@ def get_curr_img_pos_from_context(context):
     return Vector((apx, apy)), image_size, possible
 
 
-def generate_batch_attributes(bm):
+def get_batch_attributes(bm):
     uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
     if uv_layer:
         loop_triangles = bm.calc_loop_triangles()
         vertices = np.empty((len(bm.verts), 3), dtype = np.float32)
         normals = np.empty((len(bm.verts), 3), dtype = np.float32)
-        unique_uv = np.zeros((len(bm.verts), 2), dtype = np.float32)
         indices = np.empty((len(loop_triangles), 3), dtype = np.int32)
 
         for index, vertex in enumerate(bm.verts):
             vertices[index] = vertex.co
             normals[index] = vertex.normal
-        triangle_indices = np.empty(3, dtype = np.int32)
-        zero_uv = np.zeros(2, dtype = np.float32)
 
+        triangle_indices = np.empty(3, dtype = np.int32)
         for index, loop_triangles in enumerate(loop_triangles):
             for loop_index, loop in enumerate(loop_triangles):
                 vertex_index = loop.vert.index
                 triangle_indices[loop_index] = vertex_index
-                if (unique_uv[vertex_index] == zero_uv).all():
-                    unique_uv[vertex_index] = loop[uv_layer].uv
 
             indices[index] = triangle_indices
 
-        return vertices, normals, unique_uv, indices
+        return vertices, normals, indices
 
 
-def generate_updated_unique_uv(bm):
+def generate_updated_unique_uv(bm: bmesh.types.BMesh):
     uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
     if uv_layer:
         loop_triangles = bm.calc_loop_triangles()
@@ -127,28 +144,24 @@ def generate_updated_unique_uv(bm):
         return unique_uv
 
 
-def generate_fmt():
+def get_bmesh_batch(bm):
+    buf_type = 'TRIS'
+    pos, normal, indices = get_batch_attributes(bm)
+    fmt_attributes = (("pos", pos), ("normal", normal))
+
     fmt = gpu.types.GPUVertFormat()
-    fmt.attr_add(id = "pos", comp_type = 'F32', len = 3, fetch_mode = 'FLOAT')
-    fmt.attr_add(id = "normal", comp_type = 'F32', len = 3, fetch_mode = 'FLOAT')
-    fmt.attr_add(id = "unique_uv", comp_type = 'F32', len = 2, fetch_mode = 'FLOAT')
-    return fmt
+    for fmt_attr in fmt_attributes:
+        fmt.attr_add(id = fmt_attr[0], comp_type = 'F32', len = 3, fetch_mode = 'FLOAT')
 
+    ibo = gpu.types.GPUIndexBuf(type = buf_type, seq = indices)
 
-def generate_ibo(indices):
-    return gpu.types.GPUIndexBuf(type = 'TRIS', seq = indices)
+    vbo = gpu.types.GPUVertBuf(len = len(pos), format = fmt)
+    for attr_id, attr in fmt_attributes:
+        vbo.attr_fill(id = attr_id, data = attr)
 
+    batch = gpu.types.GPUBatch(type = buf_type, buf = vbo, elem = ibo)
 
-def generate_vbo(fmt, vertices, normals, unique_uv):
-    vbo = gpu.types.GPUVertBuf(len = len(vertices), format = fmt)
-    vbo.attr_fill(id = "pos", data = vertices)
-    vbo.attr_fill(id = "normal", data = normals)
-    vbo.attr_fill(id = "unique_uv", data = unique_uv)
-    return vbo
-
-
-def generate_batch(vbo, ibo):
-    return gpu.types.GPUBatch(type = 'TRIS', buf = vbo, elem = ibo)
+    return batch
 
 
 @full_poll_decorator
