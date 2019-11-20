@@ -35,14 +35,15 @@ def set_properties_defaults(self):
     self.check_brush_curve_updated = PropertyTracker()
 
 
-def register_modal(self, context):
+def register_modal(self, context, time_step = TIME_STEP):
     """
     Register event timer with constants.TIME_STEP time step,
     add modal handler to window manager
+    :param time_step: float
     :type context: bpy.types.Context
     """
     wm = context.window_manager
-    wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+    wm.event_timer_add(time_step = time_step, window = context.window)
     wm.modal_handler_add(self)
 
 

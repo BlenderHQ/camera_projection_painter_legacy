@@ -115,9 +115,6 @@ class CPP_OT_camera_projection_painter(Operator):
             self.cancel(context)
             return {'PASS_THROUGH'}
 
-        if self.setup_required:
-            generate_preview_bincodes(self, context)
-
         image_paint.clone_image = clone_image  # TODO: Find a better way to update
 
         if self.suspended:
@@ -139,10 +136,12 @@ class CPP_OT_camera_projection_painter(Operator):
 
             utils_draw.base_update_preview(context)
 
-        if not self.draw_handler:
+        if self.setup_required:
             self.bm = utils_base.get_bmesh(context, ob)
             self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
             utils_draw.add_draw_handlers(self, context)
+
+            generate_preview_bincodes(self, context)
 
         self.setup_required = False
 

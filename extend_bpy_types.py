@@ -50,14 +50,16 @@ class CameraProperties(PropertyGroup):
     def available(self):
         return self.id_data.cpp.used and self.id_data.cpp.image
 
-    used: BoolProperty(description = "Use camera as a projector")
+    used: BoolProperty(description = "Use camera as a projector", options = {'HIDDEN'})
 
     image: PointerProperty(
         type = bpy.types.Image, name = "Image",
+        options = {'HIDDEN'},
         description = "Image for texture paint from this camera")
 
     use_calibration: BoolProperty(
         name = "Calibration", default = False,
+        options = {'HIDDEN'},
         description = "Use camera calibration")
 
     calibration_principal_point: FloatVectorProperty(
@@ -68,6 +70,7 @@ class CameraProperties(PropertyGroup):
         precision = 6,
         subtype = 'TRANSLATION',
         unit = 'CAMERA',
+        options = {'HIDDEN'},
         description = "A point at the intersection of the optical axis and the image plane."
                       "This point is referred to as the principal point or image center")
 
@@ -75,42 +78,49 @@ class CameraProperties(PropertyGroup):
         name = "Skew",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
     calibration_aspect_ratio: FloatProperty(
         name = "Aspect Ratio",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
     lens_distortion_radial_1: FloatProperty(
         name = "Radial 1",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
     lens_distortion_radial_2: FloatProperty(
         name = "Radial 2",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
     lens_distortion_radial_3: FloatProperty(
         name = "Radial 3",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
     lens_distortion_tangential_1: FloatProperty(
         name = "Tangential 1",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
     lens_distortion_tangential_2: FloatProperty(
         name = "Tangential 2",
         default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "")
 
 
@@ -168,16 +178,19 @@ class SceneProperties(PropertyGroup):
                  ('CAMERA', "Camera", "Camera Projection", '', 1)],
         name = "Mapping",
         default = 'UV',
+        options = {'HIDDEN'},
         description = "Mapping method for source image")
 
     # Camera section
     use_auto_set_camera: BoolProperty(
         name = "Use Automatic Camera", default = False,
+        options = {'HIDDEN'},
         description = "Automatic/User camera selection\n"
                       "Warning! Using this option with large images may be laggy")
 
     use_auto_set_image: BoolProperty(
         name = "Use Automatic Image", default = True,
+        options = {'HIDDEN'},
         description = "Automatic/User image selection")
 
     auto_set_camera_method: EnumProperty(
@@ -191,93 +204,111 @@ class SceneProperties(PropertyGroup):
         ],
         name = "Auto Camera Method",
         default = 'FULL',
+        options = {'HIDDEN'},
         description = "Method for camera selection")
 
     tolerance_full: FloatProperty(
         name = "Tolerance", default = 0.92, soft_min = 0.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "Sensitivity for automatic camera selection")
 
     tolerance_direction: FloatProperty(
         name = "Tolerance", default = 0.55, soft_min = 0.0, soft_max = 1.0,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "Sensitivity for automatic camera selection")
 
     cameras_viewport_size: FloatProperty(
         name = "Viewport Display Size",
         default = 1.0, soft_min = 1.0, soft_max = 5.0, step = 0.1,
         subtype = 'DISTANCE',
+        options = {'HIDDEN'},
         description = "Viewport cameras display size",
         update = _cameras_viewport_size_update)
 
     # Viewport draw
     use_projection_preview: BoolProperty(
         name = "Projection Preview", default = True,
+        options = {'HIDDEN'},
         description = "Show preview of projection")
 
     use_projection_outline: BoolProperty(
         name = "Outline", default = True,
+        options = {'HIDDEN'},
         description = "Show projection outline")
 
     use_normal_highlight: BoolProperty(
         name = "Normal Highlight", default = False,
+        options = {'HIDDEN'},
         description = "Show stretching factor")
 
     # Current image preview
     use_current_image_preview: BoolProperty(
         name = "Current image", default = True,
+        options = {'HIDDEN'},
         description = "Display currently used source image directly in the viewport")
 
     current_image_size: IntProperty(
         name = "Scale",
         default = 250, min = 100, soft_max = 1500,
         subtype = 'PIXEL',
+        options = {'HIDDEN'},
         description = "Scale of displayed image in pixels")
 
     current_image_alpha: FloatProperty(
         name = "Alpha",
         default = 0.25, soft_min = 0.0, soft_max = 1.0, step = 1,
         subtype = 'FACTOR',
+        options = {'HIDDEN'},
         description = "Alpha value for image")
 
     current_image_position: FloatVectorProperty(
         name = "Pos", size = 2,
+        options = {'HIDDEN'},
         default = (0.0, 0.0), min = 0.0, max = 1.0)
 
     # Warnings
     use_warnings: BoolProperty(
         name = "Use warnings", default = False,
+        options = {'HIDDEN'},
         description = "Show warning when paint may become laggy")
 
     use_warning_action_draw: BoolProperty(
         name = "Brush Preview", default = True,
+        options = {'HIDDEN'},
         description = "Change brush preview when context out of"
                       "recommended parameters")
 
     use_warning_action_popup: BoolProperty(
         name = "Info popup", default = False,
+        options = {'HIDDEN'},
         description = "Info popup when context out of recommended parameters")
 
     use_warning_action_lock: BoolProperty(
         name = "Lock Paint", default = True,
+        options = {'HIDDEN'},
         description = "Lock paint when context out of recommended parameters")
 
     distance_warning: FloatProperty(
         name = "View Distance",
         default = 30.0, soft_min = 5, soft_max = 100,
         subtype = 'DISTANCE',
+        options = {'HIDDEN'},
         description = "Safe distance to the view location")
 
     brush_radius_warning: IntProperty(
         name = "Brush Radius",
         default = 150, soft_min = 5, soft_max = 250,
         subtype = 'PIXEL',
+        options = {'HIDDEN'},
         description = "Safe brush radius")
 
     canvas_size_warning: IntProperty(
         name = "Canvas Size",
         default = 4096, soft_min = 5, soft_max = 100, step = 10,
         subtype = 'PIXEL',
+        options = {'HIDDEN'},
         description = "Safe canvas image resolution")
 
 
@@ -297,6 +328,7 @@ class ImageProperties(PropertyGroup):
                 image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
 
         return image_metadata_size
+
 
 classes = [
     CameraProperties,
