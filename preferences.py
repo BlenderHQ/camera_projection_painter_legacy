@@ -132,6 +132,13 @@ class CppPreferences(bpy.types.AddonPreferences):
         soft_min = 0.0,
         soft_max = 0.2)
 
+    gizmo_point_size: FloatProperty(
+        name = "Point Size (DEV)",
+        default = 3.0,
+        step = 0.1,
+        soft_min = 1.0,
+        soft_max = 10.0)
+
     border_empty_space: IntProperty(
         name = "Border Empty Space",
         default = 25, soft_min = 5, soft_max = 100,
@@ -210,7 +217,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         draw_kmi(kmi, col)
 
     def _draw_advanced(self, layout):
-        col = layout.column(align = True)
+        col = layout.column(align = False)
 
         col.use_property_split = True
         col.use_property_decorate = False
@@ -222,6 +229,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.label(text = "Gizmos:")
         col.prop(self, "gizmo_scale_basis")
         col.prop(self, "gizmo_select_bias")
+        col.prop(self, "gizmo_point_size")
 
 
 

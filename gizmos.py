@@ -43,7 +43,9 @@ def open_gl_draw(func):
         bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
         bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
         bgl.glPolygonOffset(0.1, 0.9)
-        bgl.glPointSize(3.0)
+
+        preferences = context.preferences.addons[__package__].preferences
+        bgl.glPointSize(preferences.gizmo_point_size)
 
         ret = func(self, context)
 
