@@ -128,6 +128,9 @@ class CPP_GT_camera_gizmo(Gizmo):
         cpp_data = self.camera_object.data.cpp
         preferences = context.preferences.addons[__package__].preferences
 
+        self.scale_basis = preferences.gizmo_scale_basis
+        self.select_bias = preferences.gizmo_select_bias
+
         if not preferences.always_draw_gizmo_point:
             if self.is_highlight:
                 self.draw_custom_shape(self.shape)

@@ -119,8 +119,18 @@ class CppPreferences(bpy.types.AddonPreferences):
     gizmo_scale_basis: FloatProperty(
         name = "Scale Basis (DEV)",
         default = 0.1,
+        step = 0.001,
+        precision = 6,
         soft_min = 0.0,
-        soft_max = 1.0)
+        soft_max = 0.2)
+
+    gizmo_select_bias: FloatProperty(
+        name = "Select Bias (DEV)",
+        default = 0.1,
+        step = 0.001,
+        precision = 6,
+        soft_min = 0.0,
+        soft_max = 0.2)
 
     border_empty_space: IntProperty(
         name = "Border Empty Space",
@@ -207,11 +217,11 @@ class CppPreferences(bpy.types.AddonPreferences):
 
         box = col.box()
         box.label(text = "This tab for dev purposes only.", icon = 'QUESTION')
-        box.label(text = "Changing this options required restart!", icon = 'ERROR')
         col.separator()
 
         col.label(text = "Gizmos:")
         col.prop(self, "gizmo_scale_basis")
+        col.prop(self, "gizmo_select_bias")
 
 
 
