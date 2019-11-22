@@ -58,7 +58,7 @@ def open_gl_draw(func):
     return wrapper
 
 
-def generate_preview_bincodes(self, context):
+def update_preview_bincodes(context):
     images = bpy.data.images
     count = len(images)
 
@@ -75,7 +75,6 @@ def generate_preview_bincodes(self, context):
         if not len(pixels):
             context.window.cursor_set('WAIT')
             bpy.ops.wm.previews_ensure('INVOKE_DEFAULT')
-            # self.report(type = {'INFO'}, message = "Data previews refreshed, save a file to store")
             context.window.cursor_set('DEFAULT')
             break
 

@@ -4,7 +4,7 @@ from .templates import template_path
 
 from ..icons import get_icon_id
 from ..utils.utils_state import state
-from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_calibration_from_file
+from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_calibration_from_file, CPP_OT_enter_context
 
 
 class SceneButtonsPanel:
@@ -24,7 +24,12 @@ class CPP_PT_camera_projection_painter(Panel, SceneButtonsPanel):
     bl_label = "Camera Paint"
 
     def draw(self, context):
-        pass
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column(align = True)
+        col.operator(CPP_OT_enter_context.bl_idname, icon_value = get_icon_id("run"))
 
 
 class CPP_PT_path(Panel, SceneButtonsPanel):
@@ -69,5 +74,5 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
         operator.mode = 'ALL'
 
         scol = col.column()
-        #scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+        # scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
         #              icon_value = get_icon_id("calibration"))

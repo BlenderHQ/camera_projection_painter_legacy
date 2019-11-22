@@ -44,7 +44,7 @@ def full_poll(context):
     if tool_setup_poll(context):
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
-        if image_paint.clone_image:
+        if image_paint.detect_data():
             return True
     return False
 

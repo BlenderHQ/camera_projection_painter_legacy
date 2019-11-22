@@ -20,12 +20,12 @@
 
 import bpy
 from bpy.types import Operator
-from bpy.props import EnumProperty
+from bpy.props import IntVectorProperty, EnumProperty
 
 import os
 import csv
 
-from .gizmos import generate_preview_bincodes
+from .gizmos import update_preview_bincodes
 from .utils import (
     common,
     utils_state,
@@ -141,7 +141,7 @@ class CPP_OT_camera_projection_painter(Operator):
             self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
             utils_draw.add_draw_handlers(self, context)
 
-            generate_preview_bincodes(self, context)
+            update_preview_bincodes(context)
 
         self.setup_required = False
 
@@ -196,7 +196,7 @@ class CPP_OT_bind_camera_image(Operator):
         else:
             self.report(type = {'WARNING'}, message = "Images not found!")
 
-        generate_preview_bincodes(self, context)
+        update_preview_bincodes(context)
 
         return {'FINISHED'}
 
@@ -301,6 +301,58 @@ class CPP_OT_set_camera_calibration_from_file(Operator):
         return {'FINISHED'}
 
 
+class CPP_OT_enter_context(Operator):
+    bl_idname = "cpp.enter_context"
+    bl_label = "Setup Context"
+    bl_description = "Setup context to begin"
+
+    @classmethod
+    def poll(cls, context):
+        if utils_poll.full_poll(context):
+            return False
+        ob = context.active_object
+        scene = context.scene
+        if ob:
+            if ob.type == 'MESH':
+                if scene.cpp.has_visible_camera_objects:
+                    return True
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.prop(self, "image_size")
+
+    def execute(self, context):
+        ob = context.active_object
+        scene = context.scene
+
+        bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
+        bpy.ops.wm.tool_set_by_id(name = "builtin_brush.Clone", cycle = False, space_type = 'VIEW_3D')
+
+        image_paint = scene.tool_settings.image_paint
+
+        image_paint.use_clone_layer = True
+        image_paint.mode = 'IMAGE'
+        scene.cpp.mapping = 'CAMERA'
+
+        if image_paint.missing_uvs:
+            bpy.ops.object.mode_set(mode = 'EDIT')
+            ob.data.uv_layers.new(do_init = True)
+            bpy.ops.uv.unwrap(method = 'ANGLE_BASED', margin = 0.001)
+            bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
+
+        if image_paint.missing_texture:
+            name = "%s_Diffuse" % ob.name
+            if name not in bpy.data.images:
+                bpy.ops.image.new(
+                    name = name, width = 2048, height = 2048,
+                    generated_type = 'COLOR_GRID')
+            image_paint.canvas = bpy.data.images[name]
+
+        return {'FINISHED'}
+
+
 _classes = [
     CPP_OT_event_listener,
     CPP_OT_image_paint,
@@ -309,5 +361,6 @@ _classes = [
     CPP_OT_set_camera_by_view,
     CPP_OT_set_camera_active,
     CPP_OT_set_camera_calibration_from_file,
+    CPP_OT_enter_context,
 ]
 register, unregister = bpy.utils.register_classes_factory(_classes)

@@ -180,7 +180,7 @@ class SceneProperties(PropertyGroup):
         default = 'UV',
         options = {'HIDDEN'},
         description = "Mapping method for source image")
-
+    
     # Camera section
     use_auto_set_camera: BoolProperty(
         name = "Use Automatic Camera", default = False,

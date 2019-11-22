@@ -232,7 +232,6 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "gizmo_point_size")
 
 
-
 _classes = [
     CppPreferences,
 ]
