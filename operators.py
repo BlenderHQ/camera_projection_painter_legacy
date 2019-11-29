@@ -20,12 +20,11 @@
 
 import bpy
 from bpy.types import Operator
-from bpy.props import IntVectorProperty, EnumProperty
+from bpy.props import StringProperty, EnumProperty
 
 import os
 import csv
 
-from .gizmos import update_preview_bincodes
 from .utils import (
     common,
     utils_state,
@@ -33,7 +32,9 @@ from .utils import (
     utils_base,
     utils_poll,
     utils_draw,
-    utils_warning)
+    utils_warning,
+    utils_image
+)
 
 
 class CPP_OT_event_listener(Operator):
@@ -41,13 +42,23 @@ class CPP_OT_event_listener(Operator):
     bl_label = "Event Listener"
     bl_options = {'INTERNAL'}
 
+    def __init__(self):
+        self.suspended = False
+
     def invoke(self, context, event):
         wm = context.window_manager
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
+        #if event.type == 'F' and event.value == 'PRESS':
+        #    self.suspended = True
+        #if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        #    self.suspended = False
+        #if not self.suspended:
+        #    utils_state.event.mouse_position = event.mouse_x, event.mouse_y
         utils_state.event.mouse_position = event.mouse_x, event.mouse_y
+
         return {'PASS_THROUGH'}
 
 
@@ -95,10 +106,12 @@ class CPP_OT_camera_projection_painter(Operator):
 
     def cancel(self, context):
         if not self.setup_required:
+            scene = context.scene
             utils_draw.remove_draw_handlers(self)
             ob = context.active_object
             utils_base.remove_uv_layer(ob)
             utils_base.set_properties_defaults(self)
+            scene.cpp.cameras_hide_set(state = False)
 
     def modal(self, context, event):
         scene = context.scene
@@ -114,6 +127,7 @@ class CPP_OT_camera_projection_painter(Operator):
         else:
             self.cancel(context)
             return {'PASS_THROUGH'}
+
 
         image_paint.clone_image = clone_image  # TODO: Find a better way to update
 
@@ -139,9 +153,10 @@ class CPP_OT_camera_projection_painter(Operator):
         if self.setup_required:
             self.bm = utils_base.get_bmesh(context, ob)
             self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
+            self.camera_batches = utils_draw.get_camera_batches(context)
             utils_draw.add_draw_handlers(self, context)
 
-            update_preview_bincodes(context)
+            scene.cpp.cameras_hide_set(state = True)
 
         self.setup_required = False
 
@@ -176,7 +191,7 @@ class CPP_OT_bind_camera_image(Operator):
         elif self.mode == 'SELECTED':
             cameras = scene.cpp.selected_camera_objects
         elif self.mode == 'ALL':
-            cameras = scene.cpp.visible_camera_objects
+            cameras = scene.cpp.camera_objects
         elif self.mode == 'TMP':
             cam = utils_state.state.tmp_camera
             if cam:
@@ -195,8 +210,6 @@ class CPP_OT_bind_camera_image(Operator):
             self.report(type = {'INFO'}, message = mess)
         else:
             self.report(type = {'WARNING'}, message = "Images not found!")
-
-        update_preview_bincodes(context)
 
         return {'FINISHED'}
 
@@ -231,7 +244,7 @@ class CPP_OT_set_camera_active(Operator):
     def execute(self, context):
         scene = context.scene
         scene.camera = utils_state.state.tmp_camera
-        for camera in scene.cpp.visible_camera_objects:
+        for camera in scene.cpp.camera_objects:
             if camera == scene.camera:
                 continue
             camera.select_set(False)
@@ -275,7 +288,7 @@ class CPP_OT_set_camera_calibration_from_file(Operator):
                 x, y, alt, heading, pitch, roll, f, px, py, k1, k2, k3, k4, t1, t2 = (float(n) for n in line[1:])
 
                 name, ext = os.path.splitext(csv_name)
-                for ob in scene.cpp.visible_camera_objects:
+                for ob in scene.cpp.camera_objects:
                     ob_name, ob_ext = os.path.splitext(ob.name)
 
                     if name == ob_name:
@@ -314,7 +327,7 @@ class CPP_OT_enter_context(Operator):
         scene = context.scene
         if ob:
             if ob.type == 'MESH':
-                if scene.cpp.has_visible_camera_objects:
+                if scene.cpp.has_camera_objects:
                     return True
         return False
 
@@ -353,6 +366,74 @@ class CPP_OT_enter_context(Operator):
         return {'FINISHED'}
 
 
+class CPP_OT_call_pie(Operator):
+    bl_idname = "cpp.call_pie"
+    bl_label = "CPP Call Pie"
+    bl_description = "Open Context Menu"
+    bl_options = {'INTERNAL'}
+
+    camera_name: StringProperty()
+
+    @classmethod
+    def description(self, context, properties):
+        text = "Camera: %s" % properties["camera_name"]
+        return text
+
+    def execute(self, context):
+        utils_state.state.tmp_camera = context.scene.objects[self.camera_name]
+        bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
+        return {'FINISHED'}
+
+
+class CPP_OT_generate_image_previews(Operator):
+    bl_idname = "cpp.generate_image_previews"
+    bl_label = "Generate Image Previews"
+    bl_description = "Generate image previews to display in UI and viewport"
+    bl_options = {'INTERNAL'}
+
+    def set_progress(self, context, value):
+        text = "Rendering Previews Progress: %d %%" % value
+        context.workspace.status_text_set(text)
+
+    def invoke(self, context, event):
+        self.images = bpy.data.images[:]
+        li = len(self.images)
+        if not li:
+            return {'CANCELLED'}
+
+        utils_draw.clear_preview_bindcodes()
+
+        context.window.cursor_set('WAIT')
+        self.set_progress(context, 0.0)
+        utils_state.state.operator.suspended = True
+
+        wm = context.window_manager
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        if event.type == "ESC":
+            context.window.cursor_set('DEFAULT')
+            context.workspace.status_text_set(None)
+            utils_state.state.operator.suspended = False
+            return {'CANCELLED'}
+        if not len(self.images):
+            self.report(type = {'INFO'}, message = "Image previews generated")
+            context.window.cursor_set('DEFAULT')
+            context.workspace.status_text_set(None)
+            utils_state.state.operator.suspended = False
+            return {'FINISHED'}
+
+        image = self.images[-1]
+        utils_image.generate_preview(image)
+        self.images.pop()
+
+        progress = (1.0 - len(self.images) / len(bpy.data.images[:])) * 100
+        self.set_progress(context, progress)
+
+        return {'RUNNING_MODAL'}
+
+
 _classes = [
     CPP_OT_event_listener,
     CPP_OT_image_paint,
@@ -362,5 +443,7 @@ _classes = [
     CPP_OT_set_camera_active,
     CPP_OT_set_camera_calibration_from_file,
     CPP_OT_enter_context,
+    CPP_OT_call_pie,
+    CPP_OT_generate_image_previews,
 ]
 register, unregister = bpy.utils.register_classes_factory(_classes)

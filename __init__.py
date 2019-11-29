@@ -21,7 +21,7 @@
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 1, 0),
+    "version": (0, 1, 1, 1),
     "blender": (2, 80, 0),
     "description": "Expanding capabilities of texture paint Clone Brush",
     "location": "Clone Brush tool settings, Scene tab, Camera tab",
@@ -31,29 +31,29 @@ bl_info = {
     "category": "Paint",
 }
 
-import os
-
-# Support reload
 if "bpy" in locals():
-    from importlib import import_module, reload
+    import os
+    import importlib
 
     from .utils.utils_state import state
+
     state.operator.cancel(bpy.context)
 
-    unregister()  # Also support addon live edit
+    unregister()
 
     for module_name, module_file in bpy.path.module_names(path = os.path.dirname(__file__), recursive = True):
-        module = import_module(name = "." + module_name, package = __package__)
-        reload(module)
+        module = importlib.import_module(name = "." + module_name, package = __package__)
+        importlib.reload(module)
+        del module
 
     register()
 
-    bpy.ops.cpp.event_listener('INVOKE_DEFAULT')
-    bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
+    bpy.ops.cpp.event_listener('INVOKE_REGION_WIN')
+    bpy.ops.cpp.camera_projection_painter('INVOKE_REGION_WIN')
 
-    del import_module
-    del reload
+    del importlib
     del state
+    del os
 
 else:
     import bpy
@@ -71,9 +71,3 @@ else:
     ]
 
     register, unregister = bpy.utils.register_submodule_factory(module_name = __name__, submodule_names = _modules)
-
-#
-# Some useful links:
-#   https://archive.blender.org/wiki/index.php/Extensions:2.6/Py/API_Changes/
-#
-#

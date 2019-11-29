@@ -65,7 +65,7 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
         operator.mode = 'SELECTED'
 
         scol = col.column()
-        scol.enabled = scene.cpp.has_visible_camera_objects
+        scol.enabled = scene.cpp.has_camera_objects
         operator = scol.operator(
             CPP_OT_bind_camera_image.bl_idname,
             text = "Bind All Camera Images",

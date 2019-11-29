@@ -1,16 +1,68 @@
 import struct
 
+import bpy
+import gpu
+import bgl
+from mathutils import Matrix
+from gpu_extras.presets import draw_texture_2d
+
+from ..constants import PREVIEW_CHECK_MASK
+from .. import __package__ as addon_pkg
+
 FILE_UNKNOWN = "Unknown File"
 
-
-# see http://en.wikipedia.org/wiki/ICO_(file_format)
-# http://msdn.microsoft.com/en-us/library/ms997538.aspx
 
 class UnknownImageFormat(Exception):
     pass
 
 
+def generate_preview(image):
+    preferences = bpy.context.preferences.addons[addon_pkg].preferences
+    preview_size = preferences.render_preview_size  # bpy.app.render_preview_size
+
+    size_x, size_y = image.cpp.static_size
+
+    if size_x > size_y:
+        aspect_x = size_x / size_y
+        aspect_y = 1.0
+    elif size_y > size_x:
+        aspect_x = 1.0
+        aspect_y = size_x / size_y
+    else:
+        aspect_x = 1.0
+        aspect_y = 1.0
+
+    sx, sy = int(preview_size * aspect_x), int(preview_size * aspect_y)
+
+    offscreen = gpu.types.GPUOffScreen(sx, sy)
+
+    with offscreen.bind():
+        bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
+        with gpu.matrix.push_pop():
+            gpu.matrix.load_matrix(Matrix.Identity(4))
+            gpu.matrix.load_projection_matrix(Matrix.Identity(4))
+
+            if image.gl_load():
+                return -1
+            draw_texture_2d(texture_id = image.bindcode, position = (-1.0, -1.0), width = 2.0, height = 2.0)
+            image.buffers_free()
+
+        buffer = bgl.Buffer(bgl.GL_BYTE, sx * sy * 4)
+        bgl.glReadBuffer(bgl.GL_BACK)
+        bgl.glReadPixels(0, 0, sx, sy, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, buffer)
+
+    offscreen.free()
+
+    image.preview.image_size = sx, sy
+    pixels = [n / 255 for n in buffer]
+    pixels[0:len(PREVIEW_CHECK_MASK)] = PREVIEW_CHECK_MASK
+    image.preview.image_pixels_float = pixels
+
+
 def get_image_metadata_from_bytesio(input, size):
+    """
+    GIFs, PNGs, older PNGs, JPEG, BMP, TIFF,
+    """
     height = -1
     width = -1
     data = input.read(26)
@@ -133,22 +185,6 @@ def get_image_metadata_from_bytesio(input, size):
                     break
         except Exception as e:
             raise UnknownImageFormat(str(e))
-    elif size >= 2:
-        input.seek(0)
-        reserved = input.read(2)
-        if 0 != struct.unpack("<H", reserved)[0]:
-            raise UnknownImageFormat(FILE_UNKNOWN)
-        file_format = input.read(2)
-        assert 1 == struct.unpack("<H", file_format)[0]
-        num = input.read(2)
-        num = struct.unpack("<H", num)[0]
-        if num > 1:
-            import warnings
-            warnings.warn("ICO File contains more than one image")
-        w = input.read(1)
-        h = input.read(1)
-        width = ord(w)
-        height = ord(h)
     else:
         raise UnknownImageFormat(FILE_UNKNOWN)
 

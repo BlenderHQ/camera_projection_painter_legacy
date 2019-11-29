@@ -99,7 +99,14 @@ class CPP_PT_view_options(Panel, CPPOptionsPanel):
     bl_options = set()
 
     def draw(self, context):
-        pass
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        col = layout.column(align = False)
+
+        scene = context.scene
+        col.operator("cpp.generate_image_previews")
+        col.prop(scene.cpp, "use_camera_image_previews")
 
 
 class CPP_PT_view_projection_preview_options(Panel, CPPOptionsPanel):
@@ -171,7 +178,10 @@ class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
         col.label(text = "Actions:")
         col.use_property_split = True
 
-        col.prop(scene.cpp, "use_warning_action_draw")
+        scol = col.column()
+        scol.enabled = scene.cpp.use_projection_preview
+        scol.prop(scene.cpp, "use_warning_action_draw")
+
         col.prop(scene.cpp, "use_warning_action_popup")
         col.prop(scene.cpp, "use_warning_action_lock")
 

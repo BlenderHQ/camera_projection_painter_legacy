@@ -25,145 +25,12 @@ import bgl
 
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
-from mathutils import Vector, Matrix
+from mathutils import Vector
 from mathutils.geometry import intersect_point_quad_2d
 from bpy.types import Gizmo, GizmoGroup
 
 from .utils import utils_poll, utils_state, utils_draw
 from .shaders import shaders
-
-_preview_bindcodes = {}
-
-
-def open_gl_draw(func):
-    def wrapper(self, context):
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-        bgl.glEnable(bgl.GL_DEPTH_TEST)
-        bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
-        bgl.glEnable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glPolygonOffset(0.1, 0.9)
-
-        preferences = context.preferences.addons[__package__].preferences
-        bgl.glPointSize(preferences.gizmo_point_size)
-
-        ret = func(self, context)
-
-        bgl.glDisable(bgl.GL_BLEND)
-        bgl.glDisable(bgl.GL_DEPTH_TEST)
-        bgl.glDisable(bgl.GL_POLYGON_OFFSET_FILL)
-        bgl.glPointSize(1.0)
-        return ret
-
-    return wrapper
-
-
-def update_preview_bincodes(context):
-    images = bpy.data.images
-    count = len(images)
-
-    if not count:
-        return
-
-    id_buff = bgl.Buffer(bgl.GL_INT, count)
-    bgl.glGenTextures(count, id_buff)
-
-    for image in images:
-        preview = image.preview
-        pixels = list(preview.image_pixels)
-
-        if not len(pixels):
-            context.window.cursor_set('WAIT')
-            bpy.ops.wm.previews_ensure('INVOKE_DEFAULT')
-            context.window.cursor_set('DEFAULT')
-            break
-
-    for i, image in enumerate(images):
-        bindcode = id_buff.to_list()[i]
-        preview = image.preview
-        pixels = list(preview.image_pixels)
-        if not len(pixels):
-            continue
-
-        width, height = preview.image_size
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
-        image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
-        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
-        bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA,
-                         width, height, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
-
-        _preview_bindcodes[image] = bindcode
-
-
-class CPP_GT_camera_gizmo(Gizmo):
-    shape: object
-    camera_object: bpy.types.Object
-    batch_image_preview: gpu.types.GPUBatch
-
-    bl_idname = "CPP_GT_camera_gizmo"
-
-    __slots__ = (
-        "shape",
-        "camera_object",
-        "batch_image_preview",
-    )
-
-    def setup(self):
-        if not hasattr(self, "point_shape"):
-            self.shape = self.new_custom_shape('POINTS', ((0.0, 0.0, 0.0),))
-        self.camera_object = None
-
-    def invoke(self, context, event):
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event, tweak):
-        utils_state.state.tmp_camera = self.camera_object
-        bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
-        return {'FINISHED'}
-
-    def test_select(self, context, location):
-        return -1
-
-    @open_gl_draw
-    def draw(self, context):
-        cpp_data = self.camera_object.data.cpp
-        preferences = context.preferences.addons[__package__].preferences
-
-        self.scale_basis = preferences.gizmo_scale_basis
-        self.select_bias = preferences.gizmo_select_bias
-
-        if not preferences.always_draw_gizmo_point:
-            if self.is_highlight:
-                self.draw_custom_shape(self.shape)
-        else:
-            self.draw_custom_shape(self.shape)
-        if cpp_data.available:
-            self.color = preferences.gizmo_color
-            if cpp_data.image in _preview_bindcodes:
-                shader = shaders.camera_image_preview
-
-                shader.bind()
-                shader.uniform_float("modelMatrix", self.matrix_basis)
-
-                bindcode = _preview_bindcodes[cpp_data.image]
-                bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
-                shader.uniform_int("image", 0)
-                self.batch_image_preview.draw(shader)
-
-    def draw_select(self, context, select_id):
-        self.draw_custom_shape(self.shape, select_id = select_id)
-
-    def update_camera(self, context):
-        camera = self.camera_object.data
-        view_frame = camera.view_frame(scene = context.scene)
-        display_size = camera.display_size
-        asp = view_frame[0].y
-        view_frame = [n * display_size for n in view_frame]
-
-        self.batch_image_preview = batch_for_shader(
-            shaders.camera_image_preview, 'TRI_FAN',
-            {"pos": view_frame,
-             "texCoord": ((1, 0.5 + asp), (1, 0.5 - asp), (0, 0.5 - asp), (0, 0.5 + asp))})
 
 
 class CPP_GGT_camera_gizmo_group(GizmoGroup):
@@ -178,33 +45,24 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
         return utils_poll.tool_setup_poll(context)
 
     def setup(self, context):
-        preferences = context.preferences.addons[__package__].preferences
-
-        for ob in context.scene.cpp.visible_camera_objects:
-            mpr = self.gizmos.new(CPP_GT_camera_gizmo.bl_idname)
+        for ob in context.scene.cpp.camera_objects:
+            mpr = self.gizmos.new("GIZMO_GT_dial_3d")
+            props = mpr.target_set_operator("cpp.call_pie")
+            props.camera_name = ob.name
 
             mpr.matrix_basis = ob.matrix_world.normalized()
-            mpr.camera_object = ob
+
+            mpr.use_select_background = True
+            mpr.use_event_handle_all = False
+
+    def refresh(self, context):
+        preferences = context.preferences.addons[__package__].preferences
+        for mpr in self.gizmos:
             mpr.color = preferences.gizmo_color
             mpr.alpha = preferences.gizmo_alpha
             mpr.alpha_highlight = preferences.gizmo_alpha
 
-            mpr.use_draw_scale = True
-            mpr.scale_basis = preferences.gizmo_scale_basis
-            # mpr.use_draw_modal = False
-            mpr.use_select_background = True
-            mpr.use_event_handle_all = False
-            mpr.use_grab_cursor = True
-            mpr.update_camera(context)
-
-    def refresh(self, context):
-        for mpr in self.gizmos:
-            try:
-                mpr.matrix_basis = mpr.camera_object.matrix_world.normalized() @ Matrix.Translation((0.0, 0.0, 0.1))
-                mpr.update_camera(context)
-            except ReferenceError:
-                self.gizmos.remove(mpr)
-                continue
+            mpr.scale_basis = preferences.gizmo_radius
 
 
 class CPP_GT_current_image_preview(Gizmo):
@@ -235,7 +93,6 @@ class CPP_GT_current_image_preview(Gizmo):
             {"pos": ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)),
              "uv": ((0, 0), (1, 0), (1, 1), (0, 1))})
 
-    @open_gl_draw
     def draw(self, context):
         scene = context.scene
         camera_ob = scene.camera
@@ -359,7 +216,6 @@ class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
 
 
 _classes = [
-    CPP_GT_camera_gizmo,
     CPP_GGT_camera_gizmo_group,
     CPP_GT_current_image_preview,
     CPP_GGT_image_preview_gizmo_group

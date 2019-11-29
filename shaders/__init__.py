@@ -104,7 +104,7 @@ class ShaderStorage(object):
         for shader_name, data in generate_shaders().items():
             object.__setattr__(self, shader_name, data)
 
-        self.builtin_3d_smooth_color = gpu.shader.from_builtin('3D_SMOOTH_COLOR')
+        self.builtin_3d_uniform_color = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
 
 shaders = ShaderStorage()

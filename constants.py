@@ -1,4 +1,4 @@
-TIME_STEP = 1 / 40
+TIME_STEP = 1 / 60
 
 SEPARATOR = "_"
 
@@ -13,3 +13,12 @@ SHADER_LIBRARY = "lib"
 
 AUTOCAM_MIN = 0.852
 AUTOCAM_MAX = 0.999
+
+WEB_LINKS = [
+    ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
+    ("GitHub", "https://github.com/ivan-perevala")
+]
+
+PREVIEW_CHECK_MASK = [
+    0.1, 0.2, 0.3, 0.4,
+]

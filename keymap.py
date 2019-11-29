@@ -49,6 +49,18 @@ def register():
     kmi = km.keymap_items.new("view3d.view_center_pick", 'SPACE', 'PRESS', alt = True)
     _keymaps.append((km, kmi))
 
+    kmi = km.keymap_items.new("wm.context_toggle", 'I', 'PRESS')
+    kmi.properties.data_path = "scene.cpp.use_camera_image_previews"
+    _keymaps.append((km, kmi))
+
+    kmi = km.keymap_items.new("wm.context_toggle", 'O', 'PRESS')
+    kmi.properties.data_path = "scene.cpp.use_projection_preview"
+    _keymaps.append((km, kmi))
+
+    kmi = km.keymap_items.new("wm.context_toggle", 'P', 'PRESS')
+    kmi.properties.data_path = "scene.cpp.use_current_image_preview"
+    _keymaps.append((km, kmi))
+
 
 def unregister():
     for km, kmi in _keymaps:

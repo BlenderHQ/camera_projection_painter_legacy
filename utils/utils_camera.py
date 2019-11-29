@@ -112,9 +112,3 @@ def set_camera_by_view(context):
     camera_ob.select_set(True)
     scene.camera = camera_ob
 
-
-def resize_cameras_viewport(context, value):
-    scene = context.scene
-    for ob in scene.cpp.available_camera_objects:
-        camera = ob.data
-        camera.display_size = value

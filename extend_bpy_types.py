@@ -21,6 +21,7 @@ import time
 
 import bpy
 import gpu
+import bgl
 import bmesh
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -32,17 +33,12 @@ from bpy.props import (
     StringProperty,
     PointerProperty
 )
-from gpu_extras.batch import batch_for_shader
 
 from .icons import get_icon_id
 from .utils import utils_camera, utils_image
-from .constants import TEMP_DATA_NAME
-
-from .shaders import shaders
 
 import io
 import os
-import numpy as np
 
 
 class CameraProperties(PropertyGroup):
@@ -130,17 +126,16 @@ class SceneProperties(PropertyGroup):
         return self.id_data
 
     @property
-    def has_visible_camera_objects(self):
+    def has_camera_objects(self):
         for ob in self._scene.objects:
             if ob.type != 'CAMERA':
                 continue
-            if ob.visible_get():
-                return True
+            return True
         return False
 
     @property
-    def visible_camera_objects(self):
-        return (ob for ob in self._scene.objects if (ob.type == 'CAMERA' and ob.visible_get()))
+    def camera_objects(self):
+        return (ob for ob in self._scene.objects if ob.type == 'CAMERA')
 
     @property
     def has_available_camera_objects(self):
@@ -148,7 +143,7 @@ class SceneProperties(PropertyGroup):
 
     @property
     def available_camera_objects(self):
-        return (ob for ob in self._scene.cpp.visible_camera_objects if ob.data.cpp.available)
+        return (ob for ob in self._scene.cpp.camera_objects if ob.data.cpp.available)
 
     @property
     def has_camera_objects_selected(self):
@@ -156,10 +151,11 @@ class SceneProperties(PropertyGroup):
 
     @property
     def selected_camera_objects(self):
-        return (ob for ob in self._scene.cpp.visible_camera_objects if ob.select_get())
+        return (ob for ob in self._scene.cpp.camera_objects if ob.select_get())
 
-    def _cameras_viewport_size_update(self, context):
-        utils_camera.resize_cameras_viewport(context, self.cameras_viewport_size)
+    def cameras_hide_set(self, state):
+        for ob in self.camera_objects:
+            ob.hide_set(state = state)
 
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
@@ -180,7 +176,7 @@ class SceneProperties(PropertyGroup):
         default = 'UV',
         options = {'HIDDEN'},
         description = "Mapping method for source image")
-    
+
     # Camera section
     use_auto_set_camera: BoolProperty(
         name = "Use Automatic Camera", default = False,
@@ -224,8 +220,7 @@ class SceneProperties(PropertyGroup):
         default = 1.0, soft_min = 1.0, soft_max = 5.0, step = 0.1,
         subtype = 'DISTANCE',
         options = {'HIDDEN'},
-        description = "Viewport cameras display size",
-        update = _cameras_viewport_size_update)
+        description = "Viewport cameras display size")
 
     # Viewport draw
     use_projection_preview: BoolProperty(
@@ -243,9 +238,14 @@ class SceneProperties(PropertyGroup):
         options = {'HIDDEN'},
         description = "Show stretching factor")
 
+    use_camera_image_previews: BoolProperty(
+        name = "Camera Images", default = False,
+        options = {'HIDDEN'},
+        description = "Display camera images in the viewport")
+
     # Current image preview
     use_current_image_preview: BoolProperty(
-        name = "Current image", default = True,
+        name = "Current Image", default = True,
         options = {'HIDDEN'},
         description = "Display currently used source image directly in the viewport")
 
@@ -322,11 +322,14 @@ class ImageProperties(PropertyGroup):
             with io.BytesIO(data) as io_bytes:
                 image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
         else:
-            file_path = bpy.path.abspath(image.filepath)
-            size = os.path.getsize(file_path)
-            with io.open(file_path, "rb") as io_bytes:
-                image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
-
+            if image.source == 'FILE':
+                file_path = bpy.path.abspath(image.filepath)
+                if os.path.isfile(file_path):
+                    size = os.path.getsize(file_path)
+                    with io.open(file_path, "rb") as io_bytes:
+                        image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
+            elif image.source == 'GENERATED':
+                image_metadata_size = image.generated_width, image.generated_height
         return image_metadata_size
 
 

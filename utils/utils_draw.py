@@ -1,6 +1,7 @@
 import bpy
 import bgl
 import gpu
+from gpu_extras.batch import batch_for_shader
 import bmesh
 from mathutils import Vector
 from bpy.types import SpaceView3D
@@ -12,11 +13,10 @@ from .utils_poll import full_poll_decorator
 from .utils_camera import get_camera_attributes
 from .common import get_hovered_region_3d, iter_curve_values, flerp
 
-from ..constants import TEMP_DATA_NAME
+from ..constants import TEMP_DATA_NAME, PREVIEW_CHECK_MASK
 from ..shaders import shaders
 from .. import __package__ as addon_pkg
 
-import time
 import numpy as np
 
 
@@ -25,12 +25,15 @@ import numpy as np
 def add_draw_handlers(self, context):
     args = (self, context)
     callback = draw_projection_preview
-    self.draw_handler = SpaceView3D.draw_handler_add(callback, args, 'WINDOW', 'PRE_VIEW')
+    self.draw_handler = SpaceView3D.draw_handler_add(callback, args, 'WINDOW', 'POST_VIEW')
+    callback = draw_cameras
+    self.draw_handler_cameras = SpaceView3D.draw_handler_add(callback, args, 'WINDOW', 'POST_VIEW')
 
 
 def remove_draw_handlers(self):
     if self.draw_handler:
         SpaceView3D.draw_handler_remove(self.draw_handler, 'WINDOW')
+        SpaceView3D.draw_handler_remove(self.draw_handler_cameras, 'WINDOW')
 
 
 # Base utils
@@ -124,26 +127,6 @@ def get_batch_attributes(bm):
         return vertices, normals, indices
 
 
-def generate_updated_unique_uv(bm: bmesh.types.BMesh):
-    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
-    if uv_layer:
-        loop_triangles = bm.calc_loop_triangles()
-        unique_uv = np.empty((len(bm.verts), 2), dtype = np.float)
-
-        skip_vert_indices = np.empty(len(bm.verts), dtype = np.bool)
-
-        for loop_triangles in loop_triangles:
-            for loop in loop_triangles:
-                vertex_index = loop.vert.index
-                if skip_vert_indices[vertex_index]:
-                    continue
-
-                skip_vert_indices[vertex_index] = True
-                unique_uv[vertex_index] = loop[uv_layer].uv
-
-        return unique_uv
-
-
 def get_bmesh_batch(bm):
     buf_type = 'TRIS'
     pos, normal, indices = get_batch_attributes(bm)
@@ -190,7 +173,11 @@ def draw_projection_preview(self, context):
 
     mouse_position = utils_state.event.mouse_position
     active_rv3d = get_hovered_region_3d(context)
-    current_rv3d = context.area.spaces.active.region_3d
+    #current_rv3d = context.area.spaces.active.region_3d
+    current_rv3d = context.region_data
+    #print(current_rv3d)
+    #print(active_rv3d)
+    #return
 
     outline_type = 0
     if scene.cpp.use_projection_outline:
@@ -260,3 +247,145 @@ def draw_projection_preview(self, context):
 
     # Finally, draw
     batch.draw(shader)
+
+
+def get_camera_batches(context):
+    scene = context.scene
+    shader_camera = shaders.camera
+    shader_camera_image_preview = shaders.camera_image_preview
+
+    res = {}
+    for ob in scene.cpp.camera_objects:
+        camera = ob.data
+        view_frame = camera.view_frame()
+
+        vertices = [Vector((0.0, 0.0, 0.0))]
+        vertices.extend(view_frame)
+
+        indices_frame = (
+            (0, 1), (0, 2), (0, 3), (0, 4),
+            (1, 2), (2, 3), (3, 4), (1, 4)
+        )
+
+        indices_image = (
+            (1, 2, 3), (3, 4, 1)
+        )
+
+        uv = (
+            (0.0, 0.0),
+            (1.0, 1.0), (1.0, 0.0), (0.0, 0.0), (0.0, 1.0),
+        )
+
+        batch_frame = batch_for_shader(
+            shader_camera, 'LINES',
+            {"pos": vertices},
+            indices = indices_frame,
+        )
+        batch_image = batch_for_shader(
+            shader_camera_image_preview, 'TRIS',
+            {"pos": vertices, "uv": uv},
+            indices = indices_image,
+        )
+        res[ob] = batch_frame, batch_image
+
+    return res
+
+
+_preview_bindcodes = {}
+
+
+def clear_preview_bindcodes():
+    global _preview_bindcodes
+    _preview_bindcodes = {}
+
+
+def get_preview_bincode(image):
+    id_buff = bgl.Buffer(bgl.GL_INT, 1)
+    bgl.glGenTextures(1, id_buff)
+
+    bindcode = id_buff.to_list()[0]
+    preview = image.preview
+    pixels = list(preview.image_pixels)
+
+    width, height = preview.image_size
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+    image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
+    bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA,
+                     width, height, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
+
+    _preview_bindcodes[image] = bindcode
+    return bindcode
+
+
+def check_preview(image):
+    return [round(n, 1) for n in image.preview.image_pixels_float[0:len(PREVIEW_CHECK_MASK)]] == PREVIEW_CHECK_MASK
+
+
+@full_poll_decorator
+def draw_cameras(self, context):
+    scene = context.scene
+    shader_camera = shaders.camera
+    shader_camera_image_preview = shaders.camera_image_preview
+
+    preferences = context.preferences.addons[addon_pkg].preferences
+
+    bgl.glEnable(bgl.GL_BLEND)
+    bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+    bgl.glEnable(bgl.GL_MULTISAMPLE)
+
+    bgl.glEnable(bgl.GL_LINE_SMOOTH)
+    bgl.glLineWidth(preferences.camera_line_width)
+
+    for ob in scene.cpp.camera_objects:
+        batches = self.camera_batches.get(ob)
+        if not batches:
+            continue
+        batch_frame, batch_image = batches
+
+        mat = ob.matrix_world.copy()
+        display_size = scene.cpp.cameras_viewport_size
+
+        shader_camera_image_preview.bind()
+
+        image = ob.data.cpp.image
+
+        size_x, size_y = image.cpp.static_size
+        if size_x > size_y:
+            aspect_x = 1.0
+            aspect_y = size_y / size_x
+        elif size_y > size_x:
+            aspect_x = 1.0
+            aspect_y = size_y / size_x
+        else:
+            aspect_x = 1.0
+            aspect_y = 1.0
+
+        if scene.cpp.use_camera_image_previews:
+            if image not in _preview_bindcodes.keys():
+                if check_preview(image):
+                    bindcode = get_preview_bincode(image)
+                    _preview_bindcodes[image] = bindcode
+
+            if check_preview(image):
+                if image in _preview_bindcodes.keys():
+                    bindcode = _preview_bindcodes[image]
+
+                    bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                    bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+                    shader_camera_image_preview.uniform_int("image", 0)
+                    shader_camera_image_preview.uniform_float("display_size", display_size)
+                    shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
+                    shader_camera_image_preview.uniform_float("modelMatrix", mat)
+                    batch_image.draw(shader_camera_image_preview)
+
+        shader_camera.bind()
+        color = preferences.camera_color
+        if ob == scene.camera:
+            color = preferences.camera_color_highlight
+        shader_camera.uniform_float("color", color)
+        shader_camera.uniform_float("scale", (aspect_x, aspect_y))
+        shader_camera.uniform_float("display_size", display_size)
+        shader_camera.uniform_float("modelMatrix", mat)
+
+        batch_frame.draw(shader_camera)

@@ -19,33 +19,30 @@
 # <pep8 compliant>
 
 import bpy
+from bpy.props import (
+    BoolProperty,
+    FloatProperty,
+    IntProperty,
+    EnumProperty,
+    FloatVectorProperty
+)
 
-from bpy.props import BoolProperty, FloatProperty, IntProperty, EnumProperty, FloatVectorProperty
+import rna_keymap_ui
 
 from .utils.utils_state import state
 from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
-
-WEB_LINKS = [
-    ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
-    ("GitHub", "https://github.com/ivan-perevala")
-]
+from .constants import WEB_LINKS
 
 
-def get_hotkey_entry_item(km, kmi_name):
+def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
     for i, km_item in enumerate(km.keymap_items):
         if km.keymap_items.keys()[i] == kmi_name:
-            return km_item
-
-
-def draw_kmi(kmi, layout):
-    row = layout.row()
-    row.prop(kmi, "active", text = "", emboss = False)
-
-    row = row.row()
-    row.enabled = kmi.active
-    row.label(text = kmi.name)
-    row.prop(kmi, "type", text = "", full_event = True)
-    row.prop(kmi, "value", text = "")
+            if properties:
+                value = getattr(km.keymap_items[i].properties, properties, None)
+                if value == kmi_value:
+                    return km_item
+            else:
+                return km_item
 
 
 class CppPreferences(bpy.types.AddonPreferences):
@@ -55,8 +52,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         items = [
             ('DRAW', "Draw", 'Viewport draw preferences'),
             ('KEYMAP', "Keymap", 'Operators key bindings'),
-            ('INFO', "Info", 'Links to documentation and tutorials'),
-            ('ADVANCED', "Advanced", 'Advanced Options')],
+            ('INFO', "Info", 'Links to documentation and tutorials')],
         name = "Tab", default = "DRAW")
 
     # Preview draw
@@ -71,14 +67,14 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     outline_width: FloatProperty(
         name = "Width",
-        default = 0.25,
-        soft_min = 0.0,
-        soft_max = 5.0,
+        default = 0.25, soft_min = 0.0, soft_max = 5.0,
+        subtype = 'FACTOR',
         description = "Outline width")
 
     outline_scale: FloatProperty(
         name = "Scale",
         default = 50.0, soft_min = 1.0, soft_max = 100.0,
+        subtype = 'FACTOR',
         description = "Outline scale")
 
     outline_color: FloatVectorProperty(
@@ -99,6 +95,24 @@ class CppPreferences(bpy.types.AddonPreferences):
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Highlight brush warning color")
 
+    camera_line_width: FloatProperty(
+        name = "Line Width",
+        default = 1.0, soft_min = 1.0, soft_max = 5.0,
+        subtype = 'PIXEL',
+        description = "Width of camera primitive")
+
+    camera_color: FloatVectorProperty(
+        name = "Color",
+        default = (0.0, 0.0, 0.0, 0.8),
+        subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
+        description = "Camera color")
+
+    camera_color_highlight: FloatVectorProperty(
+        name = "Color Highlight",
+        default = (1.0, 0.5, 0.25, 0.8),
+        subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
+        description = "Camera color")
+
     # Gizmos
     gizmo_color: FloatVectorProperty(
         name = "Color",
@@ -109,40 +123,26 @@ class CppPreferences(bpy.types.AddonPreferences):
     gizmo_alpha: FloatProperty(
         name = "Alpha",
         default = 1.0, soft_min = 0.1, soft_max = 1.0,
+        subtype = 'FACTOR',
         description = "Gizmo alpha")
 
-    always_draw_gizmo_point: BoolProperty(
-        name = "Always Draw Point",
-        default = True,
-        description = "Display point on hover or everytime")
-
-    gizmo_scale_basis: FloatProperty(
-        name = "Scale Basis (DEV)",
-        default = 0.1,
-        step = 0.001,
-        precision = 6,
-        soft_min = 0.0,
-        soft_max = 0.2)
-
-    gizmo_select_bias: FloatProperty(
-        name = "Select Bias (DEV)",
-        default = 0.1,
-        step = 0.001,
-        precision = 6,
-        soft_min = 0.0,
-        soft_max = 0.2)
-
-    gizmo_point_size: FloatProperty(
-        name = "Point Size (DEV)",
-        default = 3.0,
-        step = 0.1,
-        soft_min = 1.0,
-        soft_max = 10.0)
+    gizmo_radius: FloatProperty(
+        name = "Circle Radius",
+        default = 0.1, soft_min = 0.1, soft_max = 1.0,
+        subtype = 'DISTANCE',
+        description = "Gizmo radius")
 
     border_empty_space: IntProperty(
         name = "Border Empty Space",
         default = 25, soft_min = 5, soft_max = 100,
+        subtype = 'PIXEL',
         description = "Border Empty Space")
+
+    render_preview_size: IntProperty(
+        name = "Image previews size",
+        default = 128, min = 128, soft_max = 512,
+        subtype = 'PIXEL',
+        description = "Image previews size")
 
     def draw(self, context):
         layout = self.layout
@@ -152,26 +152,24 @@ class CppPreferences(bpy.types.AddonPreferences):
             col = layout.column(align = True)
             col.use_property_split = True
             col.use_property_decorate = False
-            self._draw_info(col)
+            self.draw_info_tab(col)
         else:
             row = layout.row()
             row.prop(self, "tab", expand = True)
 
             if self.tab == 'INFO':
-                self._draw_info(layout)
+                self.draw_info_tab(layout)
             elif self.tab == 'DRAW':
-                self._draw_draw(layout)
+                self.draw_draw_tab(layout)
             elif self.tab == 'KEYMAP':
-                self._draw_keymap(layout)
-            elif self.tab == 'ADVANCED':
-                self._draw_advanced(layout)
+                self.draw_keymap_tab(layout)
 
-    def _draw_info(self, layout):
+    def draw_info_tab(self, layout):
         col = layout.column(align = True)
         for name, url in WEB_LINKS:
             col.operator("wm.url_open", text = name, icon = 'URL').url = url
 
-    def _draw_draw(self, layout):
+    def draw_draw_tab(self, layout):
         col = layout.column(align = True)
 
         col.use_property_split = True
@@ -190,8 +188,16 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "normal_highlight_color")
         col.prop(self, "warning_color")
 
-        col.label(text = "Camera Gizmos:")
-        col.prop(self, "always_draw_gizmo_point")
+        col.label(text = "Cameras:")
+        col.prop(self, "render_preview_size")
+        col.separator()
+        col.prop(self, "camera_line_width")
+        col.prop(self, "camera_color")
+        col.prop(self, "camera_color_highlight")
+
+        col.label(text = "Camera Gizmo:")
+        col.label(text = "(Updated after refreshing gizmo)")
+        col.prop(self, "gizmo_radius")
         col.prop(self, "gizmo_color")
         col.prop(self, "gizmo_alpha")
 
@@ -199,38 +205,78 @@ class CppPreferences(bpy.types.AddonPreferences):
         scol = col.column(align = True)
         scol.prop(self, "border_empty_space")
 
-    def _draw_keymap(self, layout):
+    def draw_keymap_tab(self, layout):
         wm = bpy.context.window_manager
-        kc = wm.keyconfigs.addon
-        km = kc.keymaps["Image Paint"]
+        kc = wm.keyconfigs.user
 
         col = layout.column()
-        col.context_pointer_set("keymap", km)
 
-        kmi = get_hotkey_entry_item(km, CPP_OT_image_paint.bl_idname)
-        draw_kmi(kmi, col)
+        km = kc.keymaps["Image Paint"]
 
-        kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname)
-        draw_kmi(kmi, col)
+        kmi = get_hotkey_entry_item(km, CPP_OT_image_paint.bl_idname, None, None)
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
-        kmi = get_hotkey_entry_item(km, "view3d.view_center_pick")
-        draw_kmi(kmi, col)
+        kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname, None, None)
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
-    def _draw_advanced(self, layout):
-        col = layout.column(align = False)
+        kmi = get_hotkey_entry_item(km, "view3d.view_center_pick", None, None)
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
-        col.use_property_split = True
-        col.use_property_decorate = False
-
-        box = col.box()
-        box.label(text = "This tab for dev purposes only.", icon = 'QUESTION')
         col.separator()
 
-        col.label(text = "Gizmos:")
-        col.prop(self, "gizmo_scale_basis")
-        col.prop(self, "gizmo_select_bias")
-        col.prop(self, "gizmo_point_size")
+        kmi = get_hotkey_entry_item(km, "wm.context_toggle", "scene.cpp.use_camera_image_previews", "data_path")
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            col.label(text = "Camera Image Previews:")
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
+        kmi = get_hotkey_entry_item(km, "wm.context_toggle", "scene.cpp.use_projection_preview", "data_path")
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            col.label(text = "Projection Preview:")
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+
+        kmi = get_hotkey_entry_item(km, "wm.context_toggle", "scene.cpp.use_current_image_preview", "data_path")
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            col.label(text = "Current Image Preview:")
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+
+
+
+
+# kmi = get_hotkey_entry_item(km, CPP_OT_image_paint.bl_idname)
+# draw_kmi(kmi, col)
+
+
+#
+# kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname)
+# draw_kmi(kmi, col)
+#
+# kmi = get_hotkey_entry_item(km, "view3d.view_center_pick")
+# draw_kmi(kmi, col)
+#
+# kmi = get_hotkey_entry_item(
+#    km, "wm.context_toggle",
+#    properties = {"data_path": "scene.cpp.use_camera_image_previews"})
+# draw_kmi(kmi, col, text = "Toggle Camera Image Previews")
+#
+# kmi = get_hotkey_entry_item(
+#    km, "wm.context_toggle",
+#    properties = {"data_path": "scene.cpp.use_projection_preview"})
+# draw_kmi(kmi, col, text = "Toggle Projection Preview")
+#
+# kmi = get_hotkey_entry_item(
+#    km, "wm.context_toggle",
+#    properties = {"data_path": "scene.cpp.use_current_image_preview"})
+# draw_kmi(kmi, col, text = "Toggle Current Image Preview")
+#
 
 _classes = [
     CppPreferences,

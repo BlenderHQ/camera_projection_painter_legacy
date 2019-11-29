@@ -29,6 +29,7 @@ def set_properties_defaults(self):
 
     self.bm = None
     self.mesh_batch = None
+    self.camera_batches = {}
 
     self.brush_texture_bindcode = 0
     self.data_updated = PropertyTracker()
