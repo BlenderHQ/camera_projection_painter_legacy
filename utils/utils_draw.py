@@ -173,11 +173,8 @@ def draw_projection_preview(self, context):
 
     mouse_position = utils_state.event.mouse_position
     active_rv3d = get_hovered_region_3d(context)
-    #current_rv3d = context.area.spaces.active.region_3d
-    current_rv3d = context.region_data
-    #print(current_rv3d)
-    #print(active_rv3d)
-    #return
+    current_rv3d = context.area.spaces.active.region_3d
+    # current_rv3d = context.region_data
 
     outline_type = 0
     if scene.cpp.use_projection_outline:
@@ -336,6 +333,8 @@ def draw_cameras(self, context):
 
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glLineWidth(preferences.camera_line_width)
+
+    bgl.glEnable(bgl.GL_DEPTH_TEST)
 
     for ob in scene.cpp.camera_objects:
         batches = self.camera_batches.get(ob)
