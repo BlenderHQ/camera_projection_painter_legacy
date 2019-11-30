@@ -1,11 +1,11 @@
 import bpy
 
-from .utils_state import state
 from ..constants import TEMP_DATA_NAME
+from .. import operators
 
 
 def base_poll(context):
-    if not state.operator:
+    if not operators.camera_painter_operator:
         return False
     ob = context.image_paint_object
     camera = context.scene.camera

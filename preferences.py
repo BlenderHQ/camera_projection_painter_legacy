@@ -1,26 +1,5 @@
-# ##### BEGIN GPL LICENSE BLOCK #####
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software Foundation,
-#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-# ##### END GPL LICENSE BLOCK #####
-
-# <pep8 compliant>
-
 import bpy
 from bpy.props import (
-    BoolProperty,
     FloatProperty,
     IntProperty,
     EnumProperty,
@@ -29,9 +8,10 @@ from bpy.props import (
 
 import rna_keymap_ui
 
-from .utils.utils_state import state
 from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
 from .constants import WEB_LINKS
+
+from . import operators
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
@@ -147,7 +127,7 @@ class CppPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        if not state.operator:
+        if not operators.camera_painter_operator:
             layout.label(text = "To finish addon installation please reload current file", icon = 'INFO')
             col = layout.column(align = True)
             col.use_property_split = True

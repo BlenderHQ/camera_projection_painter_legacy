@@ -3,8 +3,9 @@ from bpy.types import Panel
 from .templates import template_path
 
 from ..icons import get_icon_id
-from ..utils.utils_state import state
 from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_calibration_from_file, CPP_OT_enter_context
+
+from .. import operators
 
 
 class SceneButtonsPanel:
@@ -15,9 +16,9 @@ class SceneButtonsPanel:
 
     @classmethod
     def poll(cls, context):
-        if not state.operator:
-            return False
-        return True
+        if operators.camera_painter_operator:
+            return True
+        return False
 
 
 class CPP_PT_camera_projection_painter(Panel, SceneButtonsPanel):

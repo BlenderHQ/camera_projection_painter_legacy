@@ -1,5 +1,3 @@
-import struct
-
 import bpy
 import gpu
 import bgl
@@ -8,6 +6,8 @@ from gpu_extras.presets import draw_texture_2d
 
 from ..constants import PREVIEW_CHECK_MASK
 from .. import __package__ as addon_pkg
+
+import struct
 
 FILE_UNKNOWN = "Unknown File"
 

@@ -1,24 +1,3 @@
-# ##### BEGIN GPL LICENSE BLOCK #####
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software Foundation,
-#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-# ##### END GPL LICENSE BLOCK #####
-
-# <pep8 compliant>
-
-
 import bpy
 import gpu
 import bgl
@@ -29,8 +8,9 @@ from mathutils import Vector
 from mathutils.geometry import intersect_point_quad_2d
 from bpy.types import Gizmo, GizmoGroup
 
-from .utils import utils_poll, utils_state, utils_draw
+from .utils import utils_poll, utils_draw
 from .shaders import shaders
+from . import operators
 
 
 class CPP_GGT_camera_gizmo_group(GizmoGroup):
@@ -122,6 +102,8 @@ class CPP_GT_current_image_preview(Gizmo):
         self.alpha = scene.cpp.current_image_alpha
 
         bgl.glEnable(bgl.GL_BLEND)
+        bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
+
         with gpu.matrix.push_pop():
             gpu.matrix.translate(pos)
             gpu.matrix.scale(size)
@@ -140,6 +122,9 @@ class CPP_GT_current_image_preview(Gizmo):
 
             batch.draw(shader)
 
+        bgl.glDisable(bgl.GL_BLEND)
+        bgl.glEnable(bgl.GL_POLYGON_SMOOTH)
+
     def test_select(self, context, location):
         rv3d = context.region_data
         if rv3d.view_perspective == 'CAMERA':
@@ -156,9 +141,9 @@ class CPP_GT_current_image_preview(Gizmo):
         quad_p4 = mpr_pos + Vector((self.pixel_size.x, 0.0))
         res = intersect_point_quad_2d(mouse_pos, quad_p1, quad_p2, quad_p3, quad_p4)
         if res == -1:
-            utils_state.state.operator.suspended = True
+            operators.camera_painter_operator.suspended = True
             return 0
-        utils_state.state.operator.suspended = False
+        operators.camera_painter_operator.suspended = False
         return -1
 
     def invoke(self, context, event):
@@ -166,7 +151,7 @@ class CPP_GT_current_image_preview(Gizmo):
         image_paint = scene.tool_settings.image_paint
         self.restore_show_brush = bool(image_paint.show_brush)
         image_paint.show_brush = False
-        utils_state.state.operator.suspended = True
+        operators.camera_painter_operator.suspended = True
         self.rel_offset = Vector(scene.cpp.current_image_position) - self._get_image_rel_pos(context, event)
         return {'RUNNING_MODAL'}
 
@@ -184,7 +169,7 @@ class CPP_GT_current_image_preview(Gizmo):
     def exit(self, context, cancel):
         image_paint = context.scene.tool_settings.image_paint
         image_paint.show_brush = self.restore_show_brush
-        utils_state.state.operator.suspended = False
+        operators.camera_painter_operator.suspended = False
 
 
 class CPP_GGT_image_preview_gizmo_group(GizmoGroup):

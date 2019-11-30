@@ -1,6 +1,6 @@
 import bpy
 import bmesh
-from ..constants import TEMP_DATA_NAME, TIME_STEP
+from ..constants import TEMP_DATA_NAME
 
 
 class PropertyTracker(object):
@@ -35,17 +35,7 @@ def set_properties_defaults(self):
     self.data_updated = PropertyTracker()
     self.check_brush_curve_updated = PropertyTracker()
 
-
-def register_modal(self, context, time_step = TIME_STEP):
-    """
-    Register event timer with constants.TIME_STEP time step,
-    add modal handler to window manager
-    :param time_step: float
-    :type context: bpy.types.Context
-    """
-    wm = context.window_manager
-    wm.event_timer_add(time_step = time_step, window = context.window)
-    wm.modal_handler_add(self)
+    self.mouse_position = (0, 0)
 
 
 # Base utils

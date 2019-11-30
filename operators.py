@@ -22,12 +22,9 @@ import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
 
-import os
-import csv
-
+from .constants import TIME_STEP
 from .utils import (
     common,
-    utils_state,
     utils_camera,
     utils_base,
     utils_poll,
@@ -36,30 +33,14 @@ from .utils import (
     utils_image
 )
 
+import os
+import csv
 
-class CPP_OT_event_listener(Operator):
-    bl_idname = "cpp.event_listener"
-    bl_label = "Event Listener"
-    bl_options = {'INTERNAL'}
+#
+camera_painter_operator = None
 
-    def __init__(self):
-        self.suspended = False
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        #if event.type == 'F' and event.value == 'PRESS':
-        #    self.suspended = True
-        #if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-        #    self.suspended = False
-        #if not self.suspended:
-        #    utils_state.event.mouse_position = event.mouse_x, event.mouse_y
-        utils_state.event.mouse_position = event.mouse_x, event.mouse_y
-
-        return {'PASS_THROUGH'}
+mouse_position = (0, 0)
+tmp_camera = None
 
 
 class CPP_OT_image_paint(Operator):
@@ -78,7 +59,7 @@ class CPP_OT_image_paint(Operator):
         scene = context.scene
         wm = context.window_manager
         # Danger zone
-        rv3d = common.get_hovered_region_3d(context)
+        rv3d = common.get_hovered_region_3d(context, mouse_position)
         if rv3d:
             warning_status = utils_warning.get_warning_status(context, rv3d)
             if warning_status:
@@ -100,8 +81,12 @@ class CPP_OT_camera_projection_painter(Operator):
         utils_base.set_properties_defaults(self)
 
     def invoke(self, context, event):
-        utils_state.state.operator = self
-        utils_base.register_modal(self, context)
+        global camera_painter_operator
+        camera_painter_operator = self
+
+        wm = context.window_manager
+        wm.modal_handler_add(self)
+        wm.event_timer_add(time_step = TIME_STEP, window = context.window)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -128,17 +113,25 @@ class CPP_OT_camera_projection_painter(Operator):
             self.cancel(context)
             return {'PASS_THROUGH'}
 
-
         image_paint.clone_image = clone_image  # TODO: Find a better way to update
 
         if self.suspended:
             return {'PASS_THROUGH'}
 
+        if event.type == 'F' and event.value == 'PRESS':
+            self.suspended = True
+        if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+            self.suspended = False
+        if not self.suspended:
+            global mouse_position
+            mouse_position = event.mouse_x, event.mouse_y
+            self.mouse_position = mouse_position
+
         if scene.cpp.use_projection_preview:
             utils_draw.update_brush_texture_bindcode(self, context)
 
         if scene.cpp.use_auto_set_camera:
-            utils_camera.set_camera_by_view(context)
+            utils_camera.set_camera_by_view(context, mouse_position)
 
         if scene.cpp.use_auto_set_image:
             utils_base.set_clone_image_from_camera_data(context)
@@ -193,7 +186,7 @@ class CPP_OT_bind_camera_image(Operator):
         elif self.mode == 'ALL':
             cameras = scene.cpp.camera_objects
         elif self.mode == 'TMP':
-            cam = utils_state.state.tmp_camera
+            cam = tmp_camera
             if cam:
                 cameras = [cam]
         count = 0
@@ -226,7 +219,7 @@ class CPP_OT_set_camera_by_view(Operator):
         return scene.cpp.has_available_camera_objects
 
     def execute(self, context):
-        utils_camera.set_camera_by_view(context)
+        utils_camera.set_camera_by_view(context, mouse_position)
         return {'FINISHED'}
 
 
@@ -237,13 +230,13 @@ class CPP_OT_set_camera_active(Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.scene.camera == utils_state.state.tmp_camera:
+        if context.scene.camera == tmp_camera:
             return False
         return True
 
     def execute(self, context):
         scene = context.scene
-        scene.camera = utils_state.state.tmp_camera
+        scene.camera = tmp_camera
         for camera in scene.cpp.camera_objects:
             if camera == scene.camera:
                 continue
@@ -380,7 +373,8 @@ class CPP_OT_call_pie(Operator):
         return text
 
     def execute(self, context):
-        utils_state.state.tmp_camera = context.scene.objects[self.camera_name]
+        global tmp_camera
+        tmp_camera = context.scene.objects[self.camera_name]
         bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
         return {'FINISHED'}
 
@@ -405,7 +399,7 @@ class CPP_OT_generate_image_previews(Operator):
 
         context.window.cursor_set('WAIT')
         self.set_progress(context, 0.0)
-        utils_state.state.operator.suspended = True
+        camera_painter_operator.suspended = True
 
         wm = context.window_manager
         wm.modal_handler_add(self)
@@ -415,13 +409,13 @@ class CPP_OT_generate_image_previews(Operator):
         if event.type == "ESC":
             context.window.cursor_set('DEFAULT')
             context.workspace.status_text_set(None)
-            utils_state.state.operator.suspended = False
+            camera_painter_operator.suspended = False
             return {'CANCELLED'}
         if not len(self.images):
             self.report(type = {'INFO'}, message = "Image previews generated")
             context.window.cursor_set('DEFAULT')
             context.workspace.status_text_set(None)
-            utils_state.state.operator.suspended = False
+            camera_painter_operator.suspended = False
             return {'FINISHED'}
 
         image = self.images[-1]
@@ -435,7 +429,6 @@ class CPP_OT_generate_image_previews(Operator):
 
 
 _classes = [
-    CPP_OT_event_listener,
     CPP_OT_image_paint,
     CPP_OT_camera_projection_painter,
     CPP_OT_bind_camera_image,

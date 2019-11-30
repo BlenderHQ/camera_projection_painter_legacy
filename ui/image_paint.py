@@ -32,7 +32,7 @@ class CPP_PT_options(Panel, CPPOptionsPanel):
     bl_options = set()
 
     def draw(self, context):
-        pass  # Just a container
+        pass
 
 
 class CPP_PT_scene_options(Panel, CPPOptionsPanel):

@@ -18,7 +18,6 @@
 
 # <pep8 compliant>
 
-
 import gpu
 import os
 from ..constants import (

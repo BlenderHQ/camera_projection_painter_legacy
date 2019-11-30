@@ -67,8 +67,8 @@ def bind_camera_image_by_name(ob, file_path):
         return image.name
 
 
-def set_camera_by_view(context):
-    rw3d = get_hovered_region_3d(context)
+def set_camera_by_view(context, mouse_position):
+    rw3d = get_hovered_region_3d(context, mouse_position)
     if not rw3d:
         return
 

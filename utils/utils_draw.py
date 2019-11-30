@@ -2,11 +2,8 @@ import bpy
 import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
-import bmesh
 from mathutils import Vector
 from bpy.types import SpaceView3D
-
-from . import utils_state
 
 from .utils_warning import get_warning_status
 from .utils_poll import full_poll_decorator
@@ -17,6 +14,7 @@ from ..constants import TEMP_DATA_NAME, PREVIEW_CHECK_MASK
 from ..shaders import shaders
 from .. import __package__ as addon_pkg
 
+import time
 import numpy as np
 
 
@@ -150,7 +148,6 @@ def get_bmesh_batch(bm):
 @full_poll_decorator
 def draw_projection_preview(self, context):
     scene = context.scene
-
     if not scene.cpp.use_projection_preview:
         return
     if self.suspended:
@@ -171,8 +168,8 @@ def draw_projection_preview(self, context):
     if not batch:
         return
 
-    mouse_position = utils_state.event.mouse_position
-    active_rv3d = get_hovered_region_3d(context)
+    mouse_position = self.mouse_position
+    active_rv3d = get_hovered_region_3d(context, mouse_position)
     current_rv3d = context.area.spaces.active.region_3d
     # current_rv3d = context.region_data
 
@@ -315,8 +312,22 @@ def get_preview_bincode(image):
     return bindcode
 
 
+_cheched_previews = {}
+PREVIEW_CHECK_PERIOD = 1.0
+
+
 def check_preview(image):
-    return [round(n, 1) for n in image.preview.image_pixels_float[0:len(PREVIEW_CHECK_MASK)]] == PREVIEW_CHECK_MASK
+    if not image in _cheched_previews:
+        _cheched_previews[image] = time.time()
+    last_check = _cheched_previews[image]
+
+    dt = time.time() - last_check
+    if dt >= PREVIEW_CHECK_PERIOD:
+        _cheched_previews[image] = time.time()
+        pixels = image.preview.image_pixels_float
+        image.cpp.preview_check_passed = [round(n, 1) for n in pixels[0:len(PREVIEW_CHECK_MASK)]] == PREVIEW_CHECK_MASK
+
+    return image.cpp.preview_check_passed
 
 
 @full_poll_decorator

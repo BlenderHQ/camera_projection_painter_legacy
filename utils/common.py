@@ -1,7 +1,24 @@
-import bpy
-from mathutils import Vector
+# ##### BEGIN GPL LICENSE BLOCK #####
+#
+#  This program is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation; either version 2
+#  of the License, or (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software Foundation,
+#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+#
+# ##### END GPL LICENSE BLOCK #####
 
-from .utils_state import event
+# <pep8 compliant>
+
+from mathutils import Vector
 
 
 def fclamp(value: float, min_value: float, max_value: float):
@@ -31,8 +48,8 @@ def iter_curve_values(curve_mapping, steps: int):
         yield fclamp(value, clip_min_y, clip_max_y)
 
 
-def get_hovered_region_3d(context):
-    mouse_x, mouse_y = event.mouse_position
+def get_hovered_region_3d(context, mouse_position):
+    mouse_x, mouse_y = mouse_position
     for area in context.screen.areas:
         if area.type == 'VIEW_3D':
             header = next(r for r in area.regions if r.type == 'HEADER')

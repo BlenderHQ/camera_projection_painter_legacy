@@ -5,7 +5,7 @@ from .templates import (
     template_camera_calibration,
     template_camera_lens_distortion)
 
-from ..utils.utils_state import state
+from .. import operators
 
 
 class CameraOptionsPanel:
@@ -20,9 +20,9 @@ class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
 
     @classmethod
     def poll(cls, context):
-        if not state.operator:
-            return False
-        return context.active_object.type == 'CAMERA'
+        if operators.camera_painter_operator:
+            return context.object.type == 'CAMERA'
+        return False
 
     def draw_header(self, context):
         layout = self.layout
