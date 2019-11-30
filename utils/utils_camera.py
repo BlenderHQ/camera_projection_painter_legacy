@@ -61,9 +61,6 @@ def bind_camera_image_by_name(ob, file_path):
     if image:
         ob.data.cpp.used = True
         ob.data.cpp.image = image
-
-        image.colorspace_settings.name = 'Raw'
-
         return image.name
 
 

@@ -59,19 +59,19 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     outline_color: FloatVectorProperty(
         name = "Color",
-        default = (0.343402, 0.449120, 0.999984, 0.500000),
+        default = [0.076387, 0.135512, 0.626662, 0.742857],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Outline color")
 
     normal_highlight_color: FloatVectorProperty(
         name = "Normal Highlight",
-        default = (0.281741, 0.533584, 1.000000, 0.609286),
+        default = [0.076387, 0.135512, 0.626662, 0.742857],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Highlight stretched projection color")
 
     warning_color: FloatVectorProperty(
         name = "Warning Color",
-        default = (0.223, 0.223, 0.223, 0.95),
+        default = [1.000000, 0.134977, 0.080129, 0.950000],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Highlight brush warning color")
 
@@ -83,28 +83,22 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     camera_color: FloatVectorProperty(
         name = "Color",
-        default = (0.0, 0.0, 0.0, 0.8),
+        default = [0.000963, 0.001284, 0.002579, 0.564286],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Camera color")
 
     camera_color_highlight: FloatVectorProperty(
         name = "Color Highlight",
-        default = (1.0, 0.5, 0.25, 0.8),
+        default = [0.019613, 0.356583, 0.827556, 0.957143],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Camera color")
 
     # Gizmos
     gizmo_color: FloatVectorProperty(
         name = "Color",
-        default = (0.281741, 0.533584, 1.000000),
-        subtype = "COLOR", size = 3, min = 0.0, max = 1.0,
+        default = [0.019613, 0.356583, 0.827556, 0.742857],
+        subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Gizmo color")
-
-    gizmo_alpha: FloatProperty(
-        name = "Alpha",
-        default = 1.0, soft_min = 0.1, soft_max = 1.0,
-        subtype = 'FACTOR',
-        description = "Gizmo alpha")
 
     gizmo_radius: FloatProperty(
         name = "Circle Radius",
@@ -120,7 +114,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     render_preview_size: IntProperty(
         name = "Image previews size",
-        default = 128, min = 128, soft_max = 512,
+        default = 256, min = 128, soft_max = 512,
         subtype = 'PIXEL',
         description = "Image previews size")
 
@@ -155,7 +149,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.use_property_split = True
         col.use_property_decorate = False
 
-        col.label(text = "Viewport Projection Border Outline:")
+        col.label(text = "Outline:")
         col.prop(self, "outline_type")
         scol = col.column(align = True)
         if self.outline_type == 'NO_OUTLINE':
@@ -179,7 +173,6 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.label(text = "(Updated after refreshing gizmo)")
         col.prop(self, "gizmo_radius")
         col.prop(self, "gizmo_color")
-        col.prop(self, "gizmo_alpha")
 
         col.label(text = "Current Image Preview Gizmo:")
         scol = col.column(align = True)

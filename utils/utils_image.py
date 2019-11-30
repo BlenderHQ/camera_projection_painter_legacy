@@ -2,7 +2,9 @@ import bpy
 import gpu
 import bgl
 from mathutils import Matrix
-from gpu_extras.presets import draw_texture_2d
+from gpu_extras.batch import batch_for_shader
+
+from ..shaders import shaders
 
 from ..constants import PREVIEW_CHECK_MASK
 from .. import __package__ as addon_pkg
@@ -20,6 +22,9 @@ def generate_preview(image):
     preferences = bpy.context.preferences.addons[addon_pkg].preferences
     preview_size = preferences.render_preview_size  # bpy.app.render_preview_size
 
+    if image.gl_load():
+        return -1
+
     size_x, size_y = image.cpp.static_size
 
     if size_x > size_y:
@@ -34,17 +39,32 @@ def generate_preview(image):
 
     sx, sy = int(preview_size * aspect_x), int(preview_size * aspect_y)
 
-    offscreen = gpu.types.GPUOffScreen(sx, sy)
+    coords = ((0, 0), (1, 0), (1, 1), (0, 1))
 
+    shader = shaders.current_image
+    batch = batch_for_shader(shader, 'TRI_FAN',
+                             {"pos": coords,
+                              "uv": coords})
+
+    offscreen = gpu.types.GPUOffScreen(sx, sy)
     with offscreen.bind():
         bgl.glClear(bgl.GL_COLOR_BUFFER_BIT)
         with gpu.matrix.push_pop():
             gpu.matrix.load_matrix(Matrix.Identity(4))
             gpu.matrix.load_projection_matrix(Matrix.Identity(4))
 
-            if image.gl_load():
-                return -1
-            draw_texture_2d(texture_id = image.bindcode, position = (-1.0, -1.0), width = 2.0, height = 2.0)
+            gpu.matrix.translate((-1.0, -1.0))
+            gpu.matrix.scale((2.0, 2.0))
+
+            bgl.glActiveTexture(bgl.GL_TEXTURE0)
+            bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+
+            shader.bind()
+            shader.uniform_int("image", 0)
+            shader.uniform_float("alpha", 1.0)
+            shader.uniform_bool("colorspace_srgb", (image.colorspace_settings.name == 'sRGB',))
+            batch.draw(shader)
+
             image.buffers_free()
 
         buffer = bgl.Buffer(bgl.GL_BYTE, sx * sy * 4)

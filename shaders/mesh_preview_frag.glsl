@@ -27,7 +27,7 @@ uniform bool colorspace_srgb;
 in vec2 posInterp;
 in vec3 nrmInterp;
 
-out vec4 fragColor;// Output
+out vec4 fragColor;
 
 
 float inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right) {
@@ -49,103 +49,99 @@ float checker_pattern(in vec2 _coo, in vec2 _scale, in float _check_size) {
     return checker;
 }
 
-float linearrgb_to_srgb(float c)
-{
-  if (c < 0.0031308) {
-    return (c < 0.0) ? 0.0 : c * 12.92;
-  }
-  else {
-    return 1.055 * pow(c, 1.0 / 2.4) - 0.055;
-  }
+float linearrgb_to_srgb(float c) {
+    if (c < 0.0031308) {
+        return (c < 0.0) ? 0.0 : c * 12.92;
+    }
+    else {
+        return 1.055 * pow(c, 1.0 / 2.4) - 0.055;
+    }
 }
 
-vec4 linearrgb_to_srgb(vec4 col_from)
-{
+vec4 linearrgb_to_srgb(vec4 col_from) {
     return vec4(
-        linearrgb_to_srgb(col_from.r),
-        linearrgb_to_srgb(col_from.g),
-        linearrgb_to_srgb(col_from.b),
-        col_from.a);
+    linearrgb_to_srgb(col_from.r),
+    linearrgb_to_srgb(col_from.g),
+    linearrgb_to_srgb(col_from.b),
+    col_from.a);
 }
 
+vec4 premultiplied_alpha_blend(vec4 src, vec4 dst) {
+    float final_alpha = src.a + dst.a * (1.0 - src.a);
+    return vec4(
+    (src.rgb * src.a + dst.rgb * dst.a * (1.0 - src.a)) / final_alpha,
+    final_alpha
+    );
+}
 
-void main()
-{
+void main() {
     vec4 textureSource;
     float brushMask;
     vec2 brushCoord;
 
     float imageFrameMask = inside_rect(posInterp, vec2(0.0), vec2(1.0));
 
-    if (useBrush != 0)
-    {
-        float dist = distance((gl_FragCoord.xy - mousePos) / vec2(brushRadius), vec2(0.0));
-        brushCoord = vec2(dist, 0.0);
-        if (dist <= 1.0)
+    if (imageFrameMask != 0.0) {
+        if (useBrush != 0)
         {
-            brushMask = texture(brushImage, brushCoord).r;
+            float dist = distance((gl_FragCoord.xy - mousePos) / vec2(brushRadius), vec2(0.0));
+            brushCoord = vec2(dist, 0.1);
+            if (dist < 0.96)
+            {
+                brushMask = texture(brushImage, brushCoord).r;
 
-            if (colorspace_srgb == false) {
-                textureSource = texture(sourceImage, posInterp);
+                if (colorspace_srgb == false) {
+                    textureSource = texture(sourceImage, posInterp);
+                }
+                else {
+                    textureSource = linearrgb_to_srgb(texture(sourceImage, posInterp));
+                }
             }
-            else {
-                textureSource = linearrgb_to_srgb(texture(sourceImage, posInterp));
-            }
-
-            textureSource *= imageFrameMask;
         }
-    }
 
 
-    // Normal inspection
-    vec4 fragNormalInspection;
-    float normalInspectionFactor = 35.0;
+        // Normal inspection
+        vec4 fragNormalInspection;
+        float normalInspectionFactor = 35.0;
 
-    if (useNormalInspection != 0)
-    {
-        float nrmDot = 1.0 - clamp(dot(nrmInterp, projectorForward) / normalInspectionFactor, 0.0, 1.0);
-        float fac = imageFrameMask * nrmDot;
-        fragNormalInspection = normalHighlightColor * fac;
-    }
-
-    // Outline
-    vec4 fragOutline;
-    float outlinePattern;
-
-    if (outlineType == 1)// Fill color
-    {
-        outlinePattern = 1.0;
-    }
-    else if (outlineType == 2)// Checher pattern
-    {
-        outlinePattern = checker_pattern(posInterp, sourceScale, outlineScale);
-    }
-
-    if (outlineType != 0)
-    {
-        float outlineMask = inside_outline(posInterp, outlineWidth, sourceScale);
-        fragOutline = outlineColor;
-        fragOutline *= outlineMask * outlinePattern;
-    }
-
-    vec4 overlay = fragNormalInspection + fragOutline;
-    fragColor = overlay;
-    if (useBrush != 0)
-    {
-        if (brushMask != 0.0)
+        if (useNormalInspection != 0)
         {
+            float nrmDot = 1.0 - clamp(dot(nrmInterp, projectorForward) / normalInspectionFactor, 0.0, 1.0);
+            fragNormalInspection = linearrgb_to_srgb(normalHighlightColor) * nrmDot;
+        }
+
+        float opacity = clamp(brushStrength * brushMask, 0.0, 1.0);
+        if (useBrush != 0) {
             if (warning != 0)
             {
-                fragColor = warningColor;
+                fragColor = linearrgb_to_srgb(warningColor * opacity);
             }
             else
             {
-                float opacity = clamp(brushStrength * brushMask, 0.0, 1.0);
-                vec4 texture = textureSource;
-                texture.a *= opacity;
-                overlay *= 1.0 - opacity;
-                fragColor = texture + overlay;
+                textureSource.a *= opacity;
+                fragColor = premultiplied_alpha_blend(textureSource, fragNormalInspection);
             }
+        }
+        else {
+            fragColor = fragNormalInspection;
+        }
+    }
+    else {
+        // Outline
+        vec4 fragOutline;
+        float outlinePattern;
+
+        if (outlineType == 1) {
+            // Fill color
+            outlinePattern = 1.0;
+        }
+        else if (outlineType == 2) {
+            // Checher pattern
+            outlinePattern = checker_pattern(posInterp, sourceScale, outlineScale);
+        }
+        if (outlineType != 0) {
+            float outlineMask = inside_outline(posInterp, outlineWidth, sourceScale);
+            fragColor = linearrgb_to_srgb(outlineColor) * outlineMask * outlinePattern;
         }
     }
 }

@@ -119,10 +119,10 @@ class CPP_OT_camera_projection_painter(Operator):
             return {'PASS_THROUGH'}
 
         if event.type == 'F' and event.value == 'PRESS':
-            self.suspended = True
+            self.suspended_mouse = True
         if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
-            self.suspended = False
-        if not self.suspended:
+            self.suspended_mouse = False
+        if not (self.suspended_mouse or self.suspended):
             global mouse_position
             mouse_position = event.mouse_x, event.mouse_y
             self.mouse_position = mouse_position
@@ -136,20 +136,39 @@ class CPP_OT_camera_projection_painter(Operator):
         if scene.cpp.use_auto_set_image:
             utils_base.set_clone_image_from_camera_data(context)
 
-        if self.data_updated((scene.camera, clone_image)):
-            utils_base.setup_basis_uv_layer(context)
-            if scene.camera.data.cpp.use_calibration:
-                utils_base.deform_uv_layer(context)
-
-            utils_draw.base_update_preview(context)
+        camera_ob = scene.camera
+        camera = camera_ob.data
 
         if self.setup_required:
+            utils_base.setup_basis_uv_layer(context)
             self.bm = utils_base.get_bmesh(context, ob)
             self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
             self.camera_batches = utils_draw.get_camera_batches(context)
             utils_draw.add_draw_handlers(self, context)
 
             scene.cpp.cameras_hide_set(state = True)
+
+        if event.type not in ('TIMER', 'TIMER_REPORT'):
+            if self.data_updated((
+                    camera_ob, clone_image,  # Base properties
+
+                    camera.lens,
+                    camera.cpp.use_calibration,  # Calibration properties
+                    camera.cpp.calibration_principal_point[:],
+                    camera.cpp.calibration_skew,
+                    camera.cpp.calibration_aspect_ratio,
+                    camera.cpp.lens_distortion_radial_1,
+                    camera.cpp.lens_distortion_radial_2,
+                    camera.cpp.lens_distortion_radial_3,
+                    camera.cpp.lens_distortion_tangential_1,
+                    camera.cpp.lens_distortion_tangential_2,
+            )):
+                utils_base.setup_basis_uv_layer(context)
+                if scene.camera.data.cpp.use_calibration:
+                    utils_base.deform_uv_layer(self, context)
+
+                self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
+                utils_draw.base_update_preview(context)
 
         self.setup_required = False
 
@@ -394,7 +413,7 @@ class CPP_OT_generate_image_previews(Operator):
         li = len(self.images)
         if not li:
             return {'CANCELLED'}
-
+        bpy.ops.wm.previews_clear(id_type = {'IMAGE'})
         utils_draw.clear_preview_bindcodes()
 
         context.window.cursor_set('WAIT')

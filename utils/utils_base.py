@@ -1,6 +1,10 @@
 import bpy
 import bmesh
+from mathutils import Vector
+
 from ..constants import TEMP_DATA_NAME
+
+import time
 
 
 class PropertyTracker(object):
@@ -23,6 +27,7 @@ def set_properties_defaults(self):
     Set default values at startup and after exit available context
     """
     self.suspended = False
+    self.suspended_mouse = False
     self.setup_required = True
 
     self.draw_handler = None
@@ -123,11 +128,22 @@ def setup_basis_uv_layer(context):
 
     bpy.ops.object.modifier_apply(modifier = TEMP_DATA_NAME)
 
-    # Scene resolution for background images
-    # TODO: Remove next lines
-    scene.render.resolution_x = size_x
-    scene.render.resolution_y = size_y
 
+def deform_uv_layer(self, context):
+    ob = context.image_paint_object
 
-def deform_uv_layer(context):
-    print("deform")
+    bm = self.bm
+
+    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
+
+    dt = time.time()
+
+    for face in bm.faces:
+        for loop in face.loops:
+            loop_uv = loop[uv_layer]
+            # use xy position of the vertex as a uv coordinate
+            loop_uv.uv = Vector(loop_uv.uv)  # + Vector((0.005, 0.005))
+
+    bm.to_mesh(ob.data)
+
+    print("deform", time.time() - dt)

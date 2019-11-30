@@ -208,7 +208,7 @@ def draw_projection_preview(self, context):
     shader.bind()
 
     shader.uniform_float("ModelMatrix", ob.matrix_world)
-    # shader.uniform_float("projectorForward", Vector((0.0, 0.0, 1.0)) @ scene.camera.matrix_world.inverted())
+
     shader.uniform_int("sourceImage", 0)
     shader.uniform_int("brushImage", 1)
     shader.uniform_int("outlineType", outline_type)
@@ -243,43 +243,49 @@ def draw_projection_preview(self, context):
     batch.draw(shader)
 
 
-def get_camera_batches(context):
-    scene = context.scene
+def gen_camera_batch(camera):
     shader_camera = shaders.camera
     shader_camera_image_preview = shaders.camera_image_preview
 
+    view_frame = camera.view_frame()
+
+    vertices = [Vector((0.0, 0.0, 0.0))]
+    vertices.extend(view_frame)
+
+    indices_frame = (
+        (0, 1), (0, 2), (0, 3), (0, 4),
+        (1, 2), (2, 3), (3, 4), (1, 4)
+    )
+
+    indices_image = (
+        (1, 2, 3), (3, 4, 1)
+    )
+
+    uv = (
+        (0.0, 0.0),
+        (1.0, 1.0), (1.0, 0.0), (0.0, 0.0), (0.0, 1.0),
+    )
+
+    batch_frame = batch_for_shader(
+        shader_camera, 'LINES',
+        {"pos": vertices},
+        indices = indices_frame,
+    )
+    batch_image = batch_for_shader(
+        shader_camera_image_preview, 'TRIS',
+        {"pos": vertices, "uv": uv},
+        indices = indices_image,
+    )
+
+    return batch_frame, batch_image
+
+
+def get_camera_batches(context):
     res = {}
+    scene = context.scene
     for ob in scene.cpp.camera_objects:
         camera = ob.data
-        view_frame = camera.view_frame()
-
-        vertices = [Vector((0.0, 0.0, 0.0))]
-        vertices.extend(view_frame)
-
-        indices_frame = (
-            (0, 1), (0, 2), (0, 3), (0, 4),
-            (1, 2), (2, 3), (3, 4), (1, 4)
-        )
-
-        indices_image = (
-            (1, 2, 3), (3, 4, 1)
-        )
-
-        uv = (
-            (0.0, 0.0),
-            (1.0, 1.0), (1.0, 0.0), (0.0, 0.0), (0.0, 1.0),
-        )
-
-        batch_frame = batch_for_shader(
-            shader_camera, 'LINES',
-            {"pos": vertices},
-            indices = indices_frame,
-        )
-        batch_image = batch_for_shader(
-            shader_camera_image_preview, 'TRIS',
-            {"pos": vertices, "uv": uv},
-            indices = indices_image,
-        )
+        batch_frame, batch_image = gen_camera_batch(camera)
         res[ob] = batch_frame, batch_image
 
     return res

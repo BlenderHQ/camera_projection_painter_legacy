@@ -22,7 +22,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.tool_setup_poll(context)
+        return utils_poll.full_poll(context)
 
     def setup(self, context):
         for ob in context.scene.cpp.camera_objects:
@@ -38,9 +38,9 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
     def refresh(self, context):
         preferences = context.preferences.addons[__package__].preferences
         for mpr in self.gizmos:
-            mpr.color = preferences.gizmo_color
-            mpr.alpha = preferences.gizmo_alpha
-            mpr.alpha_highlight = preferences.gizmo_alpha
+            mpr.color = preferences.gizmo_color[0:3]
+            mpr.alpha = preferences.gizmo_color[3]
+            mpr.alpha_highlight = preferences.gizmo_color[3]
 
             mpr.scale_basis = preferences.gizmo_radius
 
@@ -78,6 +78,9 @@ class CPP_GT_current_image_preview(Gizmo):
         camera_ob = scene.camera
         image_paint = scene.tool_settings.image_paint
         image = image_paint.clone_image
+
+        if not image:
+            return
 
         shader = shaders.current_image
         batch = self.image_batch
@@ -119,6 +122,7 @@ class CPP_GT_current_image_preview(Gizmo):
 
             alpha = self.alpha_highlight if self.is_highlight else scene.cpp.current_image_alpha
             shader.uniform_float("alpha", alpha)
+            shader.uniform_bool("colorspace_srgb", (image.colorspace_settings.name == 'sRGB',))
 
             batch.draw(shader)
 
@@ -141,9 +145,7 @@ class CPP_GT_current_image_preview(Gizmo):
         quad_p4 = mpr_pos + Vector((self.pixel_size.x, 0.0))
         res = intersect_point_quad_2d(mouse_pos, quad_p1, quad_p2, quad_p3, quad_p4)
         if res == -1:
-            operators.camera_painter_operator.suspended = True
             return 0
-        operators.camera_painter_operator.suspended = False
         return -1
 
     def invoke(self, context, event):
