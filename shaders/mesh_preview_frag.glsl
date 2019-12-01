@@ -19,6 +19,8 @@ uniform int useBrush;
 uniform float brushRadius;
 uniform float brushStrength;
 
+uniform int fullDraw;
+
 uniform int warning;
 uniform vec4 warningColor;
 
@@ -82,11 +84,11 @@ void main() {
     float imageFrameMask = inside_rect(posInterp, vec2(0.0), vec2(1.0));
 
     if (imageFrameMask != 0.0) {
-        if (useBrush != 0)
+        if (useBrush != 0 || fullDraw == 1)
         {
             float dist = distance((gl_FragCoord.xy - mousePos) / vec2(brushRadius), vec2(0.0));
             brushCoord = vec2(dist, 0.1);
-            if (dist < 0.96)
+            if (dist < 0.96 || fullDraw == 1)
             {
                 brushMask = texture(brushImage, brushCoord).r;
 
@@ -110,9 +112,12 @@ void main() {
             fragNormalInspection = linearrgb_to_srgb(normalHighlightColor) * nrmDot;
         }
 
-        float opacity = clamp(brushStrength * brushMask, 0.0, 1.0);
-        if (useBrush != 0) {
-            if (warning != 0)
+        float opacity = 1.0;
+        if (fullDraw == 0) {
+            opacity = clamp(brushStrength * brushMask, 0.0, 1.0);
+        }
+        if (useBrush != 0 || fullDraw == 1) {
+            if (warning != 0 && fullDraw == 0)
             {
                 fragColor = linearrgb_to_srgb(warningColor * opacity);
             }

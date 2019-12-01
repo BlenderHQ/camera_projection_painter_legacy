@@ -36,6 +36,8 @@ from .utils import (
 import os
 import csv
 
+import time
+
 #
 camera_painter_operator = None
 
@@ -84,9 +86,11 @@ class CPP_OT_camera_projection_painter(Operator):
         global camera_painter_operator
         camera_painter_operator = self
 
+        # bpy.ops.cpp.screen_update('INVOKE_DEFAULT')
+
         wm = context.window_manager
-        wm.modal_handler_add(self)
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+        wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -148,6 +152,12 @@ class CPP_OT_camera_projection_painter(Operator):
 
             scene.cpp.cameras_hide_set(state = True)
 
+        if self.check_camera_frame_updated(camera.view_frame()):
+            #print(camera.view_frame())
+            utils_draw.base_update_preview(context)
+            self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
+            self.full_draw = True
+
         if event.type not in ('TIMER', 'TIMER_REPORT'):
             if self.data_updated((
                     camera_ob, clone_image,  # Base properties
@@ -166,10 +176,8 @@ class CPP_OT_camera_projection_painter(Operator):
                 utils_base.setup_basis_uv_layer(context)
                 if scene.camera.data.cpp.use_calibration:
                     utils_base.deform_uv_layer(self, context)
-
-                self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
+                self.full_draw = False
                 utils_draw.base_update_preview(context)
-
         self.setup_required = False
 
         return {'PASS_THROUGH'}
@@ -447,6 +455,54 @@ class CPP_OT_generate_image_previews(Operator):
         return {'RUNNING_MODAL'}
 
 
+_windows = {}
+
+
+class CPP_OT_mouse(Operator):
+    bl_idname = "cpp.mouse"
+    bl_label = "mouse"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+        wm.modal_handler_add(self)
+        _windows[context.window] = self
+
+        screen = context.screen
+
+        for area in screen.areas:
+            if area.type == 'VIEW_3D':
+                print(area.spaces.active)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        global mouse_position
+        if event.mouse_x != event.mouse_prev_x and event.mouse_y != event.mouse_prev_y:
+            mouse_position = event.mouse_x, event.mouse_y
+
+        return {'PASS_THROUGH'}
+
+
+class CPP_OT_screen_update(Operator):
+    bl_idname = "cpp.screen_update"
+    bl_label = "screen_update"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        wm = context.window_manager
+        for window in wm.windows:
+            if window not in _windows:
+                override = {'window': window, 'screen': window.screen}
+                bpy.ops.cpp.mouse(override, 'INVOKE_REGION_WIN')
+        return {'PASS_THROUGH'}
+
+
 _classes = [
     CPP_OT_image_paint,
     CPP_OT_camera_projection_painter,
@@ -457,5 +513,7 @@ _classes = [
     CPP_OT_enter_context,
     CPP_OT_call_pie,
     CPP_OT_generate_image_previews,
+    # CPP_OT_mouse,
+    # CPP_OT_screen_update,
 ]
 register, unregister = bpy.utils.register_classes_factory(_classes)

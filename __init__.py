@@ -50,7 +50,7 @@ if "bpy" in locals():
 
     register()
 
-    bpy.ops.cpp.camera_projection_painter('INVOKE_REGION_WIN')
+    bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
 
     del operators
     del importlib

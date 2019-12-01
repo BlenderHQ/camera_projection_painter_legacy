@@ -5,6 +5,7 @@ from mathutils import Vector
 from ..constants import TEMP_DATA_NAME
 
 import time
+import numpy as np
 
 
 class PropertyTracker(object):
@@ -29,6 +30,7 @@ def set_properties_defaults(self):
     self.suspended = False
     self.suspended_mouse = False
     self.setup_required = True
+    self.full_draw = False
 
     self.draw_handler = None
 
@@ -39,6 +41,7 @@ def set_properties_defaults(self):
     self.brush_texture_bindcode = 0
     self.data_updated = PropertyTracker()
     self.check_brush_curve_updated = PropertyTracker()
+    self.check_camera_frame_updated = PropertyTracker()
 
     self.mouse_position = (0, 0)
 
@@ -130,10 +133,8 @@ def setup_basis_uv_layer(context):
 
 
 def deform_uv_layer(self, context):
-    ob = context.image_paint_object
-
     bm = self.bm
-
+    ob = context.image_paint_object
     uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
 
     dt = time.time()
@@ -141,8 +142,9 @@ def deform_uv_layer(self, context):
     for face in bm.faces:
         for loop in face.loops:
             loop_uv = loop[uv_layer]
-            # use xy position of the vertex as a uv coordinate
-            loop_uv.uv = Vector(loop_uv.uv)  # + Vector((0.005, 0.005))
+
+            # And some deformations here
+            #loop_uv.uv = Vector(loop_uv.uv)# + Vector((0.005, 0.005))
 
     bm.to_mesh(ob.data)
 

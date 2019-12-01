@@ -89,7 +89,7 @@ def get_curr_img_pos_from_context(context):
     ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
     area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
 
-    image_size = Vector([1.0, image.size[1] / image.size[0]]) * scene.cpp.current_image_size
+    image_size = Vector([1.0, image.cpp.static_size[1] / image.cpp.static_size[0]]) * scene.cpp.current_image_size
     possible = True
     if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
         possible = False
@@ -141,7 +141,6 @@ def get_bmesh_batch(bm):
         vbo.attr_fill(id = attr_id, data = attr)
 
     batch = gpu.types.GPUBatch(type = buf_type, buf = vbo, elem = ibo)
-
     return batch
 
 
@@ -211,6 +210,7 @@ def draw_projection_preview(self, context):
 
     shader.uniform_int("sourceImage", 0)
     shader.uniform_int("brushImage", 1)
+    shader.uniform_int("fullDraw", self.full_draw)
     shader.uniform_int("outlineType", outline_type)
     shader.uniform_float("outlineWidth", outline_width)
     shader.uniform_float("outlineScale", outline_scale)
@@ -287,7 +287,6 @@ def get_camera_batches(context):
         camera = ob.data
         batch_frame, batch_image = gen_camera_batch(camera)
         res[ob] = batch_frame, batch_image
-
     return res
 
 
@@ -354,16 +353,16 @@ def draw_cameras(self, context):
     bgl.glEnable(bgl.GL_DEPTH_TEST)
 
     for ob in scene.cpp.camera_objects:
-        batches = self.camera_batches.get(ob)
+        batches = None
+        if ob in self.camera_batches.keys():
+            batches = self.camera_batches[ob]
         if not batches:
             continue
+
         batch_frame, batch_image = batches
 
-        mat = ob.matrix_world.copy()
+        mat = ob.matrix_world
         display_size = scene.cpp.cameras_viewport_size
-
-        shader_camera_image_preview.bind()
-
         image = ob.data.cpp.image
 
         size_x, size_y = image.cpp.static_size
@@ -389,6 +388,8 @@ def draw_cameras(self, context):
 
                     bgl.glActiveTexture(bgl.GL_TEXTURE0)
                     bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+
+                    shader_camera_image_preview.bind()
                     shader_camera_image_preview.uniform_int("image", 0)
                     shader_camera_image_preview.uniform_float("display_size", display_size)
                     shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
@@ -397,6 +398,7 @@ def draw_cameras(self, context):
 
         shader_camera.bind()
         color = preferences.camera_color
+
         if ob == scene.camera:
             color = preferences.camera_color_highlight
         shader_camera.uniform_float("color", color)
@@ -405,3 +407,4 @@ def draw_cameras(self, context):
         shader_camera.uniform_float("modelMatrix", mat)
 
         batch_frame.draw(shader_camera)
+

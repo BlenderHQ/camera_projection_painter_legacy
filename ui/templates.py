@@ -42,7 +42,7 @@ def template_camera_image(layout, camera_ob):
     operator.mode = 'ACTIVE'
 
     if image:
-        sx, sy = image.size
+        sx, sy = image.cpp.static_size
         row = col.row()
         row.label(text = "Width:")
         row.label(text = "%d px" % sx)

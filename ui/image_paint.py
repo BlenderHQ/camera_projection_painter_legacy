@@ -7,11 +7,7 @@ from .templates import (
     template_camera_lens_distortion,
     template_path_with_ops)
 
-from ..icons import get_icon_id
-from ..operators import (
-    CPP_OT_bind_camera_image,
-    CPP_OT_set_camera_by_view,
-    CPP_OT_set_camera_calibration_from_file)
+from ..operators import CPP_OT_set_camera_by_view
 from ..utils import utils_poll
 
 

@@ -7,7 +7,8 @@ from bpy.props import (
     FloatVectorProperty,
     EnumProperty,
     StringProperty,
-    PointerProperty
+    PointerProperty,
+    CollectionProperty
 )
 
 from .icons import get_icon_id
@@ -310,10 +311,11 @@ class ImageProperties(PropertyGroup):
 
     preview_check_passed: BoolProperty(default = False, options = {'HIDDEN', 'SKIP_SAVE'})
 
+
 classes = [
     CameraProperties,
     SceneProperties,
-    ImageProperties
+    ImageProperties,
 ]
 
 _register, _unregister = bpy.utils.register_classes_factory(classes)

@@ -71,7 +71,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     warning_color: FloatVectorProperty(
         name = "Warning Color",
-        default = [1.000000, 0.134977, 0.080129, 0.950000],
+        default = [0.485150, 0.074298, 0.030191, 1.000000],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Highlight brush warning color")
 
