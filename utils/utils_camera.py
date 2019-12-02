@@ -7,45 +7,31 @@ from .common import flerp, get_hovered_region_3d
 from ..constants import AUTOCAM_MIN, AUTOCAM_MAX
 
 
-def get_camera_attributes(context, ob):
-    camera_pos = None
-    camera_forward = None
-    camera_up = None
-    camera_scale = None
+def get_camera_attributes(ob):
+    camera_size = ob.data.sensor_width
+    matrix_world = ob.matrix_world
+    camera_pos = ob.matrix_world.translation
+    camera_forward = (
+            matrix_world.translation + (
+            Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted()))
 
-    if ob:
-        scene = context.scene
+    camera_up = (Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted())
 
-        render_width = scene.render.resolution_x
-        render_height = scene.render.resolution_y
-
-        if render_width > render_height:
-            camera_scale = (1.0, render_width / render_height)
-        else:
-            camera_scale = (render_width / render_height, 1.0)
-
-        camera_size = ob.data.sensor_width
-        matrix_world = ob.matrix_world
-        camera_pos = ob.matrix_world.translation
-        camera_forward = (
-                matrix_world.translation + (
-                Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted()))
-
-        camera_up = (Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted())
-
-    return camera_pos, camera_forward, camera_up, camera_scale
+    return camera_pos, camera_forward, camera_up
 
 
 def bind_camera_image_by_name(ob, file_path):
     ob_name, ob_ext = os.path.splitext(ob.name)
 
-    image = None
+    res_image = None
     for img in bpy.data.images:
         img_name, img_ext = os.path.splitext(img.name)
         if img_name == ob_name:
-            image = img
+            size_x, size_y = img.cpp.static_size
+            if size_x and size_y:
+                res_image = img
             break
-    if not image:
+    if not res_image:
         if file_path != "":
             path = bpy.path.abspath(file_path)
             if os.path.isdir(path):
@@ -55,13 +41,20 @@ def bind_camera_image_by_name(ob, file_path):
 
                     if img_name == ob_name:
                         img_path = os.path.join(path, file_name)
-                        bpy.ops.image.open(filepath = img_path, relative_path = False)
-                        image = bpy.data.images[file_name]
+                        if file_name in bpy.data.images:
+                            bpy.data.images[file_name].filepath = img_path
+                        else:
+                            bpy.ops.image.open(filepath = img_path, relative_path = False)
+                        if file_name in bpy.data.images:
+                            res_image = bpy.data.images[file_name]
                         break
-    if image:
-        ob.data.cpp.used = True
-        ob.data.cpp.image = image
-        return image.name
+    if res_image:
+        size_x, size_y = res_image.cpp.static_size
+        if size_x and size_y:
+            ob.data.cpp.used = True
+            ob.data.cpp.image = res_image
+            return res_image.name
+    ob.data.cpp.image = None
 
 
 def set_camera_by_view(context, mouse_position):
@@ -108,4 +101,3 @@ def set_camera_by_view(context, mouse_position):
 
     camera_ob.select_set(True)
     scene.camera = camera_ob
-

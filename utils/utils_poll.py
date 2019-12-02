@@ -44,7 +44,7 @@ def full_poll(context):
     if tool_setup_poll(context):
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
-        if image_paint.detect_data():
+        if image_paint.detect_data() and scene.cpp.has_available_camera_objects:
             return True
     return False
 

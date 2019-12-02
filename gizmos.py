@@ -82,12 +82,19 @@ class CPP_GT_current_image_preview(Gizmo):
         if not image:
             return
 
+        #print(image.cpp.static_size)
+
         shader = shaders.current_image
         batch = self.image_batch
 
         rv3d = context.region_data
 
-        self.pixel_pos, self.pixel_size, possible = utils_draw.get_curr_img_pos_from_context(context)
+        curr_img_pos = utils_draw.get_curr_img_pos_from_context(context)
+        if not curr_img_pos:
+            return
+
+
+        self.pixel_pos, self.pixel_size, possible = curr_img_pos
 
         if rv3d.view_perspective == 'CAMERA':
             view_frame = [camera_ob.matrix_world @ v for v in camera_ob.data.view_frame(scene = scene)]
@@ -131,12 +138,16 @@ class CPP_GT_current_image_preview(Gizmo):
 
     def test_select(self, context, location):
         rv3d = context.region_data
+
         if rv3d.view_perspective == 'CAMERA':
             return -1
-
-        pos, size, possible = utils_draw.get_curr_img_pos_from_context(context)
+        curr_img_pos = utils_draw.get_curr_img_pos_from_context(context)
+        if not curr_img_pos:
+            return -1
+        pos, size, possible = curr_img_pos
         if not possible:
             return -1
+
         mouse_pos = Vector(location)
         mpr_pos = self.pixel_pos
         quad_p1 = mpr_pos

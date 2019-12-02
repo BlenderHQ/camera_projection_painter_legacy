@@ -149,12 +149,10 @@ class CPP_OT_camera_projection_painter(Operator):
             self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
             self.camera_batches = utils_draw.get_camera_batches(context)
             utils_draw.add_draw_handlers(self, context)
-
             scene.cpp.cameras_hide_set(state = True)
 
         if self.check_camera_frame_updated(camera.view_frame()):
-            #print(camera.view_frame())
-            utils_draw.base_update_preview(context)
+            # print(camera.view_frame())
             self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
             self.full_draw = True
 
@@ -177,7 +175,6 @@ class CPP_OT_camera_projection_painter(Operator):
                 if scene.camera.data.cpp.use_calibration:
                     utils_base.deform_uv_layer(self, context)
                 self.full_draw = False
-                utils_draw.base_update_preview(context)
         self.setup_required = False
 
         return {'PASS_THROUGH'}
@@ -353,7 +350,6 @@ class CPP_OT_enter_context(Operator):
 
     def draw(self, context):
         layout = self.layout
-
         layout.prop(self, "image_size")
 
     def execute(self, context):
@@ -382,6 +378,20 @@ class CPP_OT_enter_context(Operator):
                     name = name, width = 2048, height = 2048,
                     generated_type = 'COLOR_GRID')
             image_paint.canvas = bpy.data.images[name]
+        if not scene.camera:
+            scene.camera = list(scene.cpp.camera_objects)[0]
+
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                space = area.spaces.active
+
+                space.shading.type = 'SOLID'
+                space.shading.light = 'FLAT'
+
+        if not scene.cpp.has_available_camera_objects:
+            bpy.ops.cpp.bind_camera_image(mode = 'ALL')
+        if not scene.cpp.has_available_camera_objects:
+            self.report(type = {'WARNING'}, message = "You should specify source images path first!")
 
         return {'FINISHED'}
 

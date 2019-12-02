@@ -7,8 +7,7 @@ from bpy.props import (
     FloatVectorProperty,
     EnumProperty,
     StringProperty,
-    PointerProperty,
-    CollectionProperty
+    PointerProperty
 )
 
 from .icons import get_icon_id
@@ -290,26 +289,34 @@ class SceneProperties(PropertyGroup):
 
 
 class ImageProperties(PropertyGroup):
+    preview_check_passed: BoolProperty(
+        default = False,
+        options = {'HIDDEN', 'SKIP_SAVE'}
+    )
+
     @property
     def static_size(self):
         image = self.id_data
-        if image.packed_file:
-            data = image.packed_file.data
-            size = image.packed_file.size
-            with io.BytesIO(data) as io_bytes:
-                image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
-        else:
-            if image.source == 'FILE':
-                file_path = bpy.path.abspath(image.filepath)
-                if os.path.isfile(file_path):
-                    size = os.path.getsize(file_path)
-                    with io.open(file_path, "rb") as io_bytes:
-                        image_metadata_size = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
-            elif image.source == 'GENERATED':
-                image_metadata_size = image.generated_width, image.generated_height
-        return image_metadata_size
+        size_x, size_y = 0, 0
+        # if image.packed_file:
+        #    data = image.packed_file.data
+        #    size = image.packed_file.size
+        #    with io.BytesIO(data) as io_bytes:
+        #        size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
+        # else:
+        if image.source == 'FILE':
+            file_path = bpy.path.abspath(image.filepath)
+            if os.path.isfile(file_path):
+                st_size = os.path.getsize(file_path)
+                with io.open(file_path, "rb") as io_bytes:
+                    size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, st_size)
+        elif image.source == 'GENERATED':
+            size_x, size_y = image.generated_width, image.generated_height
 
-    preview_check_passed: BoolProperty(default = False, options = {'HIDDEN', 'SKIP_SAVE'})
+        if size_x and size_y:
+            return size_x, size_y
+        else:
+            return image.size[:]
 
 
 classes = [

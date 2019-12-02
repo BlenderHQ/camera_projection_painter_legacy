@@ -92,6 +92,11 @@ def setup_basis_uv_layer(context):
     ob = context.image_paint_object
     uv_layers = ob.data.uv_layers
 
+    size_x, size_y = clone_image.cpp.static_size
+
+    if not (size_x and size_y):
+        return
+
     if TEMP_DATA_NAME not in uv_layers:
         uv_layers.new(name = TEMP_DATA_NAME, do_init = False)
         uv_layer = uv_layers[TEMP_DATA_NAME]
@@ -114,8 +119,6 @@ def setup_basis_uv_layer(context):
     modifier.scale_x = 1.0
     modifier.scale_y = 1.0
 
-    size_x, size_y = clone_image.cpp.static_size
-
     if size_x > size_y:
         modifier.aspect_x = size_x / size_y
         modifier.aspect_y = 1.0
@@ -131,6 +134,9 @@ def setup_basis_uv_layer(context):
 
     bpy.ops.object.modifier_apply(modifier = TEMP_DATA_NAME)
 
+    scene.render.resolution_x = size_x
+    scene.render.resolution_y = size_y
+
 
 def deform_uv_layer(self, context):
     bm = self.bm
@@ -144,7 +150,7 @@ def deform_uv_layer(self, context):
             loop_uv = loop[uv_layer]
 
             # And some deformations here
-            #loop_uv.uv = Vector(loop_uv.uv)# + Vector((0.005, 0.005))
+            # loop_uv.uv = Vector(loop_uv.uv)# + Vector((0.005, 0.005))
 
     bm.to_mesh(ob.data)
 

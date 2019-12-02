@@ -62,25 +62,17 @@ def update_brush_texture_bindcode(self, context):
         self.brush_texture_bindcode = bindcode
 
 
-def base_update_preview(context):
-    shader = shaders.mesh_preview
-    scene = context.scene
-    camera = scene.camera
-
-    position, forward, up, scale = get_camera_attributes(context, camera)
-
-    shader.bind()
-    shader.uniform_float("projectorPosition", position)
-    shader.uniform_float("projectorForward", forward)
-    shader.uniform_float("projectorUpAxis", up)
-    shader.uniform_float("sourceScale", scale)
-
-
 def get_curr_img_pos_from_context(context):
     area = context.area
     scene = context.scene
     image_paint = scene.tool_settings.image_paint
     image = image_paint.clone_image
+
+    if not image:
+        return
+    size_x, size_y = image.cpp.static_size
+    if not (size_x and size_y):
+        return
 
     preferences = context.preferences.addons[addon_pkg].preferences
     empty_space = preferences.border_empty_space
@@ -89,7 +81,7 @@ def get_curr_img_pos_from_context(context):
     ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
     area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
 
-    image_size = Vector([1.0, image.cpp.static_size[1] / image.cpp.static_size[0]]) * scene.cpp.current_image_size
+    image_size = Vector([1.0, size_y / size_x]) * scene.cpp.current_image_size
     possible = True
     if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
         possible = False
@@ -103,31 +95,30 @@ def get_curr_img_pos_from_context(context):
 
 
 def get_batch_attributes(bm):
-    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
-    if uv_layer:
-        loop_triangles = bm.calc_loop_triangles()
-        vertices = np.empty((len(bm.verts), 3), dtype = np.float32)
-        normals = np.empty((len(bm.verts), 3), dtype = np.float32)
-        indices = np.empty((len(loop_triangles), 3), dtype = np.int32)
+    loop_triangles = bm.calc_loop_triangles()
+    vertices = np.empty((len(bm.verts), 3), dtype = np.float32)
+    normals = np.empty((len(bm.verts), 3), dtype = np.float32)
+    indices = np.empty((len(loop_triangles), 3), dtype = np.int32)
 
-        for index, vertex in enumerate(bm.verts):
-            vertices[index] = vertex.co
-            normals[index] = vertex.normal
+    for index, vertex in enumerate(bm.verts):
+        vertices[index] = vertex.co
+        normals[index] = vertex.normal
 
-        triangle_indices = np.empty(3, dtype = np.int32)
-        for index, loop_triangles in enumerate(loop_triangles):
-            for loop_index, loop in enumerate(loop_triangles):
-                vertex_index = loop.vert.index
-                triangle_indices[loop_index] = vertex_index
+    triangle_indices = np.empty(3, dtype = np.int32)
+    for index, loop_triangles in enumerate(loop_triangles):
+        for loop_index, loop in enumerate(loop_triangles):
+            vertex_index = loop.vert.index
+            triangle_indices[loop_index] = vertex_index
 
-            indices[index] = triangle_indices
+        indices[index] = triangle_indices
 
-        return vertices, normals, indices
+    return vertices, normals, indices
 
 
 def get_bmesh_batch(bm):
     buf_type = 'TRIS'
     pos, normal, indices = get_batch_attributes(bm)
+
     fmt_attributes = (("pos", pos), ("normal", normal))
 
     fmt = gpu.types.GPUVertFormat()
@@ -160,7 +151,21 @@ def draw_projection_preview(self, context):
     brush_radius = scene.tool_settings.unified_paint_settings.size
 
     if clone_image.gl_load():
-        raise Exception()
+        return
+
+    size_x, size_y = clone_image.cpp.static_size
+    if not (size_x and size_y):
+        return
+
+    if size_x > size_y:
+        aspect_x = 1.0
+        aspect_y = size_x / size_y
+    elif size_y > size_x:
+        aspect_x = 1.0
+        aspect_y = size_x / size_y
+    else:
+        aspect_x = 1.0
+        aspect_y = 1.0
 
     shader = shaders.mesh_preview
     batch = self.mesh_batch
@@ -203,10 +208,16 @@ def draw_projection_preview(self, context):
     bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
 
+    position, forward, up = get_camera_attributes(scene.camera)
+
     # Set shader uniforms
     shader.bind()
 
     shader.uniform_float("ModelMatrix", ob.matrix_world)
+    shader.uniform_float("projectorPosition", position)
+    shader.uniform_float("projectorForward", forward)
+    shader.uniform_float("projectorUpAxis", up)
+    shader.uniform_float("sourceScale", (aspect_x, aspect_y))
 
     shader.uniform_int("sourceImage", 0)
     shader.uniform_int("brushImage", 1)
@@ -365,7 +376,11 @@ def draw_cameras(self, context):
         display_size = scene.cpp.cameras_viewport_size
         image = ob.data.cpp.image
 
-        size_x, size_y = image.cpp.static_size
+        if image:
+            size_x, size_y = image.cpp.static_size
+            if not (size_x and size_y):
+                size_x, size_y = (1, 1)
+
         if size_x > size_y:
             aspect_x = 1.0
             aspect_y = size_y / size_x
@@ -377,24 +392,26 @@ def draw_cameras(self, context):
             aspect_y = 1.0
 
         if scene.cpp.use_camera_image_previews:
-            if image not in _preview_bindcodes.keys():
-                if check_preview(image):
-                    bindcode = get_preview_bincode(image)
-                    _preview_bindcodes[image] = bindcode
+            if image:
+                if size_x and size_y:
+                    if image not in _preview_bindcodes.keys():
+                        if check_preview(image):
+                            bindcode = get_preview_bincode(image)
+                            _preview_bindcodes[image] = bindcode
 
-            if check_preview(image):
-                if image in _preview_bindcodes.keys():
-                    bindcode = _preview_bindcodes[image]
+                    if check_preview(image):
+                        if image in _preview_bindcodes.keys():
+                            bindcode = _preview_bindcodes[image]
 
-                    bgl.glActiveTexture(bgl.GL_TEXTURE0)
-                    bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+                            bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                            bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
 
-                    shader_camera_image_preview.bind()
-                    shader_camera_image_preview.uniform_int("image", 0)
-                    shader_camera_image_preview.uniform_float("display_size", display_size)
-                    shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
-                    shader_camera_image_preview.uniform_float("modelMatrix", mat)
-                    batch_image.draw(shader_camera_image_preview)
+                            shader_camera_image_preview.bind()
+                            shader_camera_image_preview.uniform_int("image", 0)
+                            shader_camera_image_preview.uniform_float("display_size", display_size)
+                            shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
+                            shader_camera_image_preview.uniform_float("modelMatrix", mat)
+                            batch_image.draw(shader_camera_image_preview)
 
         shader_camera.bind()
         color = preferences.camera_color
@@ -407,4 +424,3 @@ def draw_cameras(self, context):
         shader_camera.uniform_float("modelMatrix", mat)
 
         batch_frame.draw(shader_camera)
-

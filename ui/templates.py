@@ -42,18 +42,22 @@ def template_camera_image(layout, camera_ob):
     operator.mode = 'ACTIVE'
 
     if image:
-        sx, sy = image.cpp.static_size
-        row = col.row()
-        row.label(text = "Width:")
-        row.label(text = "%d px" % sx)
+        size_x, size_y = image.cpp.static_size
 
-        row = col.row()
-        row.label(text = "Height:")
-        row.label(text = "%d px" % sy)
+        if size_x and size_y:
+            row = col.row()
+            row.label(text = "Width:")
+            row.label(text = "%d px" % size_x)
 
-        row = col.row()
-        row.label(text = "Pixel Format:")
-        row.label(text = "%d-bit %s" % (image.depth, image.colorspace_settings.name))
+            row = col.row()
+            row.label(text = "Height:")
+            row.label(text = "%d px" % size_y)
+
+            row = col.row()
+            row.label(text = "Pixel Format:")
+            row.label(text = "%d-bit %s" % (image.depth, image.colorspace_settings.name))
+        else:
+            col.label(text = "Empty image!", icon = 'ERROR')
 
 
 def template_camera_calibration(layout, camera_ob):
