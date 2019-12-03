@@ -375,11 +375,11 @@ def draw_cameras(self, context):
         mat = ob.matrix_world
         display_size = scene.cpp.cameras_viewport_size
         image = ob.data.cpp.image
-
+        size_x, size_y = (1, 1)
         if image:
-            size_x, size_y = image.cpp.static_size
-            if not (size_x and size_y):
-                size_x, size_y = (1, 1)
+            sx, sy = image.cpp.static_size
+            if (size_x and size_y):
+                size_x, size_y = sx, sy
 
         if size_x > size_y:
             aspect_x = 1.0
