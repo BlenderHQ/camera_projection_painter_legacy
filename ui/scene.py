@@ -6,8 +6,7 @@ from ..icons import get_icon_id
 from ..operators import (
     CPP_OT_bind_camera_image,
     CPP_OT_set_camera_calibration_from_file,
-    CPP_OT_enter_context,
-    CPP_OT_generate_image_previews
+    CPP_OT_enter_context
 )
 
 from .. import operators
@@ -36,7 +35,6 @@ class CPP_PT_camera_projection_painter(Panel, SceneButtonsPanel):
 
         col = layout.column(align = True)
         col.operator(CPP_OT_enter_context.bl_idname, icon_value = get_icon_id("run"))
-        col.operator(CPP_OT_generate_image_previews.bl_idname, icon_value = get_icon_id("gen_previews"))
 
 
 class CPP_PT_path(Panel, SceneButtonsPanel):

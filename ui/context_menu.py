@@ -23,15 +23,12 @@ class CPP_MT_camera_pie(Menu):
             col.emboss = 'NORMAL'
             col = col.column(align = True)
 
+            scol = col.column()
+            scol.emboss = 'NONE'
+            scol.prop(cam.data.cpp, "used")
             if cam.data.cpp.image:
-                scol = col.column()
-                scol.emboss = 'NONE'
-                scol.prop(cam.data.cpp, "used")
                 col.template_ID_preview(cam.data.cpp, "image", open = "image.open", rows = 3, cols = 8)
             else:
-                scol = col.column()
-                scol.emboss = 'NONE'
-                scol.prop(cam.data.cpp, "used")
                 col.template_ID(cam.data.cpp, "image")
 
             operator = pie.operator(CPP_OT_bind_camera_image.bl_idname, icon_value = get_icon_id("bind_image"))

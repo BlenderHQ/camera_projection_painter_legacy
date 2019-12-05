@@ -31,7 +31,15 @@ in vec3 nrmInterp;
 
 out vec4 fragColor;
 
+#define PI 3.14159265358979323846
 
+vec2 rotate2D(vec2 _st, float _angle){
+    _st -= 0.5;
+    _st =  mat2(cos(_angle),-sin(_angle),
+                sin(_angle),cos(_angle)) * _st;
+    _st += 0.5;
+    return _st;
+}
 float inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right) {
     vec2 st = step(_bottom_left, _coo) - step(_top_right, _coo);
     return st.x * st.y;
@@ -49,6 +57,13 @@ float checker_pattern(in vec2 _coo, in vec2 _scale, in float _check_size) {
     floor(_check_size * _scale.x * _coo.y), 2.0));
     float checker = clamp(fmod_result, 0.0, 1.0);
     return checker;
+}
+
+float lines_pattern(in vec2 _coo, in vec2 _scale, in float _check_size) {
+    vec2 _rcoo = rotate2D(_coo, PI * 0.25);
+    float fmod_result = (mod(floor(_check_size * _scale.y * _rcoo.x * 4.0), 2.0));
+    float pattern = clamp(fmod_result, 0.0, 1.0);
+    return pattern;
 }
 
 float linearrgb_to_srgb(float c) {
@@ -141,8 +156,10 @@ void main() {
             outlinePattern = 1.0;
         }
         else if (outlineType == 2) {
-            // Checher pattern
             outlinePattern = checker_pattern(posInterp, sourceScale, outlineScale);
+        }
+        else if (outlineType == 3) {
+            outlinePattern = lines_pattern(posInterp, sourceScale, outlineScale);
         }
         if (outlineType != 0) {
             float outlineMask = inside_outline(posInterp, outlineWidth, sourceScale);

@@ -108,16 +108,15 @@ class CPP_OT_camera_projection_painter(Operator):
         image_paint = scene.tool_settings.image_paint
         clone_image = image_paint.clone_image
 
-        if utils_poll.tool_setup_poll(context):
-            if not image_paint.clone_image:
-                if scene.cpp.use_auto_set_image:
-                    utils_base.set_clone_image_from_camera_data(context)
-                return {'PASS_THROUGH'}
-        else:
+        if not utils_poll.full_poll(context):
             self.cancel(context)
             return {'PASS_THROUGH'}
 
         image_paint.clone_image = clone_image  # TODO: Find a better way to update
+
+        # Manully call image.buffers_free(). BF does't do this so Blender often crashes
+        # Also, it checks if image preview generated
+        utils_draw.check_image_previews()
 
         if self.suspended:
             return {'PASS_THROUGH'}
@@ -198,7 +197,7 @@ class CPP_OT_bind_camera_image(Operator):
 
     def execute(self, context):
         scene = context.scene
-        file_path = scene.cpp.source_images_path
+        source_images_path = bpy.path.native_pathsep(bpy.path.abspath(scene.cpp.source_images_path))
 
         cameras = []
         if self.mode == 'ACTIVE':
@@ -214,8 +213,15 @@ class CPP_OT_bind_camera_image(Operator):
             if cam:
                 cameras = [cam]
         count = 0
+
+        file_list = []
+        if os.path.isdir(source_images_path):
+            file_list = [
+                bpy.path.native_pathsep(os.path.join(source_images_path, n)) for n in os.listdir(source_images_path)
+            ]
+
         for ob in cameras:
-            res = utils_camera.bind_camera_image_by_name(ob, file_path)
+            res = utils_camera.bind_camera_image_by_name(ob, file_list)
             if res:
                 count += 1
                 print(res)  # Also print list of successfully binded cameras to console
@@ -416,103 +422,6 @@ class CPP_OT_call_pie(Operator):
         return {'FINISHED'}
 
 
-class CPP_OT_generate_image_previews(Operator):
-    bl_idname = "cpp.generate_image_previews"
-    bl_label = "Generate Image Previews"
-    bl_description = "Generate image previews to display in UI and viewport"
-    bl_options = {'INTERNAL'}
-
-    def set_progress(self, context, value):
-        text = "Rendering Previews Progress: %d %%" % value
-        context.workspace.status_text_set(text)
-
-    def invoke(self, context, event):
-        self.images = bpy.data.images[:]
-        li = len(self.images)
-        if not li:
-            return {'CANCELLED'}
-        bpy.ops.wm.previews_clear(id_type = {'IMAGE'})
-        utils_draw.clear_preview_bindcodes()
-
-        context.window.cursor_set('WAIT')
-        self.set_progress(context, 0.0)
-        camera_painter_operator.suspended = True
-
-        wm = context.window_manager
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        if event.type == "ESC":
-            context.window.cursor_set('DEFAULT')
-            context.workspace.status_text_set(None)
-            camera_painter_operator.suspended = False
-            return {'CANCELLED'}
-        if not len(self.images):
-            self.report(type = {'INFO'}, message = "Image previews generated")
-            context.window.cursor_set('DEFAULT')
-            context.workspace.status_text_set(None)
-            camera_painter_operator.suspended = False
-            return {'FINISHED'}
-
-        image = self.images[-1]
-        utils_image.generate_preview(image)
-        self.images.pop()
-
-        progress = (1.0 - len(self.images) / len(bpy.data.images[:])) * 100
-        self.set_progress(context, progress)
-
-        return {'RUNNING_MODAL'}
-
-
-_windows = {}
-
-
-class CPP_OT_mouse(Operator):
-    bl_idname = "cpp.mouse"
-    bl_label = "mouse"
-    bl_options = {'INTERNAL'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.event_timer_add(time_step = TIME_STEP, window = context.window)
-        wm.modal_handler_add(self)
-        _windows[context.window] = self
-
-        screen = context.screen
-
-        for area in screen.areas:
-            if area.type == 'VIEW_3D':
-                print(area.spaces.active)
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        global mouse_position
-        if event.mouse_x != event.mouse_prev_x and event.mouse_y != event.mouse_prev_y:
-            mouse_position = event.mouse_x, event.mouse_y
-
-        return {'PASS_THROUGH'}
-
-
-class CPP_OT_screen_update(Operator):
-    bl_idname = "cpp.screen_update"
-    bl_label = "screen_update"
-    bl_options = {'INTERNAL'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def modal(self, context, event):
-        wm = context.window_manager
-        for window in wm.windows:
-            if window not in _windows:
-                override = {'window': window, 'screen': window.screen}
-                bpy.ops.cpp.mouse(override, 'INVOKE_REGION_WIN')
-        return {'PASS_THROUGH'}
-
-
 _classes = [
     CPP_OT_image_paint,
     CPP_OT_camera_projection_painter,
@@ -521,9 +430,6 @@ _classes = [
     CPP_OT_set_camera_active,
     CPP_OT_set_camera_calibration_from_file,
     CPP_OT_enter_context,
-    CPP_OT_call_pie,
-    CPP_OT_generate_image_previews,
-    # CPP_OT_mouse,
-    # CPP_OT_screen_update,
+    CPP_OT_call_pie
 ]
 register, unregister = bpy.utils.register_classes_factory(_classes)

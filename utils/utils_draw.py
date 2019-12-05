@@ -1,3 +1,5 @@
+import io
+
 import bpy
 import bgl
 import gpu
@@ -10,9 +12,11 @@ from .utils_poll import full_poll_decorator
 from .utils_camera import get_camera_attributes
 from .common import get_hovered_region_3d, iter_curve_values, flerp
 
-from ..constants import TEMP_DATA_NAME, PREVIEW_CHECK_MASK
+from ..constants import TEMP_DATA_NAME
 from ..shaders import shaders
 from .. import __package__ as addon_pkg
+
+from . import utils_image
 
 import time
 import numpy as np
@@ -182,7 +186,8 @@ def draw_projection_preview(self, context):
         outline_type = {
             'NO_OUTLINE': 0,
             'FILL': 1,
-            'CHECKER': 2
+            'CHECKER': 2,
+            'LINES': 3
         }[preferences.outline_type]
 
     outline_width = preferences.outline_width * 0.1
@@ -301,21 +306,15 @@ def get_camera_batches(context):
     return res
 
 
-_preview_bindcodes = {}
+_image_previews = {}
 
 
-def clear_preview_bindcodes():
-    global _preview_bindcodes
-    _preview_bindcodes = {}
-
-
-def get_preview_bincode(image):
+def gen_buffer_preview(preview):
     id_buff = bgl.Buffer(bgl.GL_INT, 1)
     bgl.glGenTextures(1, id_buff)
 
     bindcode = id_buff.to_list()[0]
-    preview = image.preview
-    pixels = list(preview.image_pixels)
+    pixels = preview.image_pixels[:]
 
     width, height = preview.image_size
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
@@ -323,27 +322,24 @@ def get_preview_bincode(image):
     bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
     bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA,
                      width, height, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
-
-    _preview_bindcodes[image] = bindcode
+    # glTexSubImage2d
     return bindcode
 
 
-_cheched_previews = {}
-PREVIEW_CHECK_PERIOD = 1.0
+def check_image_previews():
+    for image in bpy.data.images:
+        preview = image.preview
 
-
-def check_preview(image):
-    if not image in _cheched_previews:
-        _cheched_previews[image] = time.time()
-    last_check = _cheched_previews[image]
-
-    dt = time.time() - last_check
-    if dt >= PREVIEW_CHECK_PERIOD:
-        _cheched_previews[image] = time.time()
-        pixels = image.preview.image_pixels_float
-        image.cpp.preview_check_passed = [round(n, 1) for n in pixels[0:len(PREVIEW_CHECK_MASK)]] == PREVIEW_CHECK_MASK
-
-    return image.cpp.preview_check_passed
+        if image not in _image_previews:
+            if image.has_data:
+                if any(preview.image_pixels[:]):
+                    bindcode = gen_buffer_preview(preview)
+                    _image_previews[image] = bindcode
+                    image.buffers_free()
+            else:
+                if any(preview.image_pixels[:]):
+                    bindcode = gen_buffer_preview(preview)
+                    _image_previews[image] = bindcode
 
 
 @full_poll_decorator
@@ -375,11 +371,12 @@ def draw_cameras(self, context):
         mat = ob.matrix_world
         display_size = scene.cpp.cameras_viewport_size
         image = ob.data.cpp.image
+
         size_x, size_y = (1, 1)
         if image:
-            sx, sy = image.cpp.static_size
-            if (size_x and size_y):
-                size_x, size_y = sx, sy
+            static_size = image.cpp.static_size
+            if static_size[0] and static_size[1]:
+                size_x, size_y = static_size
 
         if size_x > size_y:
             aspect_x = 1.0
@@ -391,27 +388,21 @@ def draw_cameras(self, context):
             aspect_x = 1.0
             aspect_y = 1.0
 
-        if scene.cpp.use_camera_image_previews:
-            if image:
-                if size_x and size_y:
-                    if image not in _preview_bindcodes.keys():
-                        if check_preview(image):
-                            bindcode = get_preview_bincode(image)
-                            _preview_bindcodes[image] = bindcode
+        rv3d = context.region_data
+        if image and scene.cpp.use_camera_image_previews:
+            if rv3d.view_perspective != 'CAMERA':
+                # print(_image_previews)
+                if image in _image_previews.keys():
+                    bindcode = _image_previews[image]
+                    bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                    bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
 
-                    if check_preview(image):
-                        if image in _preview_bindcodes.keys():
-                            bindcode = _preview_bindcodes[image]
-
-                            bgl.glActiveTexture(bgl.GL_TEXTURE0)
-                            bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
-
-                            shader_camera_image_preview.bind()
-                            shader_camera_image_preview.uniform_int("image", 0)
-                            shader_camera_image_preview.uniform_float("display_size", display_size)
-                            shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
-                            shader_camera_image_preview.uniform_float("modelMatrix", mat)
-                            batch_image.draw(shader_camera_image_preview)
+                    shader_camera_image_preview.bind()
+                    shader_camera_image_preview.uniform_int("image", 0)
+                    shader_camera_image_preview.uniform_float("display_size", display_size)
+                    shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
+                    shader_camera_image_preview.uniform_float("modelMatrix", mat)
+                    batch_image.draw(shader_camera_image_preview)
 
         shader_camera.bind()
         color = preferences.camera_color

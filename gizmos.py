@@ -82,7 +82,7 @@ class CPP_GT_current_image_preview(Gizmo):
         if not image:
             return
 
-        #print(image.cpp.static_size)
+        # print(image.cpp.static_size)
 
         shader = shaders.current_image
         batch = self.image_batch
@@ -92,7 +92,6 @@ class CPP_GT_current_image_preview(Gizmo):
         curr_img_pos = utils_draw.get_curr_img_pos_from_context(context)
         if not curr_img_pos:
             return
-
 
         self.pixel_pos, self.pixel_size, possible = curr_img_pos
 

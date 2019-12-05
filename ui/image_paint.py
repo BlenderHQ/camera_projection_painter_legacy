@@ -20,7 +20,7 @@ class CPPOptionsPanel:
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.tool_setup_poll(context)
+        return utils_poll.full_poll(context)
 
 
 class CPP_PT_options(Panel, CPPOptionsPanel):
@@ -53,6 +53,9 @@ class CPP_PT_camera_options(bpy.types.Panel, CPPOptionsPanel):
         col = layout.column(align = False)
         scene = context.scene
         col.prop(scene.cpp, "cameras_viewport_size")
+
+        col.use_property_split = True
+        col.prop(scene.cpp, "use_camera_image_previews")
 
 
 class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
@@ -95,14 +98,7 @@ class CPP_PT_view_options(Panel, CPPOptionsPanel):
     bl_options = set()
 
     def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-        col = layout.column(align = False)
-
-        scene = context.scene
-        col.operator("cpp.generate_image_previews")
-        col.prop(scene.cpp, "use_camera_image_previews")
+        pass
 
 
 class CPP_PT_view_projection_preview_options(Panel, CPPOptionsPanel):

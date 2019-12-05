@@ -20,40 +20,34 @@ def get_camera_attributes(ob):
     return camera_pos, camera_forward, camera_up
 
 
-def bind_camera_image_by_name(ob, file_path):
-    ob_name, ob_ext = os.path.splitext(ob.name)
+def bind_camera_image_by_name(ob, file_list):
+    res = None
 
-    res_image = None
-    for img in bpy.data.images:
-        img_name, img_ext = os.path.splitext(img.name)
-        if img_name == ob_name:
-            size_x, size_y = img.cpp.static_size
-            if size_x and size_y:
-                res_image = img
+    for image in bpy.data.images:
+        name, ext = os.path.splitext(image.name)
+        if ob.name == image.name or ob.name == name:
+            res = image
             break
-    if not res_image:
-        if file_path != "":
-            path = bpy.path.abspath(file_path)
-            if os.path.isdir(path):
-                file_list = [n for n in os.listdir(path) if os.path.isfile(os.path.join(path, n))]
-                for file_name in file_list:
-                    img_name, img_ext = os.path.splitext(file_name)
+    if not res:
+        for file_path in file_list:
+            file_name = bpy.path.basename(file_path)
+            name, ext = os.path.splitext(file_name)
 
-                    if img_name == ob_name:
-                        img_path = os.path.join(path, file_name)
-                        if file_name in bpy.data.images:
-                            bpy.data.images[file_name].filepath = img_path
-                        else:
-                            bpy.ops.image.open(filepath = img_path, relative_path = False)
-                        if file_name in bpy.data.images:
-                            res_image = bpy.data.images[file_name]
-                        break
-    if res_image:
-        size_x, size_y = res_image.cpp.static_size
+            if ob.name == file_name or ob.name == name:
+
+                if file_name in bpy.data.images:
+                    bpy.data.images[file_name].filepath = file_path
+                    res = bpy.data.images[file_path]
+                else:
+                    res = bpy.data.images.load(filepath = file_path, check_existing = True)
+                break
+    if res:
+        size_x, size_y = res.cpp.static_size
+
         if size_x and size_y:
             ob.data.cpp.used = True
-            ob.data.cpp.image = res_image
-            return res_image.name
+            ob.data.cpp.image = res
+        return res.name
     ob.data.cpp.image = None
 
 

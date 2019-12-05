@@ -4,48 +4,28 @@ from ..constants import TEMP_DATA_NAME
 from .. import operators
 
 
-def base_poll(context):
+def full_poll(context):
     if not operators.camera_painter_operator:
         return False
-    ob = context.image_paint_object
-    camera = context.scene.camera
-    if ob and camera:
-        return True
-    return False
 
-
-def tool_setup_poll(context):
-    if not base_poll(context):
-        return False
     scene = context.scene
-    tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
     image_paint = scene.tool_settings.image_paint
-    ob = context.image_paint_object
+    if scene.camera and image_paint.detect_data():
+        tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
+        if tool.idname == "builtin_brush.Clone":
+            if (image_paint.mode == 'IMAGE'
+                    and image_paint.use_clone_layer
+                    and scene.cpp.mapping == 'CAMERA'
+                    and image_paint.clone_image):
 
-    uv_layers = ob.data.uv_layers
-    uv_layers_count = len(uv_layers)
-    if TEMP_DATA_NAME in uv_layers:
-        uv_layers_count -= 1
+                ob = context.image_paint_object
+                uv_layers = ob.data.uv_layers
+                uv_layers_count = len(uv_layers)
+                if TEMP_DATA_NAME in uv_layers:
+                    uv_layers_count -= 1
 
-        if uv_layers.active.name == TEMP_DATA_NAME:
-            return False
-
-    if not uv_layers_count:
-        return False
-
-    if tool.idname == "builtin_brush.Clone":
-        if image_paint.mode == 'IMAGE' and image_paint.use_clone_layer:
-            if scene.cpp.mapping == 'CAMERA':
-                return True
-    return False
-
-
-def full_poll(context):
-    if tool_setup_poll(context):
-        scene = context.scene
-        image_paint = scene.tool_settings.image_paint
-        if image_paint.detect_data() and scene.cpp.has_available_camera_objects:
-            return True
+                if uv_layers_count and uv_layers.active.name != TEMP_DATA_NAME:
+                    return True
     return False
 
 

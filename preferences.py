@@ -12,6 +12,7 @@ from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
 from .constants import WEB_LINKS
 
 from . import operators
+from .icons import get_icon_id
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
@@ -38,11 +39,12 @@ class CppPreferences(bpy.types.AddonPreferences):
     # Preview draw
     outline_type: EnumProperty(
         items = [
-            ('NO_OUTLINE', "No outline", 'Outline not used', '', 0),
-            ('FILL', "Fill color", 'Single color outline', '', 1),
-            ('CHECKER', "Checker", 'Checker Pattern outline', '', 2)],
+            ('NO_OUTLINE', "No outline", 'Outline not used', "", 0),
+            ('FILL', "Fill color", 'Single color outline', get_icon_id("pattern_fill"), 1),
+            ('CHECKER', "Checker", 'Checker pattern outline', get_icon_id("pattern_checker"), 2),
+            ('LINES', "Lines", 'Lines pattern outline', get_icon_id("pattern_lines"), 3)],
         name = "Type",
-        default = 'CHECKER',
+        default = 'LINES',
         description = "Outline to be drawn outside camera rectangle for preview")
 
     outline_width: FloatProperty(
@@ -112,12 +114,6 @@ class CppPreferences(bpy.types.AddonPreferences):
         subtype = 'PIXEL',
         description = "Border Empty Space")
 
-    render_preview_size: IntProperty(
-        name = "Image previews size",
-        default = 256, min = 128, soft_max = 512,
-        subtype = 'PIXEL',
-        description = "Image previews size")
-
     def draw(self, context):
         layout = self.layout
 
@@ -150,7 +146,9 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.use_property_decorate = False
 
         col.label(text = "Outline:")
-        col.prop(self, "outline_type")
+        row = col.row()
+        #row.use_property_split = False
+        row.prop(self, "outline_type", expand = True, emboss = True)
         scol = col.column(align = True)
         if self.outline_type == 'NO_OUTLINE':
             scol.enabled = False
@@ -163,7 +161,6 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "warning_color")
 
         col.label(text = "Cameras:")
-        col.prop(self, "render_preview_size")
         col.separator()
         col.prop(self, "camera_line_width")
         col.prop(self, "camera_color")

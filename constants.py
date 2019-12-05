@@ -39,10 +39,3 @@ WEB_LINKS = [
     ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
     ("GitHub", "https://github.com/ivan-perevala")
 ]
-
-PREVIEW_CHECK_MASK = [
-    0.1, 0.2, 0.3, 0.4,
-    0.1, 0.2, 0.3, 0.4,
-    0.1, 0.2, 0.3, 0.4,
-    0.1, 0.2, 0.3, 0.4,
-]

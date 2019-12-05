@@ -131,7 +131,7 @@ class SceneProperties(PropertyGroup):
 
     def cameras_hide_set(self, state):
         for ob in self.camera_objects:
-            ob.hide_set(state = state)
+            ob.hide_viewport = state
 
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
@@ -175,7 +175,7 @@ class SceneProperties(PropertyGroup):
              get_icon_id("autocam_direction"), 1)
         ],
         name = "Auto Camera Method",
-        default = 'FULL',
+        default = 'DIRECTION',
         options = {'HIDDEN'},
         description = "Method for camera selection")
 
@@ -288,6 +288,9 @@ class SceneProperties(PropertyGroup):
         description = "Safe canvas image resolution")
 
 
+_image_size_cache = {}
+
+
 class ImageProperties(PropertyGroup):
     preview_check_passed: BoolProperty(
         default = False,
@@ -295,28 +298,52 @@ class ImageProperties(PropertyGroup):
     )
 
     @property
+    def _image(self):
+        return self.id_data
+
+    @property
     def static_size(self):
-        image = self.id_data
+        image = self._image
+
+        if image in _image_size_cache:
+            return _image_size_cache[image]
+
         size_x, size_y = 0, 0
-        # if image.packed_file:
-        #    data = image.packed_file.data
-        #    size = image.packed_file.size
-        #    with io.BytesIO(data) as io_bytes:
-        #        size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, size)
-        # else:
+
         if image.source == 'FILE':
-            file_path = bpy.path.abspath(image.filepath)
-            if os.path.isfile(file_path):
-                st_size = os.path.getsize(file_path)
-                with io.open(file_path, "rb") as io_bytes:
+            if image.packed_file:
+                packed_data = image.packed_file.data
+                st_size = image.packed_file.size
+                with io.BytesIO(packed_data) as io_bytes:
                     size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, st_size)
+            else:
+                file_path = bpy.path.abspath(image.filepath)
+                if os.path.isfile(file_path):
+                    st_size = os.path.getsize(file_path)
+                    with io.open(file_path, "rb") as io_bytes:
+                        size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, st_size)
+
         elif image.source == 'GENERATED':
             size_x, size_y = image.generated_width, image.generated_height
 
         if size_x and size_y:
+            _image_size_cache[image] = size_x, size_y
             return size_x, size_y
-        else:
-            return image.size[:]
+
+        size_x, size_y = image.size[:]
+        if size_x and size_y:
+            _image_size_cache[image] = size_x, size_y
+            return size_x, size_y
+
+        return size_x, size_y
+
+    @property
+    def invalid(self):
+        image = self._image
+        size_x, size_y = image.cpp.static_size
+        if size_x and size_y:
+            return False
+        return True
 
 
 classes = [
