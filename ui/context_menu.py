@@ -19,7 +19,8 @@ class CPP_MT_camera_pie(Menu):
 
         cam = operators.tmp_camera
         if cam:
-            col.label(text = "Camera: %s" % cam.name)
+            col.label(text = "Camera:")
+            col.label(text = cam.name)
             col.emboss = 'NORMAL'
             col = col.column(align = True)
 

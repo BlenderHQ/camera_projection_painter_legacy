@@ -384,8 +384,16 @@ class CPP_OT_enter_context(Operator):
                     name = name, width = 2048, height = 2048,
                     generated_type = 'COLOR_GRID')
             image_paint.canvas = bpy.data.images[name]
+
+        if not scene.cpp.has_available_camera_objects:
+            bpy.ops.cpp.bind_camera_image(mode = 'ALL')
+
+        if not scene.cpp.has_available_camera_objects:
+            self.report(type = {'WARNING'}, message = "You should specify source images path first!")
+
         if not scene.camera:
-            scene.camera = list(scene.cpp.camera_objects)[0]
+            scene.camera = list(scene.cpp.available_camera_objects)[0]
+        utils_base.set_clone_image_from_camera_data(context)
 
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
@@ -393,11 +401,6 @@ class CPP_OT_enter_context(Operator):
 
                 space.shading.type = 'SOLID'
                 space.shading.light = 'FLAT'
-
-        if not scene.cpp.has_available_camera_objects:
-            bpy.ops.cpp.bind_camera_image(mode = 'ALL')
-        if not scene.cpp.has_available_camera_objects:
-            self.report(type = {'WARNING'}, message = "You should specify source images path first!")
 
         return {'FINISHED'}
 
