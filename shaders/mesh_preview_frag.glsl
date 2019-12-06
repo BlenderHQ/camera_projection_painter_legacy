@@ -31,80 +31,19 @@ in vec3 nrmInterp;
 
 out vec4 fragColor;
 
-#define PI 3.14159265358979323846
-
-vec2 rotate2D(vec2 _st, float _angle){
-    _st -= 0.5;
-    _st =  mat2(cos(_angle),-sin(_angle),
-                sin(_angle),cos(_angle)) * _st;
-    _st += 0.5;
-    return _st;
-}
-float inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right) {
-    vec2 st = step(_bottom_left, _coo) - step(_top_right, _coo);
-    return st.x * st.y;
-}
-
-float inside_outline(in vec2 _coo, in float _width, in vec2 _scale) {
-    float inside_image = inside_rect(_coo, vec2(0.0), vec2(1.0));
-    vec2 sw = _scale * vec2(_width);
-    float inside = inside_rect(_coo, -sw, vec2(1.0) + sw);
-    return (1.0 - inside_image) * inside;
-}
-
-float checker_pattern(in vec2 _coo, in vec2 _scale, in float _check_size) {
-    float fmod_result = (mod(floor(_check_size * _scale.y * _coo.x) +
-    floor(_check_size * _scale.x * _coo.y), 2.0));
-    float checker = clamp(fmod_result, 0.0, 1.0);
-    return checker;
-}
-
-float lines_pattern(in vec2 _coo, in vec2 _scale, in float _check_size) {
-    vec2 _rcoo = rotate2D(_coo, PI * 0.25);
-    float fmod_result = (mod(floor(_check_size * _scale.y * _rcoo.x * 4.0), 2.0));
-    float pattern = clamp(fmod_result, 0.0, 1.0);
-    return pattern;
-}
-
-float linearrgb_to_srgb(float c) {
-    if (c < 0.0031308) {
-        return (c < 0.0) ? 0.0 : c * 12.92;
-    }
-    else {
-        return 1.055 * pow(c, 1.0 / 2.4) - 0.055;
-    }
-}
-
-vec4 linearrgb_to_srgb(vec4 col_from) {
-    return vec4(
-    linearrgb_to_srgb(col_from.r),
-    linearrgb_to_srgb(col_from.g),
-    linearrgb_to_srgb(col_from.b),
-    col_from.a);
-}
-
-vec4 premultiplied_alpha_blend(vec4 src, vec4 dst) {
-    float final_alpha = src.a + dst.a * (1.0 - src.a);
-    return vec4(
-    (src.rgb * src.a + dst.rgb * dst.a * (1.0 - src.a)) / final_alpha,
-    final_alpha
-    );
-}
 
 void main() {
-    vec4 textureSource;
-    float brushMask;
-    vec2 brushCoord;
-
-    float imageFrameMask = inside_rect(posInterp, vec2(0.0), vec2(1.0));
+    float imageFrameMask = inside_rect(posInterp, vec2(0.0), vec2(1.0)); // Inside draw preview, outside draw outline
 
     if (imageFrameMask != 0.0) {
-        if (useBrush != 0 || fullDraw == 1)
-        {
+        vec4 textureSource;
+        vec2 brushCoord;
+        float brushMask;
+
+        if (useBrush != 0 || fullDraw == 1) {
             float dist = distance((gl_FragCoord.xy - mousePos) / vec2(brushRadius), vec2(0.0));
             brushCoord = vec2(dist, 0.1);
-            if (dist < 0.96 || fullDraw == 1)
-            {
+            if (dist < 0.96 || fullDraw == 1) {
                 brushMask = texture(brushImage, brushCoord).r;
 
                 if (colorspace_srgb == false) {
@@ -116,13 +55,10 @@ void main() {
             }
         }
 
-
-        // Normal inspection
         vec4 fragNormalInspection;
         float normalInspectionFactor = 35.0;
 
-        if (useNormalInspection != 0)
-        {
+        if (useNormalInspection != 0) {
             float nrmDot = 1.0 - clamp(dot(nrmInterp, projectorForward) / normalInspectionFactor, 0.0, 1.0);
             fragNormalInspection = linearrgb_to_srgb(normalHighlightColor) * nrmDot;
         }
@@ -132,12 +68,10 @@ void main() {
             opacity = clamp(brushStrength * brushMask, 0.0, 1.0);
         }
         if (useBrush != 0 || fullDraw == 1) {
-            if (warning != 0 && fullDraw == 0)
-            {
+            if (warning != 0 && fullDraw == 0) {
                 fragColor = linearrgb_to_srgb(warningColor * opacity);
             }
-            else
-            {
+            else {
                 textureSource.a *= opacity;
                 fragColor = premultiplied_alpha_blend(textureSource, fragNormalInspection);
             }
@@ -147,12 +81,10 @@ void main() {
         }
     }
     else {
-        // Outline
         vec4 fragOutline;
         float outlinePattern;
 
         if (outlineType == 1) {
-            // Fill color
             outlinePattern = 1.0;
         }
         else if (outlineType == 2) {
@@ -163,7 +95,8 @@ void main() {
         }
         if (outlineType != 0) {
             float outlineMask = inside_outline(posInterp, outlineWidth, sourceScale);
-            fragColor = linearrgb_to_srgb(outlineColor) * outlineMask * outlinePattern;
+            fragColor = linearrgb_to_srgb(outlineColor);
+            fragColor.a *= outlineMask * outlinePattern;
         }
     }
 }

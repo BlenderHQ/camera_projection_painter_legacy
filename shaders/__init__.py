@@ -70,7 +70,7 @@ def generate_shaders():
 
                 _shader_dict[shader_name][shader_index] = data
 
-        elif shader_type == SHADER_LIBRARY:  # TODO: Usage of shader libraries
+        elif shader_type == SHADER_LIBRARY:
             with open(file_path, 'r') as code:
                 data = code.read()
                 _shader_library += "\n\n%s" % data

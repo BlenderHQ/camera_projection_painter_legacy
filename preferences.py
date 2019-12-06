@@ -62,7 +62,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     outline_color: FloatVectorProperty(
         name = "Color",
-        default = [0.076387, 0.135512, 0.626662, 0.742857],
+        default = [0.784363, 0.735347, 0.787399, 0.792857],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Outline color")
 

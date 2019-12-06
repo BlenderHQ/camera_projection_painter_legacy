@@ -1,8 +1,8 @@
 uniform sampler2D image;
 in vec2 uvInterp;
-out vec4 frag;
+out vec4 fragColor;
 
 void main()
 {
-    frag = texture(image, uvInterp);
+    fragColor = texture(image, uvInterp);
 }
