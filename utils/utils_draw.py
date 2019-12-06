@@ -320,6 +320,10 @@ def gen_buffer_preview(preview):
     return bindcode
 
 
+def get_loaded_images_count():
+    return len([image for image in bpy.data.images if image.has_data])
+
+
 def check_image_previews():
     for image in bpy.data.images:
         preview = image.preview
@@ -371,11 +375,13 @@ def draw_cameras(self, context):
         display_size = scene.cpp.cameras_viewport_size
         image = ob.data.cpp.image
 
+        has_data = False
         size_x, size_y = (1, 1)
         if image:
             static_size = image.cpp.static_size
             if static_size[0] and static_size[1]:
                 size_x, size_y = static_size
+                has_data = image.has_data
 
         if size_x > size_y:
             aspect_x = 1.0
@@ -404,10 +410,13 @@ def draw_cameras(self, context):
                     batch_image.draw(shader_camera_image_preview)
 
         shader_camera.bind()
-        color = preferences.camera_color
-
+        if has_data:
+            color = preferences.camera_color_loaded_data
+        else:
+            color = preferences.camera_color
         if ob == scene.camera:
             color = preferences.camera_color_highlight
+
         shader_camera.uniform_float("color", color)
         shader_camera.uniform_float("scale", (aspect_x, aspect_y))
         shader_camera.uniform_float("display_size", display_size)

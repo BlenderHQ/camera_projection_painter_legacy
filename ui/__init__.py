@@ -17,6 +17,7 @@ from .image_paint import (
     CPP_PT_view_projection_preview_options,
     CPP_PT_current_image_preview_options,
     CPP_PT_warnings_options,
+    CPP_PT_memory_options,
     CPP_PT_current_camera,
     CPP_PT_current_camera_calibration,
     CPP_PT_current_camera_lens_distortion
@@ -42,6 +43,7 @@ _classes = [
     CPP_PT_view_projection_preview_options,
     CPP_PT_current_image_preview_options,
     CPP_PT_warnings_options,
+    CPP_PT_memory_options,
     CPP_PT_current_camera,
     CPP_PT_current_camera_calibration,
     CPP_PT_current_camera_lens_distortion,

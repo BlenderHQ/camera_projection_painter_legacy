@@ -47,7 +47,7 @@ def bind_camera_image_by_name(ob, file_list):
         if size_x and size_y:
             ob.data.cpp.used = True
             ob.data.cpp.image = res
-        return res.name
+        return res
     ob.data.cpp.image = None
 
 

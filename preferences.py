@@ -74,7 +74,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     warning_color: FloatVectorProperty(
         name = "Warning Color",
-        default = [0.485150, 0.074298, 0.030191, 1.000000],
+        default = [1.000000, 0.102228, 0.030697, 1.000000],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Highlight brush warning color")
 
@@ -95,6 +95,12 @@ class CppPreferences(bpy.types.AddonPreferences):
         default = [0.019613, 0.356583, 0.827556, 0.957143],
         subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
         description = "Camera color")
+
+    camera_color_loaded_data: FloatVectorProperty(
+        name = "Color Loaded",
+        default = [0.062277, 0.092429, 0.246195, 0.714286],
+        subtype = "COLOR", size = 4, min = 0.0, max = 1.0,
+        description = "Camera image has data loaded into memory")
 
     # Gizmos
     gizmo_color: FloatVectorProperty(
@@ -166,6 +172,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "camera_line_width")
         col.prop(self, "camera_color")
         col.prop(self, "camera_color_highlight")
+        col.prop(self, "camera_color_loaded_data")
 
         col.label(text = "Camera Gizmo:")
         col.label(text = "(Updated after refreshing gizmo)")

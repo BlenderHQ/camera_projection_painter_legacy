@@ -220,12 +220,12 @@ class CPP_OT_bind_camera_image(Operator):
             res = utils_camera.bind_camera_image_by_name(ob, file_list)
             if res:
                 count += 1
-                print(res)  # Also print list of successfully binded cameras to console
+                print("Camera: %s - Image: %s" % (ob.name, res.name))  # Also print list of successfully binded cameras to console
 
         if count:
             mess = "Binded %d camera images" % count
             if count == 1:
-                mess = "Binded %s camera image" % res
+                mess = "Binded %s camera image" % res.name
             self.report(type = {'INFO'}, message = mess)
         else:
             self.report(type = {'WARNING'}, message = "Images not found!")
@@ -388,8 +388,11 @@ class CPP_OT_enter_context(Operator):
             self.report(type = {'WARNING'}, message = "You should specify source images path first!")
 
         if not scene.camera:
-            scene.camera = list(scene.cpp.available_camera_objects)[0]
-        utils_base.set_clone_image_from_camera_data(context)
+            if scene.cpp.has_available_camera_objects:
+                scene.camera = list(scene.cpp.available_camera_objects)[0]
+
+        if scene.camera:
+            utils_base.set_clone_image_from_camera_data(context)
 
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
@@ -404,7 +407,6 @@ class CPP_OT_enter_context(Operator):
 class CPP_OT_call_pie(Operator):
     bl_idname = "cpp.call_pie"
     bl_label = "CPP Call Pie"
-    bl_description = "Open Context Menu"
     bl_options = {'INTERNAL'}
 
     camera_name: StringProperty()
@@ -421,6 +423,34 @@ class CPP_OT_call_pie(Operator):
         return {'FINISHED'}
 
 
+class CPP_OT_free_memory(Operator):
+    bl_idname = "cpp.free_memory"
+    bl_label = "Free Memory"
+    bl_description = "Free unused images from memory"
+    bl_options = {'INTERNAL'}
+
+    @classmethod
+    def poll(cls, context):
+        if utils_draw.get_loaded_images_count() > 2:
+            return True
+        return False
+
+    def execute(self, context):
+        scene = context.scene
+        image_paint = scene.tool_settings.image_paint
+
+        count = 0
+        for image in bpy.data.images:
+            if image not in (image_paint.canvas, image_paint.clone_image):
+                if image.has_data:
+                    image.buffers_free()
+                    count += 1
+
+        self.report(type = {'INFO'}, message = "Freed %d images" % count)
+
+        return {'FINISHED'}
+
+
 _classes = [
     CPP_OT_image_paint,
     CPP_OT_camera_projection_painter,
@@ -429,6 +459,7 @@ _classes = [
     CPP_OT_set_camera_active,
     CPP_OT_set_camera_calibration_from_file,
     CPP_OT_enter_context,
-    CPP_OT_call_pie
+    CPP_OT_call_pie,
+    CPP_OT_free_memory
 ]
 register, unregister = bpy.utils.register_classes_factory(_classes)

@@ -7,8 +7,8 @@ from .templates import (
     template_camera_lens_distortion,
     template_path_with_ops)
 
-from ..operators import CPP_OT_set_camera_by_view
-from ..utils import utils_poll
+from ..operators import CPP_OT_set_camera_by_view, CPP_OT_free_memory
+from ..utils import utils_poll, utils_draw
 
 
 class CPPOptionsPanel:
@@ -176,6 +176,23 @@ class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
 
         col.prop(scene.cpp, "use_warning_action_popup")
         col.prop(scene.cpp, "use_warning_action_lock")
+
+
+class CPP_PT_memory_options(Panel, CPPOptionsPanel):
+    bl_label = "Memory Management"
+    bl_parent_id = "CPP_PT_warnings_options"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = False
+        layout.use_property_decorate = False
+        col = layout.column(align = False)
+
+        row = col.row()
+        row.label(text = "Images loaded:")
+        row.label(text = "%d" % utils_draw.get_loaded_images_count())
+
+        col.operator(CPP_OT_free_memory.bl_idname)
 
 
 class CPP_PT_current_camera(Panel, CPPOptionsPanel):
