@@ -78,6 +78,6 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
             icon_value = get_icon_id("bind_image"))
         operator.mode = 'ALL'
 
-        scol = col.column()
-        scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
-                      icon_value = get_icon_id("calibration"))
+        #scol = col.column()
+        #scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+        #              icon_value = get_icon_id("calibration"))

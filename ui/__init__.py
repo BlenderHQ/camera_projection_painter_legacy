@@ -28,8 +28,8 @@ __all__ = ["register", "unregister"]
 
 _classes = [
     CPP_PT_active_camera_options,
-    CPP_PT_active_camera_calibration,
-    CPP_PT_active_camera_lens_distortion,
+    #CPP_PT_active_camera_calibration,
+    #CPP_PT_active_camera_lens_distortion,
 
     CPP_PT_camera_projection_painter,
     CPP_PT_path,
@@ -45,8 +45,8 @@ _classes = [
     CPP_PT_warnings_options,
     CPP_PT_memory_options,
     CPP_PT_current_camera,
-    CPP_PT_current_camera_calibration,
-    CPP_PT_current_camera_lens_distortion,
+    #CPP_PT_current_camera_calibration,
+    #CPP_PT_current_camera_lens_distortion,
 
     CPP_MT_camera_pie
 ]

@@ -104,7 +104,7 @@ def template_path(layout, scene):
     col = layout.column(align = True)
 
     col.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
-    col.prop(scene.cpp, "calibration_source_file", icon = 'FILE_CACHE')
+    #col.prop(scene.cpp, "calibration_source_file", icon = 'FILE_CACHE')
 
 
 def template_path_with_ops(layout, scene):
@@ -124,6 +124,6 @@ def template_path_with_ops(layout, scene):
 
     col.separator()
 
-    col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
-    col.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
-                 icon_value = get_icon_id("calibration"))
+    #col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
+    #col.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+    #             icon_value = get_icon_id("calibration"))
