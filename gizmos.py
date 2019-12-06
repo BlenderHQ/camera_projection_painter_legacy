@@ -8,9 +8,9 @@ from mathutils import Vector
 from mathutils.geometry import intersect_point_quad_2d
 from bpy.types import Gizmo, GizmoGroup
 
+from . import operators
 from .utils import utils_poll, utils_draw
 from .shaders import shaders
-from . import operators
 
 
 class CPP_GGT_camera_gizmo_group(GizmoGroup):

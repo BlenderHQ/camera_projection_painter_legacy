@@ -23,6 +23,7 @@ vec4 linearrgb_to_srgb(vec4 col_from) {
     col_from.a);
 }
 
+
 void main()
 {
     vec4 imageTexture = texture(image, uvInterp);

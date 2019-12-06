@@ -11,7 +11,7 @@ from bpy.props import (
 )
 
 from .icons import get_icon_id
-from .utils import utils_image, utils_base
+from .utils import utils_image, utils_base, utils_draw
 
 import io
 import os
@@ -137,6 +137,10 @@ class SceneProperties(PropertyGroup):
         if self.use_auto_set_image:
             utils_base.set_clone_image_from_camera_data(context)
 
+    def _use_camera_image_previews_update(self, context):
+        if self.use_camera_image_previews:
+            utils_draw.clear_image_previews()
+
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
         description = "Path to source images used. "
@@ -167,7 +171,8 @@ class SceneProperties(PropertyGroup):
     use_auto_set_image: BoolProperty(
         name = "Use Automatic Image", default = True,
         options = {'HIDDEN'},
-        description = "Automatic/User image selection")
+        description = "Automatic/User image selection",
+        update = _use_auto_set_image_update)
 
     auto_set_camera_method: EnumProperty(
         items = [
@@ -222,7 +227,7 @@ class SceneProperties(PropertyGroup):
         name = "Camera Images", default = False,
         options = {'HIDDEN'},
         description = "Display camera images in the viewport",
-        update = _use_auto_set_image_update)
+        update = _use_camera_image_previews_update)
 
     # Current image preview
     use_current_image_preview: BoolProperty(

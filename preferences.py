@@ -8,11 +8,12 @@ from bpy.props import (
 
 import rna_keymap_ui
 
+from . import operators
 from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
+from .icons import get_icon_id
 from .constants import WEB_LINKS
 
-from . import operators
-from .icons import get_icon_id
+__all__ = ["register", "unregister"]
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
@@ -147,7 +148,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
         col.label(text = "Outline:")
         row = col.row()
-        #row.use_property_split = False
+        # row.use_property_split = False
         row.prop(self, "outline_type", expand = True, emboss = True)
         scol = col.column(align = True)
         if self.outline_type == 'NO_OUTLINE':
@@ -218,35 +219,6 @@ class CppPreferences(bpy.types.AddonPreferences):
             col.label(text = "Current Image Preview:")
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
-
-
-
-# kmi = get_hotkey_entry_item(km, CPP_OT_image_paint.bl_idname)
-# draw_kmi(kmi, col)
-
-
-#
-# kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname)
-# draw_kmi(kmi, col)
-#
-# kmi = get_hotkey_entry_item(km, "view3d.view_center_pick")
-# draw_kmi(kmi, col)
-#
-# kmi = get_hotkey_entry_item(
-#    km, "wm.context_toggle",
-#    properties = {"data_path": "scene.cpp.use_camera_image_previews"})
-# draw_kmi(kmi, col, text = "Toggle Camera Image Previews")
-#
-# kmi = get_hotkey_entry_item(
-#    km, "wm.context_toggle",
-#    properties = {"data_path": "scene.cpp.use_projection_preview"})
-# draw_kmi(kmi, col, text = "Toggle Projection Preview")
-#
-# kmi = get_hotkey_entry_item(
-#    km, "wm.context_toggle",
-#    properties = {"data_path": "scene.cpp.use_current_image_preview"})
-# draw_kmi(kmi, col, text = "Toggle Current Image Preview")
-#
 
 _classes = [
     CppPreferences,

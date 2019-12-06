@@ -12,14 +12,12 @@ from .utils_poll import full_poll_decorator
 from .utils_camera import get_camera_attributes
 from .common import get_hovered_region_3d, iter_curve_values, flerp
 
-from ..constants import TEMP_DATA_NAME
 from ..shaders import shaders
 from .. import __package__ as addon_pkg
 
-from . import utils_image
-
-import time
 import numpy as np
+
+_image_previews = {}
 
 
 # Operator cls specific func
@@ -179,7 +177,6 @@ def draw_projection_preview(self, context):
     mouse_position = self.mouse_position
     active_rv3d = get_hovered_region_3d(context, mouse_position)
     current_rv3d = context.area.spaces.active.region_3d
-    # current_rv3d = context.region_data
 
     outline_type = 0
     if scene.cpp.use_projection_outline:
@@ -306,9 +303,6 @@ def get_camera_batches(context):
     return res
 
 
-_image_previews = {}
-
-
 def gen_buffer_preview(preview):
     id_buff = bgl.Buffer(bgl.GL_INT, 1)
     bgl.glGenTextures(1, id_buff)
@@ -340,6 +334,11 @@ def check_image_previews():
                 if any(preview.image_pixels[:]):
                     bindcode = gen_buffer_preview(preview)
                     _image_previews[image] = bindcode
+
+
+def clear_image_previews():
+    global _image_previews
+    _image_previews = {}
 
 
 @full_poll_decorator

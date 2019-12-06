@@ -36,11 +36,7 @@ from .utils import (
 import os
 import csv
 
-import time
-
-#
 camera_painter_operator = None
-
 mouse_position = (0, 0)
 tmp_camera = None
 

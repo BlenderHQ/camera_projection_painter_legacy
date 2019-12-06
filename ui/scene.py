@@ -79,5 +79,5 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
         operator.mode = 'ALL'
 
         scol = col.column()
-        # scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
-        #              icon_value = get_icon_id("calibration"))
+        scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+                      icon_value = get_icon_id("calibration"))
