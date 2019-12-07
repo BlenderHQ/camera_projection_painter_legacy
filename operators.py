@@ -421,9 +421,11 @@ class CPP_OT_call_pie(Operator):
     def execute(self, context):
         global tmp_camera
         scene = context.scene
-        if self.camera_name in scene.cpp.camera_objects:
-            tmp_camera = scene.cpp.camera_objects[self.camera_name]
-            bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
+        if self.camera_name in scene.objects:
+            ob = scene.objects[self.camera_name]
+            if ob.type == 'CAMERA':
+                tmp_camera = ob
+                bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
         return {'FINISHED'}
 
 
