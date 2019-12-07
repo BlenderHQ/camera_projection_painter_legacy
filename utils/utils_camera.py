@@ -21,34 +21,35 @@ def get_camera_attributes(ob):
 
 
 def bind_camera_image_by_name(ob, file_list):
-    res = None
+    if ob.type == 'CAMERA':
+        res = None
 
-    for image in bpy.data.images:
-        name, ext = os.path.splitext(image.name)
-        if ob.name == image.name or ob.name == name:
-            res = image
-            break
-    if not res:
-        for file_path in file_list:
-            file_name = bpy.path.basename(file_path)
-            name, ext = os.path.splitext(file_name)
-
-            if ob.name == file_name or ob.name == name:
-
-                if file_name in bpy.data.images:
-                    bpy.data.images[file_name].filepath = file_path
-                    res = bpy.data.images[file_path]
-                else:
-                    res = bpy.data.images.load(filepath = file_path, check_existing = True)
+        for image in bpy.data.images:
+            name, ext = os.path.splitext(image.name)
+            if ob.name == image.name or ob.name == name:
+                res = image
                 break
-    if res:
-        size_x, size_y = res.cpp.static_size
+        if not res:
+            for file_path in file_list:
+                file_name = bpy.path.basename(file_path)
+                name, ext = os.path.splitext(file_name)
 
-        if size_x and size_y:
-            ob.data.cpp.used = True
-            ob.data.cpp.image = res
-        return res
-    ob.data.cpp.image = None
+                if ob.name == file_name or ob.name == name:
+
+                    if file_name in bpy.data.images:
+                        bpy.data.images[file_name].filepath = file_path
+                        res = bpy.data.images[file_path]
+                    else:
+                        res = bpy.data.images.load(filepath = file_path, check_existing = True)
+                    break
+        if res:
+            size_x, size_y = res.cpp.static_size
+
+            if size_x and size_y:
+                ob.data.cpp.used = True
+                ob.data.cpp.image = res
+            return res
+        ob.data.cpp.image = None
 
 
 def set_camera_by_view(context, mouse_position):

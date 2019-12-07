@@ -197,7 +197,8 @@ class CPP_OT_bind_camera_image(Operator):
 
         cameras = []
         if self.mode == 'ACTIVE':
-            cameras = [context.active_object]
+            ob = context.active_object
+            cameras = [ob] if ob.type == 'CAMERA' else []
         elif self.mode == 'CONTEXT':
             cameras = [scene.camera]
         elif self.mode == 'SELECTED':
@@ -205,9 +206,9 @@ class CPP_OT_bind_camera_image(Operator):
         elif self.mode == 'ALL':
             cameras = scene.cpp.camera_objects
         elif self.mode == 'TMP':
-            cam = tmp_camera
-            if cam:
-                cameras = [cam]
+            ob = tmp_camera
+            if ob:
+                cameras = [ob] if ob.type == 'CAMERA' else []
         count = 0
 
         file_list = []
@@ -220,7 +221,8 @@ class CPP_OT_bind_camera_image(Operator):
             res = utils_camera.bind_camera_image_by_name(ob, file_list)
             if res:
                 count += 1
-                print("Camera: %s - Image: %s" % (ob.name, res.name))  # Also print list of successfully binded cameras to console
+                # Also print list of successfully binded cameras to console
+                print("Camera: %s - Image: %s" % (ob.name, res.name))
 
         if count:
             mess = "Binded %d camera images" % count
@@ -418,8 +420,10 @@ class CPP_OT_call_pie(Operator):
 
     def execute(self, context):
         global tmp_camera
-        tmp_camera = context.scene.objects[self.camera_name]
-        bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
+        scene = context.scene
+        if self.camera_name in scene.cpp.camera_objects:
+            tmp_camera = scene.cpp.camera_objects[self.camera_name]
+            bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
         return {'FINISHED'}
 
 
