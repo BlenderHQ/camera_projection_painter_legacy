@@ -18,12 +18,6 @@ class SceneButtonsPanel:
     bl_context = "scene"
     bl_options = {'DEFAULT_CLOSED'}
 
-    @classmethod
-    def poll(cls, context):
-        if operators.camera_painter_operator:
-            return True
-        return False
-
 
 class CPP_PT_camera_projection_painter(Panel, SceneButtonsPanel):
     bl_label = "Camera Paint"
@@ -78,6 +72,6 @@ class CPP_PT_scene_cameras(Panel, SceneButtonsPanel):
             icon_value = get_icon_id("bind_image"))
         operator.mode = 'ALL'
 
-        #scol = col.column()
-        #scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+        # scol = col.column()
+        # scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
         #              icon_value = get_icon_id("calibration"))

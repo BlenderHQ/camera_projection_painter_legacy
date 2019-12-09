@@ -20,9 +20,7 @@ class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
 
     @classmethod
     def poll(cls, context):
-        if operators.camera_painter_operator:
-            return context.object.type == 'CAMERA'
-        return False
+        return context.object.type == 'CAMERA'
 
     def draw_header(self, context):
         layout = self.layout

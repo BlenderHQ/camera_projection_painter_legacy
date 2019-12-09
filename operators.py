@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
+import time
 
 import bpy
 from bpy.types import Operator
@@ -79,43 +80,37 @@ class CPP_OT_camera_projection_painter(Operator):
         utils_base.set_properties_defaults(self)
 
     def invoke(self, context, event):
-        global camera_painter_operator
-        camera_painter_operator = self
-
-        # bpy.ops.cpp.screen_update('INVOKE_DEFAULT')
-
         wm = context.window_manager
+        if wm.cpp_running:
+            return {'CANCELLED'}
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        if not self.setup_required:
-            scene = context.scene
-            utils_draw.remove_draw_handlers(self)
-            ob = context.active_object
-            utils_base.remove_uv_layer(ob)
-            utils_base.set_properties_defaults(self)
-            scene.cpp.cameras_hide_set(state = False)
+        wm = context.window_manager
+        wm.cpp_running = False
+
+        scene = context.scene
+        utils_draw.remove_draw_handlers(self)
+        ob = context.active_object
+        utils_base.remove_uv_layer(ob)
+        utils_base.set_properties_defaults(self)
+        scene.cpp.cameras_hide_set(state = False)
+        utils_draw.clear_image_previews()
 
     def modal(self, context, event):
-        scene = context.scene
-        ob = context.image_paint_object
-        image_paint = scene.tool_settings.image_paint
-        clone_image = image_paint.clone_image
-
         if not utils_poll.full_poll(context):
             self.cancel(context)
-            return {'PASS_THROUGH'}
-
-        image_paint.clone_image = clone_image  # TODO: Find a better way to update
-
-        # Manully call image.buffers_free(). BF does't do this so Blender often crashes
-        # Also, it checks if image preview generated
-        utils_draw.check_image_previews()
+            return {'FINISHED'}
 
         if self.suspended:
             return {'PASS_THROUGH'}
+
+        if event.type == 'MOUSEMOVE':
+            for area in context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.tag_redraw()
 
         if event.type == 'F' and event.value == 'PRESS':
             self.suspended_mouse = True
@@ -125,6 +120,15 @@ class CPP_OT_camera_projection_painter(Operator):
             global mouse_position
             mouse_position = event.mouse_x, event.mouse_y
             self.mouse_position = mouse_position
+
+        scene = context.scene
+        ob = context.image_paint_object
+        image_paint = scene.tool_settings.image_paint
+        clone_image = image_paint.clone_image
+
+        # Manully call image.buffers_free(). BF does't do this so Blender often crashes
+        # Also, it checks if image preview generated
+        utils_draw.check_image_previews(context)
 
         if scene.cpp.use_projection_preview:
             utils_draw.update_brush_texture_bindcode(self, context)

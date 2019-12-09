@@ -1,13 +1,9 @@
 import bpy
 
 from ..constants import TEMP_DATA_NAME
-from .. import operators
 
 
 def full_poll(context):
-    if not operators.camera_painter_operator:
-        return False
-
     scene = context.scene
     image_paint = scene.tool_settings.image_paint
     if scene.camera and image_paint.detect_data():

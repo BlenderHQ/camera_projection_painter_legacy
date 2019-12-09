@@ -8,7 +8,6 @@ from mathutils import Vector
 from bpy.types import SpaceView3D
 
 from .utils_warning import get_warning_status
-from .utils_poll import full_poll_decorator
 from .utils_camera import get_camera_attributes
 from .common import get_hovered_region_3d, iter_curve_values, flerp
 
@@ -137,7 +136,6 @@ def get_bmesh_batch(bm):
     return batch
 
 
-@full_poll_decorator
 def draw_projection_preview(self, context):
     scene = context.scene
     if not scene.cpp.use_projection_preview:
@@ -324,7 +322,11 @@ def get_loaded_images_count():
     return len([image for image in bpy.data.images if image.has_data])
 
 
-def check_image_previews():
+def check_image_previews(context):
+    scene = context.scene
+    image_paint = scene.tool_settings.image_paint
+    clone_image = image_paint.clone_image
+    canvas = image_paint.canvas
     for image in bpy.data.images:
         preview = image.preview
 
@@ -333,6 +335,7 @@ def check_image_previews():
                 if any(preview.image_pixels[:]):
                     bindcode = gen_buffer_preview(preview)
                     _image_previews[image] = bindcode
+                if image not in (clone_image, canvas):
                     image.buffers_free()
             else:
                 if any(preview.image_pixels[:]):
@@ -345,7 +348,6 @@ def clear_image_previews():
     _image_previews = {}
 
 
-@full_poll_decorator
 def draw_cameras(self, context):
     scene = context.scene
     shader_camera = shaders.camera
