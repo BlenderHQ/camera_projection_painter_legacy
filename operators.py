@@ -80,29 +80,28 @@ class CPP_OT_camera_projection_painter(Operator):
         utils_base.set_properties_defaults(self)
 
     def invoke(self, context, event):
+        global camera_painter_operator
+        camera_painter_operator = self
+
         wm = context.window_manager
-        if wm.cpp_running:
-            return {'CANCELLED'}
         wm.event_timer_add(time_step = TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        wm = context.window_manager
-        wm.cpp_running = False
-
-        scene = context.scene
-        utils_draw.remove_draw_handlers(self)
-        ob = context.active_object
-        utils_base.remove_uv_layer(ob)
-        utils_base.set_properties_defaults(self)
-        scene.cpp.cameras_hide_set(state = False)
-        utils_draw.clear_image_previews()
+        if not self.setup_required:
+            scene = context.scene
+            utils_draw.remove_draw_handlers(self)
+            ob = context.active_object
+            utils_base.remove_uv_layer(ob)
+            scene.cpp.cameras_hide_set(state = False)
+            utils_draw.clear_image_previews()
+            utils_base.set_properties_defaults(self)
 
     def modal(self, context, event):
         if not utils_poll.full_poll(context):
             self.cancel(context)
-            return {'FINISHED'}
+            return {'PASS_THROUGH'}
 
         if self.suspended:
             return {'PASS_THROUGH'}
@@ -114,7 +113,7 @@ class CPP_OT_camera_projection_painter(Operator):
 
         if event.type == 'F' and event.value == 'PRESS':
             self.suspended_mouse = True
-        if event.type == 'LEFTMOUSE' and event.value == 'RELEASE':
+        if event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
             self.suspended_mouse = False
         if not (self.suspended_mouse or self.suspended):
             global mouse_position

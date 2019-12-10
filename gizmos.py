@@ -176,6 +176,9 @@ class CPP_GT_current_image_preview(Gizmo):
         elif 'SNAP' in tweak:
             rel_pos = Vector((sorted(snap_points, key = lambda dist: (Vector(dist) - rel_pos).length)[0]))
         scene.cpp.current_image_position = rel_pos
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
         return {'RUNNING_MODAL'}
 
     def exit(self, context, cancel):

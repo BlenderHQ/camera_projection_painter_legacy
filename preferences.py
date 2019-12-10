@@ -124,15 +124,22 @@ class CppPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         layout = self.layout
 
-        row = layout.row()
-        row.prop(self, "tab", expand = True)
+        if not operators.camera_painter_operator:
+            layout.label(text = "To finish addon installation please reload current file", icon = 'INFO')
+            col = layout.column(align = True)
+            col.use_property_split = True
+            col.use_property_decorate = False
+            self.draw_info_tab(col)
+        else:
+            row = layout.row()
+            row.prop(self, "tab", expand = True)
 
-        if self.tab == 'INFO':
-            self.draw_info_tab(layout)
-        elif self.tab == 'DRAW':
-            self.draw_draw_tab(layout)
-        elif self.tab == 'KEYMAP':
-            self.draw_keymap_tab(layout)
+            if self.tab == 'INFO':
+                self.draw_info_tab(layout)
+            elif self.tab == 'DRAW':
+                self.draw_draw_tab(layout)
+            elif self.tab == 'KEYMAP':
+                self.draw_keymap_tab(layout)
 
     def draw_info_tab(self, layout):
         col = layout.column(align = True)

@@ -368,7 +368,6 @@ _register, _unregister = bpy.utils.register_classes_factory(classes)
 def register():
     _register()
 
-    bpy.types.WindowManager.cpp_running = BoolProperty(default = False)
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
@@ -377,7 +376,6 @@ def register():
 def unregister():
     _unregister()
 
-    del bpy.types.Image.cpp
-    del bpy.types.Scene.cpp
     del bpy.types.Camera.cpp
-    del bpy.types.WindowManager.cpp_running
+    del bpy.types.Scene.cpp
+    del bpy.types.Image.cpp

@@ -21,7 +21,7 @@
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 1, 7),
+    "version": (0, 1, 1, 8),
     "blender": (2, 80, 0),
     "description": "Expanding capabilities of texture paint Clone Brush",
     "location": "Clone Brush tool settings, Scene tab, Camera tab",
@@ -35,6 +35,12 @@ if "bpy" in locals():
     import os
     import importlib
 
+    from . import operators
+
+    operators.camera_painter_operator.cancel(bpy.context)
+
+    unregister()
+
     for module_name, module_file in sorted(bpy.path.module_names(
             path = os.path.dirname(__file__), recursive = True),
             key = lambda x: x[1]):
@@ -42,6 +48,11 @@ if "bpy" in locals():
         importlib.reload(module)
         del module
 
+    register()
+
+    bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
+
+    del operators
     del importlib
     del os
 
