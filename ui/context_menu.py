@@ -23,9 +23,11 @@ class CPP_MT_camera_pie(Menu):
             col.emboss = 'NORMAL'
             col = col.column(align = True)
 
+            scene = context.scene
+
             scol = col.column()
             scol.emboss = 'NONE'
-            scol.prop(camera_ob.data.cpp, "used")
+
             if camera_ob.data.cpp.image:
                 col.template_ID_preview(camera_ob.data.cpp, "image", open = "image.open", rows = 3, cols = 8)
             else:
@@ -39,6 +41,8 @@ class CPP_MT_camera_pie(Menu):
             col.separator()
 
             text = None
-            if context.scene.camera == camera_ob:
+            if scene.cpp.use_auto_set_camera:
+                text = "Automatic Selection Used"
+            if scene.camera == camera_ob:
                 text = "Already active"
             pie.operator(CPP_OT_set_camera_active.bl_idname, text = text, icon_value = get_icon_id("set_active"))

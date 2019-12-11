@@ -30,7 +30,6 @@ def template_camera_image(layout, camera_ob):
     camera = camera_ob.data
 
     col = layout.column(align = True)
-    col.enabled = camera.cpp.used
 
     image = camera.cpp.image
     if image:
@@ -42,9 +41,9 @@ def template_camera_image(layout, camera_ob):
     operator.mode = 'ACTIVE'
 
     if image:
-        size_x, size_y = image.cpp.static_size
 
-        if size_x and size_y:
+        if not image.cpp.invalid:
+            size_x, size_y = image.cpp.static_size
             row = col.row()
             row.label(text = "Width:")
             row.label(text = "%d px" % size_x)
@@ -57,7 +56,7 @@ def template_camera_image(layout, camera_ob):
             row.label(text = "Pixel Format:")
             row.label(text = "%d-bit %s" % (image.depth, image.colorspace_settings.name))
         else:
-            col.label(text = "Empty image!", icon = 'ERROR')
+            col.label(text = "Invalid image", icon = 'ERROR')
 
 
 def template_camera_calibration(layout, camera_ob):
@@ -98,15 +97,6 @@ def template_camera_lens_distortion(layout, camera_ob):
     col.prop(data.cpp, "lens_distortion_tangential_2")
 
 
-def template_path(layout, scene):
-    layout.use_property_split = True
-    layout.use_property_decorate = False
-    col = layout.column(align = True)
-
-    col.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
-    #col.prop(scene.cpp, "calibration_source_file", icon = 'FILE_CACHE')
-
-
 def template_path_with_ops(layout, scene):
     layout.use_property_split = False
     layout.use_property_decorate = False
@@ -124,6 +114,6 @@ def template_path_with_ops(layout, scene):
 
     col.separator()
 
-    #col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
-    #col.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+    # col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
+    # col.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
     #             icon_value = get_icon_id("calibration"))

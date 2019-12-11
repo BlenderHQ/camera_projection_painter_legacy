@@ -22,7 +22,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.full_poll(context)
+        return utils_poll.tool_setup_poll(context)
 
     def setup(self, context):
         for ob in context.scene.cpp.camera_objects:
@@ -159,12 +159,13 @@ class CPP_GT_current_image_preview(Gizmo):
         return -1
 
     def invoke(self, context, event):
+        wm = context.window_manager
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
         self.restore_show_brush = bool(image_paint.show_brush)
         image_paint.show_brush = False
-        operators.camera_painter_operator.suspended = True
         self.rel_offset = Vector(scene.cpp.current_image_position) - self._get_image_rel_pos(context, event)
+        wm.cpp_suspended = True
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event, tweak):
@@ -182,9 +183,10 @@ class CPP_GT_current_image_preview(Gizmo):
         return {'RUNNING_MODAL'}
 
     def exit(self, context, cancel):
+        wm = context.window_manager
+        wm.cpp_suspended = False
         image_paint = context.scene.tool_settings.image_paint
         image_paint.show_brush = self.restore_show_brush
-        operators.camera_painter_operator.suspended = False
 
 
 class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
@@ -213,12 +215,3 @@ class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
         mpr.use_grab_cursor = True
 
         self.mpr = mpr
-
-
-_classes = [
-    CPP_GGT_camera_gizmo_group,
-    CPP_GT_current_image_preview,
-    CPP_GGT_image_preview_gizmo_group
-]
-
-register, unregister = bpy.utils.register_classes_factory(_classes)

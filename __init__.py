@@ -1,74 +1,112 @@
-# ##### BEGIN GPL LICENSE BLOCK #####
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software Foundation,
-#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-# ##### END GPL LICENSE BLOCK #####
-
-# <pep8 compliant>
-
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 1, 8),
+    "version": (0, 1, 1, 9),
     "blender": (2, 80, 0),
     "description": "Expanding capabilities of texture paint Clone Brush",
     "location": "Clone Brush tool settings, Scene tab, Camera tab",
-    "warning": "4-th digit in version is just for development. It will be removed in release version",
     "wiki_url": "",
     "support": 'COMMUNITY',
     "category": "Paint",
 }
 
 if "bpy" in locals():
-    import os
     import importlib
 
-    from . import operators
+    importlib.reload(icons)
+    importlib.reload(shaders)
+    importlib.reload(preferences)
+    importlib.reload(keymap)
+    importlib.reload(extend_bpy_types)
+    importlib.reload(utils)
+    importlib.reload(ui)
+    importlib.reload(overwrite_ui)
+    importlib.reload(operators)
+    importlib.reload(gizmos)
+    importlib.reload(handlers)
 
-    operators.camera_painter_operator.cancel(bpy.context)
-
-    unregister()
-
-    for module_name, module_file in sorted(bpy.path.module_names(
-            path = os.path.dirname(__file__), recursive = True),
-            key = lambda x: x[1]):
-        module = importlib.import_module(name = "." + module_name, package = __package__)
-        importlib.reload(module)
-        del module
-
-    register()
-
-    bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
-
-    del operators
     del importlib
-    del os
 
 else:
-    import bpy
+    from . import icons
+    from . import shaders
+    from . import preferences
+    from . import keymap
+    from . import extend_bpy_types
+    from . import utils
+    from . import ui
+    from . import overwrite_ui
+    from . import operators
+    from . import gizmos
+    from . import handlers
 
-    _modules = [
-        "locale",
-        "icons",
-        "extend_bpy_types",
-        "keymap",
-        "preferences",
-        "operators",
-        "gizmos",
-        "ui",
-        "handlers"
-    ]
+import bpy
 
-    register, unregister = bpy.utils.register_submodule_factory(module_name = __name__, submodule_names = _modules)
+_classes = (
+    # extend_bpy_types
+    extend_bpy_types.CameraProperties,
+    extend_bpy_types.SceneProperties,
+    extend_bpy_types.ImageProperties,
+    # preferences
+    preferences.CppPreferences,
+    # operators
+    operators.CPP_OT_listener,
+    operators.CPP_OT_camera_projection_painter,
+    operators.CPP_OT_image_paint,
+    operators.CPP_OT_bind_camera_image,
+    operators.CPP_OT_set_camera_by_view,
+    operators.CPP_OT_set_camera_active,
+    operators.CPP_OT_set_camera_calibration_from_file,
+    operators.CPP_OT_enter_context,
+    operators.CPP_OT_call_pie,
+    operators.CPP_OT_free_memory,
+    # gizmos
+    gizmos.CPP_GGT_camera_gizmo_group,
+    gizmos.CPP_GT_current_image_preview,
+    gizmos.CPP_GGT_image_preview_gizmo_group,
+    # ui
+    ui.camera.CPP_PT_active_camera_options,
+    # ui.camera.CPP_PT_active_camera_calibration,
+    # ui.camera.CPP_PT_active_camera_lens_distortion,
+
+    ui.scene.CPP_PT_camera_painter_scene,
+
+    ui.image_paint.CPP_PT_camera_painter,
+
+    ui.image_paint.CPP_PT_view_options,
+    ui.image_paint.CPP_PT_camera_options,
+    ui.image_paint.CPP_PT_view_projection_options,
+    ui.image_paint.CPP_PT_current_image_preview_options,
+    ui.image_paint.CPP_PT_warnings_options,
+    ui.image_paint.CPP_PT_memory_options,
+
+    ui.image_paint.CPP_PT_operator_options,
+    ui.image_paint.CPP_PT_camera_autocam_options,
+    ui.image_paint.CPP_PT_current_camera,
+    # ui.image_paint.CPP_PT_current_camera_calibration,
+    # ui.image_paint.CPP_PT_current_camera_lens_distortion,
+
+    ui.context_menu.CPP_MT_camera_pie
+)
+
+
+def register():
+    for cls in _classes:
+        bpy.utils.register_class(cls)
+
+    # icons.register()
+    keymap.register()
+    extend_bpy_types.register()
+    overwrite_ui.register()
+    handlers.register()
+
+
+def unregister():
+    for cls in reversed(_classes):
+        bpy.utils.unregister_class(cls)
+
+    handlers.unregister()
+    overwrite_ui.unregister()
+    extend_bpy_types.unregister()
+    keymap.unregister()
+    icons.unregister()

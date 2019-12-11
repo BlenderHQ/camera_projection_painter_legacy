@@ -22,11 +22,6 @@ class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
     def poll(cls, context):
         return context.object.type == 'CAMERA'
 
-    def draw_header(self, context):
-        layout = self.layout
-        data = context.active_object.data
-        layout.prop(data.cpp, "used", text = "", text_ctxt = "CPP")
-
     def draw(self, context):
         layout = self.layout
 

@@ -1,38 +1,18 @@
-# ##### BEGIN GPL LICENSE BLOCK #####
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software Foundation,
-#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-# ##### END GPL LICENSE BLOCK #####
-
-# <pep8 compliant>
-
 import gpu
 import os
-from ..constants import (
-    SHADER_EXTENSION,
-    SEPARATOR,
-    SHADER_VERTEX,
-    SHADER_FRAGMENT,
-    SHADER_GEOMETRY,
-    SHADER_DEFINES,
-    SHADER_LIBRARY)
-
-__all__ = ["generate_shaders", "shaders"]
 
 
-def generate_shaders():
+SEPARATOR = "_"
+
+SHADER_EXTENSION = "glsl"
+SHADER_VERTEX = "vert"
+SHADER_FRAGMENT = "frag"
+SHADER_GEOMETRY = "geom"
+SHADER_DEFINES = "def"
+SHADER_LIBRARY = "lib"
+
+
+def _generate_shaders():
     directory = os.path.dirname(__file__)
 
     shader_endings = (
@@ -100,7 +80,7 @@ def generate_shaders():
 
 class ShaderStorage(object):
     def __init__(self):
-        for shader_name, data in generate_shaders().items():
+        for shader_name, data in _generate_shaders().items():
             object.__setattr__(self, shader_name, data)
 
         self.builtin_3d_uniform_color = gpu.shader.from_builtin('3D_UNIFORM_COLOR')

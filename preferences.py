@@ -13,8 +13,6 @@ from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
 from .icons import get_icon_id
 from .constants import WEB_LINKS
 
-__all__ = ["register", "unregister"]
-
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
     for i, km_item in enumerate(km.keymap_items):
@@ -123,23 +121,15 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
+        row = layout.row()
+        row.prop(self, "tab", expand = True)
 
-        if not operators.camera_painter_operator:
-            layout.label(text = "To finish addon installation please reload current file", icon = 'INFO')
-            col = layout.column(align = True)
-            col.use_property_split = True
-            col.use_property_decorate = False
-            self.draw_info_tab(col)
-        else:
-            row = layout.row()
-            row.prop(self, "tab", expand = True)
-
-            if self.tab == 'INFO':
-                self.draw_info_tab(layout)
-            elif self.tab == 'DRAW':
-                self.draw_draw_tab(layout)
-            elif self.tab == 'KEYMAP':
-                self.draw_keymap_tab(layout)
+        if self.tab == 'INFO':
+            self.draw_info_tab(layout)
+        elif self.tab == 'DRAW':
+            self.draw_draw_tab(layout)
+        elif self.tab == 'KEYMAP':
+            self.draw_keymap_tab(layout)
 
     def draw_info_tab(self, layout):
         col = layout.column(align = True)
@@ -225,9 +215,3 @@ class CppPreferences(bpy.types.AddonPreferences):
             col.context_pointer_set("keymap", km)
             col.label(text = "Current Image Preview:")
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
-
-
-_classes = [
-    CppPreferences,
-]
-register, unregister = bpy.utils.register_classes_factory(_classes)

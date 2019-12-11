@@ -20,9 +20,12 @@ import os
 class CameraProperties(PropertyGroup):
     @property
     def available(self):
-        return self.id_data.cpp.used and self.id_data.cpp.image
-
-    used: BoolProperty(description = "Use camera as a projector", options = {'HIDDEN'})
+        image = self.id_data.cpp.image
+        if not image:
+            return False
+        if image.cpp.invalid:
+            return False
+        return True
 
     image: PointerProperty(
         type = bpy.types.Image, name = "Image",
@@ -209,7 +212,7 @@ class SceneProperties(PropertyGroup):
 
     # Viewport draw
     use_projection_preview: BoolProperty(
-        name = "Projection Preview", default = True,
+        name = "Projection Preview", default = False,
         options = {'HIDDEN'},
         description = "Show preview of projection")
 
@@ -356,26 +359,17 @@ class ImageProperties(PropertyGroup):
         return True
 
 
-classes = [
-    CameraProperties,
-    SceneProperties,
-    ImageProperties,
-]
-
-_register, _unregister = bpy.utils.register_classes_factory(classes)
-
-
 def register():
-    _register()
-
+    bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False)
+    bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False)
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
 
 
 def unregister():
-    _unregister()
-
-    del bpy.types.Camera.cpp
-    del bpy.types.Scene.cpp
     del bpy.types.Image.cpp
+    del bpy.types.Scene.cpp
+    del bpy.types.Camera.cpp
+    del bpy.types.WindowManager.cpp_running
+    del bpy.types.WindowManager.cpp_suspended

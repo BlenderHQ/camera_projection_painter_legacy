@@ -4,7 +4,9 @@ import bpy
 from mathutils import Vector
 
 from .common import flerp, get_hovered_region_3d
-from ..constants import AUTOCAM_MIN, AUTOCAM_MAX
+
+AUTOCAM_MIN = 0.852
+AUTOCAM_MAX = 0.999
 
 
 def get_camera_attributes(ob):
@@ -46,7 +48,6 @@ def bind_camera_image_by_name(ob, file_list):
             size_x, size_y = res.cpp.static_size
 
             if size_x and size_y:
-                ob.data.cpp.used = True
                 ob.data.cpp.image = res
             return res
         ob.data.cpp.image = None

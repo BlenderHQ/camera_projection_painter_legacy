@@ -1,45 +1,161 @@
-# ##### BEGIN GPL LICENSE BLOCK #####
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software Foundation,
-#  Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-#
-# ##### END GPL LICENSE BLOCK #####
-
-# <pep8 compliant>
 import time
 
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
 
-from .constants import TIME_STEP
 from .utils import (
     common,
     utils_camera,
     utils_base,
     utils_poll,
     utils_draw,
-    utils_warning,
-    utils_image
+    utils_warning
 )
 
 import os
 import csv
 
-camera_painter_operator = None
+TIME_STEP = 1 / 60
+
 mouse_position = (0, 0)
 tmp_camera = None
+
+
+class CPP_OT_listener(Operator):
+    bl_idname = "cpp.listener"
+    bl_label = "Listener"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        wm.event_timer_add(time_step = 1 / 4, window = context.window)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        wm = context.window_manager
+        if wm.cpp_suspended:
+            return {'PASS_THROUGH'}
+        if event.type == 'TIMER':
+            if not wm.cpp_running:
+                if utils_poll.full_poll(context):
+                    wm.cpp_running = True
+                    wm.cpp_suspended = False
+                    bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
+        return {'PASS_THROUGH'}
+
+
+class CPP_OT_camera_projection_painter(Operator):
+    bl_idname = "cpp.camera_projection_painter"
+    bl_label = "Camera Projection Painter"
+    bl_options = {'INTERNAL'}
+
+    def invoke(self, context, event):
+        utils_base.set_properties_defaults(self)
+
+        scene = context.scene
+        ob = context.image_paint_object
+
+        utils_base.setup_basis_uv_layer(context)
+        self.bm = utils_base.get_bmesh(context, ob)
+        self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
+        self.camera_batches = utils_draw.get_camera_batches(context)
+        utils_draw.add_draw_handlers(self, context)
+        scene.cpp.cameras_hide_set(state = True)
+
+        wm = context.window_manager
+        self.timer = wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+        wm.modal_handler_add(self)
+        return {'RUNNING_MODAL'}
+
+    def cancel(self, context):
+        wm = context.window_manager
+        wm.cpp_running = False
+        wm.cpp_suspended = False
+
+        wm.event_timer_remove(self.timer)
+
+        scene = context.scene
+        ob = context.active_object
+
+        utils_draw.clear_image_previews()
+        utils_draw.remove_draw_handlers(self)
+        utils_base.remove_uv_layer(ob)
+        scene.cpp.cameras_hide_set(state = False)
+
+    def modal(self, context, event):
+        wm = context.window_manager
+
+        if not utils_poll.full_poll(context):
+            self.cancel(context)
+            return {'FINISHED'}
+
+        if wm.cpp_suspended:
+            return {'PASS_THROUGH'}
+
+        scene = context.scene
+
+        # update viewports on mouse movements
+        if scene.cpp.use_projection_preview and event.type == 'MOUSEMOVE':
+            for area in context.screen.areas:
+                if area.type == 'VIEW_3D':
+                    area.tag_redraw()
+
+        # deal with hotkey adjust brush radius/strength
+        if event.type == 'F' and event.value == 'PRESS':
+            self.suspended_mouse = True
+        if event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
+            self.suspended_mouse = False
+        if not (self.suspended_mouse or self.suspended):
+            global mouse_position
+            mouse_position = event.mouse_x, event.mouse_y
+            self.mouse_position = mouse_position
+
+        image_paint = scene.tool_settings.image_paint
+        clone_image = image_paint.clone_image
+
+        # Manully call image.buffers_free(). BF does't do this so Blender often crashes
+        # Also, it checks if image preview generated
+        utils_draw.check_image_previews(context)
+
+        if scene.cpp.use_projection_preview:
+            utils_draw.update_brush_texture_bindcode(self, context)
+
+        if scene.cpp.use_auto_set_camera:
+            utils_camera.set_camera_by_view(context, mouse_position)
+
+        if scene.cpp.use_auto_set_image:
+            utils_base.set_clone_image_from_camera_data(context)
+
+        camera_ob = scene.camera
+        camera = camera_ob.data
+
+        if self.check_camera_frame_updated(camera.view_frame()):
+            self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
+            self.full_draw = True
+
+        if event.type not in ('TIMER', 'TIMER_REPORT'):
+            if self.data_updated((
+                    camera_ob, clone_image,  # Base properties
+
+                    camera.lens,
+                    camera.cpp.use_calibration,  # Calibration properties
+                    camera.cpp.calibration_principal_point[:],
+                    camera.cpp.calibration_skew,
+                    camera.cpp.calibration_aspect_ratio,
+                    camera.cpp.lens_distortion_radial_1,
+                    camera.cpp.lens_distortion_radial_2,
+                    camera.cpp.lens_distortion_radial_3,
+                    camera.cpp.lens_distortion_tangential_1,
+                    camera.cpp.lens_distortion_tangential_2,
+            )):
+                utils_base.setup_basis_uv_layer(context)
+                if scene.camera.data.cpp.use_calibration:
+                    utils_base.deform_uv_layer(self, context)
+                self.full_draw = False
+
+        return {'PASS_THROUGH'}
 
 
 class CPP_OT_image_paint(Operator):
@@ -69,113 +185,6 @@ class CPP_OT_image_paint(Operator):
                     return {'FINISHED'}
         bpy.ops.paint.image_paint('INVOKE_DEFAULT')
         return {'FINISHED'}
-
-
-class CPP_OT_camera_projection_painter(Operator):
-    bl_idname = "cpp.camera_projection_painter"
-    bl_label = "Camera Projection Painter"
-    bl_options = {'INTERNAL'}
-
-    def __init__(self):
-        utils_base.set_properties_defaults(self)
-
-    def invoke(self, context, event):
-        global camera_painter_operator
-        camera_painter_operator = self
-
-        wm = context.window_manager
-        wm.event_timer_add(time_step = TIME_STEP, window = context.window)
-        wm.modal_handler_add(self)
-        return {'RUNNING_MODAL'}
-
-    def cancel(self, context):
-        if not self.setup_required:
-            scene = context.scene
-            utils_draw.remove_draw_handlers(self)
-            ob = context.active_object
-            utils_base.remove_uv_layer(ob)
-            scene.cpp.cameras_hide_set(state = False)
-            utils_draw.clear_image_previews()
-            utils_base.set_properties_defaults(self)
-
-    def modal(self, context, event):
-        if not utils_poll.full_poll(context):
-            self.cancel(context)
-            return {'PASS_THROUGH'}
-
-        if self.suspended:
-            return {'PASS_THROUGH'}
-
-        if event.type == 'MOUSEMOVE':
-            for area in context.screen.areas:
-                if area.type == 'VIEW_3D':
-                    area.tag_redraw()
-
-        if event.type == 'F' and event.value == 'PRESS':
-            self.suspended_mouse = True
-        if event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
-            self.suspended_mouse = False
-        if not (self.suspended_mouse or self.suspended):
-            global mouse_position
-            mouse_position = event.mouse_x, event.mouse_y
-            self.mouse_position = mouse_position
-
-        scene = context.scene
-        ob = context.image_paint_object
-        image_paint = scene.tool_settings.image_paint
-        clone_image = image_paint.clone_image
-
-        # Manully call image.buffers_free(). BF does't do this so Blender often crashes
-        # Also, it checks if image preview generated
-        utils_draw.check_image_previews(context)
-
-        if scene.cpp.use_projection_preview:
-            utils_draw.update_brush_texture_bindcode(self, context)
-
-        if scene.cpp.use_auto_set_camera:
-            utils_camera.set_camera_by_view(context, mouse_position)
-
-        if scene.cpp.use_auto_set_image:
-            utils_base.set_clone_image_from_camera_data(context)
-
-        camera_ob = scene.camera
-        camera = camera_ob.data
-
-        if self.setup_required:
-            utils_base.setup_basis_uv_layer(context)
-            self.bm = utils_base.get_bmesh(context, ob)
-            self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
-            self.camera_batches = utils_draw.get_camera_batches(context)
-            utils_draw.add_draw_handlers(self, context)
-            scene.cpp.cameras_hide_set(state = True)
-
-        if self.check_camera_frame_updated(camera.view_frame()):
-            # print(camera.view_frame())
-            self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
-            self.full_draw = True
-
-        if event.type not in ('TIMER', 'TIMER_REPORT'):
-            if self.data_updated((
-                    camera_ob, clone_image,  # Base properties
-
-                    camera.lens,
-                    camera.cpp.use_calibration,  # Calibration properties
-                    camera.cpp.calibration_principal_point[:],
-                    camera.cpp.calibration_skew,
-                    camera.cpp.calibration_aspect_ratio,
-                    camera.cpp.lens_distortion_radial_1,
-                    camera.cpp.lens_distortion_radial_2,
-                    camera.cpp.lens_distortion_radial_3,
-                    camera.cpp.lens_distortion_tangential_1,
-                    camera.cpp.lens_distortion_tangential_2,
-            )):
-                utils_base.setup_basis_uv_layer(context)
-                if scene.camera.data.cpp.use_calibration:
-                    utils_base.deform_uv_layer(self, context)
-                self.full_draw = False
-        self.setup_required = False
-
-        return {'PASS_THROUGH'}
 
 
 class CPP_OT_bind_camera_image(Operator):
@@ -261,7 +270,10 @@ class CPP_OT_set_camera_active(Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.scene.camera == tmp_camera:
+        scene = context.scene
+        if scene.camera == tmp_camera:
+            return False
+        if scene.cpp.use_auto_set_camera:
             return False
         return True
 
@@ -458,17 +470,3 @@ class CPP_OT_free_memory(Operator):
         self.report(type = {'INFO'}, message = "Freed %d images" % count)
 
         return {'FINISHED'}
-
-
-_classes = [
-    CPP_OT_image_paint,
-    CPP_OT_camera_projection_painter,
-    CPP_OT_bind_camera_image,
-    CPP_OT_set_camera_by_view,
-    CPP_OT_set_camera_active,
-    CPP_OT_set_camera_calibration_from_file,
-    CPP_OT_enter_context,
-    CPP_OT_call_pie,
-    CPP_OT_free_memory
-]
-register, unregister = bpy.utils.register_classes_factory(_classes)
