@@ -1,5 +1,3 @@
-import time
-
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
@@ -19,7 +17,6 @@ import csv
 LISTEN_TIME_STEP = 1 / 4
 TIME_STEP = 1 / 60
 
-mouse_position = (0, 0)
 tmp_camera = None
 
 
@@ -91,12 +88,10 @@ class CPP_OT_camera_projection_painter(Operator):
 
         wm.cpp_running = False
         wm.cpp_suspended = False
-        #bpy.ops.cpp.listener('INVOKE_DEFAULT')
+        bpy.ops.cpp.listener('INVOKE_DEFAULT')
 
     def modal(self, context, event):
         wm = context.window_manager
-
-        print(time.time())
 
         if not utils_poll.full_poll(context):
             self.cancel(context)
@@ -119,9 +114,7 @@ class CPP_OT_camera_projection_painter(Operator):
         if event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
             self.suspended_mouse = False
         if not (self.suspended_mouse or self.suspended):
-            global mouse_position
-            mouse_position = event.mouse_x, event.mouse_y
-            self.mouse_position = mouse_position
+            wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
 
         image_paint = scene.tool_settings.image_paint
         clone_image = image_paint.clone_image
@@ -134,7 +127,7 @@ class CPP_OT_camera_projection_painter(Operator):
             utils_draw.update_brush_texture_bindcode(self, context)
 
         if scene.cpp.use_auto_set_camera:
-            utils_camera.set_camera_by_view(context, mouse_position)
+            utils_camera.set_camera_by_view(context, wm.cpp_mouse_pos)
 
         if scene.cpp.use_auto_set_image:
             utils_base.set_clone_image_from_camera_data(context)
@@ -185,7 +178,7 @@ class CPP_OT_image_paint(Operator):
         scene = context.scene
         wm = context.window_manager
         # Danger zone
-        rv3d = common.get_hovered_region_3d(context, mouse_position)
+        rv3d = common.get_hovered_region_3d(context, wm.cpp_mouse_pos)
         if rv3d:
             warning_status = utils_warning.get_warning_status(context, rv3d)
             if warning_status:
@@ -270,7 +263,8 @@ class CPP_OT_set_camera_by_view(Operator):
         return scene.cpp.has_available_camera_objects
 
     def execute(self, context):
-        utils_camera.set_camera_by_view(context, mouse_position)
+        wm = context.window_manager
+        utils_camera.set_camera_by_view(context, wm.cpp_mouse_pos)
         return {'FINISHED'}
 
 

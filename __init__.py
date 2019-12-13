@@ -102,11 +102,12 @@ def register():
 
 
 def unregister():
+    handlers.unregister()
+    keymap.unregister()
+
     for cls in reversed(_classes):
         bpy.utils.unregister_class(cls)
 
-    handlers.unregister()
     overwrite_ui.unregister()
     extend_bpy_types.unregister()
-    keymap.unregister()
     icons.unregister()

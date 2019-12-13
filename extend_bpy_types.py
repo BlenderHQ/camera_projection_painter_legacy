@@ -358,7 +358,6 @@ class ImageProperties(PropertyGroup):
             return False
         return True
 
-
 def register():
     bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
     bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})

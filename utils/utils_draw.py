@@ -175,7 +175,7 @@ def draw_projection_preview(self, context):
     if not batch:
         return
 
-    mouse_position = self.mouse_position
+    mouse_position = wm.cpp_mouse_pos
     active_rv3d = get_hovered_region_3d(context, mouse_position)
     current_rv3d = context.area.spaces.active.region_3d
 
