@@ -57,6 +57,9 @@ def tool_setup_poll(context):
     if not _check_uv_layers(ob):
         return False
 
+    canvas = image_paint.canvas
+    if not canvas:
+        return False
     return True
 
 

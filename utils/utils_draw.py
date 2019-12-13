@@ -17,6 +17,7 @@ from .. import __package__ as addon_pkg
 import numpy as np
 
 _image_previews = {}
+_image_icons = {}
 
 
 # Operator cls specific func

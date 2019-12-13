@@ -119,7 +119,7 @@ class CPP_OT_camera_projection_painter(Operator):
         scene = context.scene
 
         # update viewports on mouse movements
-        if scene.cpp.use_projection_preview and event.type == 'MOUSEMOVE':
+        if event.type == 'MOUSEMOVE':
             for area in context.screen.areas:
                 if area.type == 'VIEW_3D':
                     area.tag_redraw()
@@ -426,7 +426,10 @@ class CPP_OT_enter_context(Operator):
             col.prop(self, "uv_method")
 
         if image_paint.missing_texture:
-            col.label(text = "Image paint missing canvas")
+            col.label(text = "Image paint missing canvas.")
+            col.label(text = " Select existing image or create a new one:")
+            col.prop(image_paint, "canvas")
+            col.separator()
             col.prop(self, "image_size")
 
         if not scene.camera:
@@ -487,41 +490,42 @@ class CPP_OT_enter_context(Operator):
                 space.shading.type = 'SOLID'
                 space.shading.light = 'FLAT'
 
-        if not len(ob.data.materials):
-            new_material = bpy.data.materials.new(image_paint.canvas.name)
-            ob.data.materials.append(new_material)
-        material = ob.data.materials[0]
+        if self.setup_material:
+            if not len(ob.data.materials):
+                new_material = bpy.data.materials.new(image_paint.canvas.name)
+                ob.data.materials.append(new_material)
+            material = ob.data.materials[0]
 
-        material.use_nodes = True
-        node_tree = material.node_tree
+            material.use_nodes = True
+            node_tree = material.node_tree
 
-        for node in node_tree.nodes:
-            node_tree.nodes.remove(node)
+            for node in node_tree.nodes:
+                node_tree.nodes.remove(node)
 
-        # type, location, options, links(node index, output index, input index)
-        nodes = [
-            ("ShaderNodeUVMap", (0, 0), {}, None),
-            ("ShaderNodeTexImage", (300, 0), {"image": image_paint.canvas}, (0, 0, 0)),
-            ("ShaderNodeBsdfPrincipled", (600, 0), {}, (1, 0, 0)),
-            ("ShaderNodeOutputMaterial", (900, 0), {}, (2, 0, 0)),
-        ]
+            # type, location, options, links(node index, output index, input index)
+            nodes = [
+                ("ShaderNodeUVMap", (0, 0), {}, None),
+                ("ShaderNodeTexImage", (300, 0), {"image": image_paint.canvas}, (0, 0, 0)),
+                ("ShaderNodeBsdfPrincipled", (600, 0), {}, (1, 0, 0)),
+                ("ShaderNodeOutputMaterial", (900, 0), {}, (2, 0, 0)),
+            ]
 
-        _loc_offset = 350
-        _cache = []
-        for node_type, location, options, links in nodes:
-            node = node_tree.nodes.new(type = node_type)
-            node.location = location
-            if options:
-                for attr, val in options.items():
-                    setattr(node, attr, val)
+            _loc_offset = 350
+            _cache = []
+            for node_type, location, options, links in nodes:
+                node = node_tree.nodes.new(type = node_type)
+                node.location = location
+                if options:
+                    for attr, val in options.items():
+                        setattr(node, attr, val)
 
-            if links:
-                node_index, output_index, input_index = links
-                node1 = _cache[node_index]
+                if links:
+                    node_index, output_index, input_index = links
+                    node1 = _cache[node_index]
 
-                node_tree.links.new(node1.outputs[output_index], node.inputs[input_index])
+                    node_tree.links.new(node1.outputs[output_index], node.inputs[input_index])
 
-            _cache.append(node)
+                _cache.append(node)
 
         return {'FINISHED'}
 
