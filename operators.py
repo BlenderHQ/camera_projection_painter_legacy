@@ -358,6 +358,27 @@ class CPP_OT_enter_context(Operator):
     bl_label = "Setup Context"
     bl_description = "Setup context to begin"
 
+    image_size: bpy.props.IntVectorProperty(
+        name = "New Canvas Size",
+        size = 2, default = (2048, 2048),
+        description = "Size of newly created canvas (Created when canvas is missing)"
+    )
+
+    uv_method: bpy.props.EnumProperty(
+        name = "Method",
+        items = [
+            ('ANGLE_BASED', "Angle Based", ""),
+            ('CONFORMAL', "Conformal", "")
+        ],
+        default = "ANGLE_BASED"
+    )
+
+    setup_material: bpy.props.BoolProperty(
+        name = "Setup simple material",
+        default = True,
+        description = "Setup basic PBR material with canvas image as a diffuse."
+    )
+
     @classmethod
     def poll(cls, context):
         if utils_poll.full_poll(context):
@@ -370,9 +391,36 @@ class CPP_OT_enter_context(Operator):
                     return True
         return False
 
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, "image_size")
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column(align = True)
+
+        scene = context.scene
+        image_paint = scene.tool_settings.image_paint
+        if image_paint.missing_uvs:
+            col.label(text = "Mesh missing UV")
+            col.prop(self, "uv_method")
+
+        if image_paint.missing_texture:
+            col.label(text = "Image paint missing canvas")
+            col.prop(self, "image_size")
+
+        if not scene.camera:
+            col.label(text = "Scene missing camera")
+            col.prop(scene, "camera")
+        else:
+            if scene.camera.type != 'CAMERA':
+                col.label(text = "Scene camera type should be Camera")
+                col.prop(scene, "camera")
+
+        col.prop(self, "setup_material")
 
     def execute(self, context):
         ob = context.active_object
@@ -396,8 +444,9 @@ class CPP_OT_enter_context(Operator):
         if image_paint.missing_texture:
             name = "%s_Diffuse" % ob.name
             if name not in bpy.data.images:
+                w, h = self.image_size
                 bpy.ops.image.new(
-                    name = name, width = 2048, height = 2048,
+                    name = name, width = w, height = h,
                     generated_type = 'COLOR_GRID')
             image_paint.canvas = bpy.data.images[name]
 
@@ -420,6 +469,42 @@ class CPP_OT_enter_context(Operator):
 
                 space.shading.type = 'SOLID'
                 space.shading.light = 'FLAT'
+
+        if not len(ob.data.materials):
+            new_material = bpy.data.materials.new(image_paint.canvas.name)
+            ob.data.materials.append(new_material)
+        material = ob.data.materials[0]
+
+        material.use_nodes = True
+        node_tree = material.node_tree
+
+        for node in node_tree.nodes:
+            node_tree.nodes.remove(node)
+
+        # type, location, options, links(node index, output index, input index)
+        nodes = [
+            ("ShaderNodeUVMap", (0, 0), {}, None),
+            ("ShaderNodeTexImage", (300, 0), {"image": image_paint.canvas}, (0, 0, 0)),
+            ("ShaderNodeBsdfPrincipled", (600, 0), {}, (1, 0, 0)),
+            ("ShaderNodeOutputMaterial", (900, 0), {}, (2, 0, 0)),
+        ]
+
+        _loc_offset = 350
+        _cache = []
+        for node_type, location, options, links in nodes:
+            node = node_tree.nodes.new(type = node_type)
+            node.location = location
+            if options:
+                for attr, val in options.items():
+                    setattr(node, attr, val)
+
+            if links:
+                node_index, output_index, input_index = links
+                node1 = _cache[node_index]
+
+                node_tree.links.new(node1.outputs[output_index], node.inputs[input_index])
+
+            _cache.append(node)
 
         return {'FINISHED'}
 
