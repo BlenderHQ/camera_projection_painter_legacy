@@ -1,30 +1,19 @@
-import bpy
 import os
+import bpy
 
-ICON_EXT = "png"
-_preview_collection = {}
+if "_pcoll" not in locals():
+    from bpy.utils import previews
+
+    _pcoll = previews.new()
+    del previews
 
 
 def get_icon_id(key):
-    return _preview_collection["main"][key].icon_id
-
-
-def register():
-    import bpy.utils.previews
-    pcoll = bpy.utils.previews.new()
-    icons_dir = os.path.dirname(__file__)
-
-    for file_name in os.listdir(icons_dir):
-        name, ext = os.path.splitext(file_name)
-        if ext == "." + ICON_EXT:
-            pcoll.load(name, os.path.join(icons_dir, file_name), 'IMAGE')
-    _preview_collection["main"] = pcoll
+    if key not in _pcoll:
+        path = os.path.join(os.path.dirname(__file__), "%s.png" % key)
+        _pcoll.load(key, path, "IMAGE")
+    return _pcoll[key].icon_id
 
 
 def unregister():
-    for pcoll in _preview_collection.values():
-        bpy.utils.previews.remove(pcoll)
-    _preview_collection.clear()
-
-
-register()
+    bpy.utils.previews.remove(_pcoll)

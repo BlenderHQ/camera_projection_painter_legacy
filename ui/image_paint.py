@@ -6,7 +6,7 @@ from .templates import (
     template_camera_calibration,
     template_camera_lens_distortion)
 
-from ..operators import CPP_OT_set_camera_by_view, CPP_OT_free_memory
+from .. import operators
 from ..utils import utils_poll, utils_draw
 
 
@@ -174,7 +174,7 @@ class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
 
         scol = col.column()
         scol.enabled = not scene.cpp.use_auto_set_camera
-        scol.operator(CPP_OT_set_camera_by_view.bl_idname)
+        scol.operator(operator = operators.CPP_OT_set_camera_by_view.bl_idname)
 
         col.label(text = "Options:")
 
@@ -234,7 +234,7 @@ class CPP_PT_memory_options(Panel, CPPOptionsPanel):
         row.label(text = "Images loaded:")
         row.label(text = "%d" % utils_draw.get_loaded_images_count())
 
-        col.operator(CPP_OT_free_memory.bl_idname)
+        col.operator(operator = operators.CPP_OT_free_memory)
 
 
 class CPP_PT_current_camera(Panel, CPPOptionsPanel):

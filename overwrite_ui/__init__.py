@@ -33,6 +33,5 @@ def register():
 
 
 def unregister():
-    return
     importlib.reload(bl_ui)
     bl_ui.register()

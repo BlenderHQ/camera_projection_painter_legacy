@@ -32,6 +32,7 @@ def add_draw_handlers(self, context):
 def remove_draw_handlers(self):
     if self.draw_handler:
         SpaceView3D.draw_handler_remove(self.draw_handler, 'WINDOW')
+    if self.draw_handler_cameras:
         SpaceView3D.draw_handler_remove(self.draw_handler_cameras, 'WINDOW')
 
 
@@ -157,7 +158,7 @@ def draw_projection_preview(self, context):
     size_x, size_y = clone_image.cpp.static_size
 
     # size_x, size_y = clone_image.size
-    if not (size_x and size_y):
+    if clone_image.cpp.invalid:
         return
 
     if size_x > size_y:
@@ -244,7 +245,7 @@ def draw_projection_preview(self, context):
 
     shader.uniform_int("useBrush", use_brush)
 
-    if scene.cpp.use_warnings and scene.cpp.use_warning_action_draw:
+    if scene.cpp.use_warning_action_draw:
         danger_zone = get_warning_status(context, active_rv3d)
         shader.uniform_int("warning", danger_zone)
         shader.uniform_float("warningColor", preferences.warning_color)
@@ -405,7 +406,6 @@ def draw_cameras(self, context):
         rv3d = context.region_data
         if image and scene.cpp.use_camera_image_previews:
             if rv3d.view_perspective != 'CAMERA':
-                # print(_image_previews)
                 if image in _image_previews.keys():
                     bindcode = _image_previews[image]
                     bgl.glActiveTexture(bgl.GL_TEXTURE0)

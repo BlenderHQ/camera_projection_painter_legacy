@@ -121,15 +121,21 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     def draw(self, context):
         layout = self.layout
-        row = layout.row()
-        row.prop(self, "tab", expand = True)
 
-        if self.tab == 'INFO':
-            self.draw_info_tab(layout)
-        elif self.tab == 'DRAW':
-            self.draw_draw_tab(layout)
-        elif self.tab == 'KEYMAP':
-            self.draw_keymap_tab(layout)
+        wm = context.window_manager
+        if hasattr(wm, "cpp_running"):
+            row = layout.row()
+            row.prop(self, "tab", expand = True)
+
+            if self.tab == 'INFO':
+                self.draw_info_tab(layout)
+            elif self.tab == 'DRAW':
+                self.draw_draw_tab(layout)
+            elif self.tab == 'KEYMAP':
+                self.draw_keymap_tab(layout)
+        else:
+            col = layout.column()
+            col.label(text = "Please, reload Blender or current file to begin.")
 
     def draw_info_tab(self, layout):
         col = layout.column(align = True)

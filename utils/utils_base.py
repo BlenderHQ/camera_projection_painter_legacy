@@ -43,7 +43,6 @@ def set_properties_defaults(self):
     self.check_brush_curve_updated = PropertyTracker()
     self.check_camera_frame_updated = PropertyTracker()
 
-    self.mouse_position = (0, 0)
 
 
 # Base utils

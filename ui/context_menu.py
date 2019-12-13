@@ -1,7 +1,6 @@
 from bpy.types import Menu
 
 from .. import operators
-from ..operators import CPP_OT_bind_camera_image, CPP_OT_set_camera_active
 from ..icons import get_icon_id
 
 
@@ -33,7 +32,9 @@ class CPP_MT_camera_pie(Menu):
             else:
                 col.template_ID(camera_ob.data.cpp, "image")
 
-            operator = pie.operator(CPP_OT_bind_camera_image.bl_idname, icon_value = get_icon_id("bind_image"))
+            operator = pie.operator(
+                operator = operators.CPP_OT_bind_camera_image.bl_idname,
+                icon_value = get_icon_id("bind_image"))
             operator.mode = 'TMP'
 
             col = pie.column()
@@ -43,4 +44,6 @@ class CPP_MT_camera_pie(Menu):
             text = None
             if scene.camera == camera_ob:
                 text = "Already active"
-            pie.operator(CPP_OT_set_camera_active.bl_idname, text = text, icon_value = get_icon_id("set_active"))
+            pie.operator(
+                operator = operators.CPP_OT_set_camera_active.bl_idname,
+                text = text, icon_value = get_icon_id("set_active"))

@@ -24,6 +24,7 @@ def _generate_shaders():
 
     _shader_dict = {}
     _shader_library = ""
+    _defines_library = ""
 
     for file in os.listdir(directory):
         file_path = os.path.join(directory, file)
@@ -47,7 +48,6 @@ def _generate_shaders():
             shader_index = shader_endings.index(shader_type)
             with open(file_path, 'r') as code:
                 data = code.read()
-
                 _shader_dict[shader_name][shader_index] = data
 
         elif shader_type == SHADER_LIBRARY:
@@ -56,7 +56,9 @@ def _generate_shaders():
                 _shader_library += "\n\n%s" % data
 
         elif shader_type == SHADER_DEFINES:  # TODO: Usage of defines
-            pass
+            with open(file_path, 'r') as code:
+                data = code.read()
+                _defines_library += "\n\n%s" % data
 
     _res = {}
     for shader_name in _shader_dict.keys():
@@ -64,7 +66,8 @@ def _generate_shaders():
         vertex_code, frag_code, geo_code, lib_code, defines = shader_code
         if _shader_library:
             lib_code = _shader_library
-
+        if _defines_library:
+            defines = _defines_library
         kwargs = {"vertexcode": vertex_code,
                   "fragcode": frag_code,
                   "geocode": geo_code,
@@ -72,8 +75,11 @@ def _generate_shaders():
                   "defines": defines}
 
         kwargs = dict(filter(lambda item: item[1] is not None, kwargs.items()))
-        data = gpu.types.GPUShader(**kwargs)
-        _res[shader_name] = data
+        try:
+            data = gpu.types.GPUShader(**kwargs)
+            _res[shader_name] = data
+        except:
+            print(shader_name)
 
     return _res
 

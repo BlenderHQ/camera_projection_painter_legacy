@@ -23,7 +23,6 @@ if "bpy" in locals():
     importlib.reload(overwrite_ui)
     importlib.reload(operators)
     importlib.reload(gizmos)
-    importlib.reload(handlers)
 
     del importlib
 
@@ -38,17 +37,11 @@ else:
     from . import overwrite_ui
     from . import operators
     from . import gizmos
-    from . import handlers
 
 import bpy
+from bpy.app.handlers import persistent
 
 _classes = (
-    # extend_bpy_types
-    extend_bpy_types.CameraProperties,
-    extend_bpy_types.SceneProperties,
-    extend_bpy_types.ImageProperties,
-    # preferences
-    preferences.CppPreferences,
     # operators
     operators.CPP_OT_listener,
     operators.CPP_OT_camera_projection_painter,
@@ -60,10 +53,12 @@ _classes = (
     operators.CPP_OT_enter_context,
     operators.CPP_OT_call_pie,
     operators.CPP_OT_free_memory,
+
     # gizmos
     gizmos.CPP_GGT_camera_gizmo_group,
     gizmos.CPP_GT_current_image_preview,
     gizmos.CPP_GGT_image_preview_gizmo_group,
+
     # ui
     ui.camera.CPP_PT_active_camera_options,
     # ui.camera.CPP_PT_active_camera_calibration,
@@ -86,28 +81,77 @@ _classes = (
     # ui.image_paint.CPP_PT_current_camera_calibration,
     # ui.image_paint.CPP_PT_current_camera_lens_distortion,
 
-    ui.context_menu.CPP_MT_camera_pie
+    ui.context_menu.CPP_MT_camera_pie,
 )
+
+_reg = False
+
+
+@persistent
+def _load_post_register(dummy):
+    global _reg
+    if not _reg:
+        _reg = True
+        for cls in _classes:
+            bpy.utils.register_class(cls)
+        extend_bpy_types.register_types()
+        keymap.register()
+        overwrite_ui.register()
+
+
+@persistent
+def load_post_handler(dummy):
+    wm = bpy.context.window_manager
+    wm.cpp_running = False
+    wm.cpp_suspended = False
+    bpy.ops.cpp.listener('INVOKE_DEFAULT')
+
+
+@persistent
+def save_pre_handler(dummy):
+    bpy.context.scene.cpp.cameras_hide_set(state = False)
+
+
+@persistent
+def save_post_handler(dummy):
+    from .utils import utils_poll
+    if utils_poll.full_poll(bpy.context):
+        bpy.context.scene.cpp.cameras_hide_set(state = True)
+
+
+def register_handlers():
+    from bpy.app import handlers
+    handlers.load_post.append(_load_post_register)
+    handlers.load_post.append(load_post_handler)
+    handlers.save_pre.append(save_pre_handler)
+    handlers.save_post.append(save_post_handler)
+
+
+def unregister_handlers():
+    from bpy.app import handlers
+    handlers.save_post.remove(save_post_handler)
+    handlers.save_pre.remove(save_pre_handler)
+    handlers.load_post.remove(load_post_handler)
+    handlers.load_post.remove(_load_post_register)
 
 
 def register():
-    for cls in _classes:
-        bpy.utils.register_class(cls)
-
-    # icons.register()
-    keymap.register()
-    extend_bpy_types.register()
-    overwrite_ui.register()
-    handlers.register()
+    register_handlers()
+    bpy.utils.register_class(preferences.CppPreferences)
 
 
 def unregister():
-    handlers.unregister()
-    keymap.unregister()
+    for op in operators.modal_ops:
+        cancel = getattr(op, "cancel", None)
+        if cancel:
+            cancel(bpy.context)
+    if _reg:
+        keymap.unregister()
+        overwrite_ui.unregister()
+        extend_bpy_types.unregister_types()
 
-    for cls in reversed(_classes):
-        bpy.utils.unregister_class(cls)
-
-    overwrite_ui.unregister()
-    extend_bpy_types.unregister()
+        for cls in reversed(_classes):
+            bpy.utils.unregister_class(cls)
+    bpy.utils.unregister_class(preferences.CppPreferences)
     icons.unregister()
+    unregister_handlers()

@@ -26,14 +26,14 @@ class CPP_PT_camera_painter_scene(bpy.types.Panel):
         col.separator()
 
         col.operator(
-            operators.CPP_OT_enter_context.bl_idname,
+            operator = operators.CPP_OT_enter_context.bl_idname,
             icon_value = get_icon_id("run")
         )
 
         scol = col.column()
         scol.enabled = scene.cpp.has_camera_objects_selected
         operator = scol.operator(
-            operators.CPP_OT_bind_camera_image.bl_idname,
+            operator = operators.CPP_OT_bind_camera_image.bl_idname,
             text = "Bind Selected Camera Images",
             text_ctxt = "CPP",
             icon_value = get_icon_id("bind_image"))
@@ -42,12 +42,13 @@ class CPP_PT_camera_painter_scene(bpy.types.Panel):
         scol = col.column()
         scol.enabled = scene.cpp.has_camera_objects
         operator = scol.operator(
-            operators.CPP_OT_bind_camera_image.bl_idname,
+            operator = operators.CPP_OT_bind_camera_image.bl_idname,
             text = "Bind All Camera Images",
             text_ctxt = "CPP",
             icon_value = get_icon_id("bind_image"))
         operator.mode = 'ALL'
 
         # scol = col.column()
-        # scol.operator(CPP_OT_set_camera_calibration_from_file.bl_idname,
+        # scol.operator(
+        #              operator = CPP_OT_set_camera_calibration_from_file.bl_idname,
         #              icon_value = get_icon_id("calibration"))

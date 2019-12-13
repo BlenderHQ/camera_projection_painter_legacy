@@ -358,21 +358,37 @@ class ImageProperties(PropertyGroup):
             return False
         return True
 
-def register():
+
+_classes = (
+    CameraProperties,
+    SceneProperties,
+    ImageProperties,
+)
+
+
+def register_types():
     bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
     bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
     bpy.types.WindowManager.cpp_mouse_pos = bpy.props.IntVectorProperty(
         size = 2,
         default = (0, 0),
         options = {'SKIP_SAVE'})
+
+    for cls in _classes:
+        bpy.utils.register_class(cls)
+
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
 
 
-def unregister():
+def unregister_types():
+    for cls in reversed(_classes):
+        bpy.utils.unregister_class(cls)
+
     del bpy.types.Image.cpp
     del bpy.types.Scene.cpp
     del bpy.types.Camera.cpp
     del bpy.types.WindowManager.cpp_running
     del bpy.types.WindowManager.cpp_suspended
+    del bpy.types.WindowManager.cpp_mouse_pos

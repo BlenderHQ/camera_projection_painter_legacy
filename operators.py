@@ -1,3 +1,5 @@
+import time
+
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
@@ -17,6 +19,7 @@ import csv
 LISTEN_TIME_STEP = 1 / 4
 TIME_STEP = 1 / 60
 
+modal_ops = []
 tmp_camera = None
 
 
@@ -26,13 +29,17 @@ class CPP_OT_listener(Operator):
     bl_options = {'INTERNAL'}
 
     def cancel(self, context):
+        if self in modal_ops:
+            modal_ops.remove(self)
+
         wm = context.window_manager
         wm.event_timer_remove(self.timer)
 
     def invoke(self, context, event):
+        if not self in modal_ops:
+            modal_ops.append(self)
+
         wm = context.window_manager
-        if wm.cpp_running:
-            return {'CANCELLED'}
         self.timer = wm.event_timer_add(time_step = LISTEN_TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
@@ -49,6 +56,7 @@ class CPP_OT_listener(Operator):
                     wm.cpp_running = True
                     wm.cpp_suspended = False
                     bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
+
         return {'PASS_THROUGH'}
 
 
@@ -58,6 +66,9 @@ class CPP_OT_camera_projection_painter(Operator):
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
+        if not self in modal_ops:
+            modal_ops.append(self)
+
         utils_base.set_properties_defaults(self)
 
         scene = context.scene
@@ -76,6 +87,9 @@ class CPP_OT_camera_projection_painter(Operator):
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
+        if self in modal_ops:
+            modal_ops.remove(self)
+
         scene = context.scene
         ob = context.active_object
         wm = context.window_manager
@@ -88,6 +102,8 @@ class CPP_OT_camera_projection_painter(Operator):
 
         wm.cpp_running = False
         wm.cpp_suspended = False
+
+        utils_base.set_properties_defaults(self)
         bpy.ops.cpp.listener('INVOKE_DEFAULT')
 
     def modal(self, context, event):
@@ -111,9 +127,10 @@ class CPP_OT_camera_projection_painter(Operator):
         # deal with hotkey adjust brush radius/strength
         if event.type == 'F' and event.value == 'PRESS':
             self.suspended_mouse = True
-        if event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
+        elif event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
             self.suspended_mouse = False
-        if not (self.suspended_mouse or self.suspended):
+
+        if not (self.suspended_mouse or wm.cpp_suspended):
             wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
 
         image_paint = scene.tool_settings.image_paint
