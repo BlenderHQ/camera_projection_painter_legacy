@@ -109,6 +109,7 @@ class CPP_PT_view_projection_options(Panel, CPPOptionsPanel):
         col.enabled = scene.cpp.use_projection_preview
         col.prop(scene.cpp, "use_normal_highlight")
         col.prop(scene.cpp, "use_projection_outline")
+        col.prop(scene.cpp, "use_warning_action_draw")
 
 
 class CPP_PT_current_image_preview_options(Panel, CPPOptionsPanel):
@@ -132,58 +133,6 @@ class CPP_PT_current_image_preview_options(Panel, CPPOptionsPanel):
         col.enabled = scene.cpp.use_current_image_preview
         col.prop(scene.cpp, "current_image_alpha")
         col.prop(scene.cpp, "current_image_size")
-
-
-class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
-    bl_label = "Warnings"
-    bl_parent_id = "CPP_PT_view_options"
-    bl_order = 3
-
-    def draw_header(self, context):
-        layout = self.layout
-        scene = context.scene
-        layout.prop(scene.cpp, "use_warnings", text = "")
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = False
-        layout.use_property_decorate = False
-        col = layout.column(align = False)
-
-        scene = context.scene
-
-        col.enabled = scene.cpp.use_warnings
-
-        col.prop(scene.cpp, "distance_warning")
-        col.prop(scene.cpp, "brush_radius_warning")
-        col.prop(scene.cpp, "canvas_size_warning")
-
-        col.label(text = "Actions:")
-        col.use_property_split = True
-
-        scol = col.column()
-        scol.enabled = scene.cpp.use_projection_preview
-        scol.prop(scene.cpp, "use_warning_action_draw")
-
-        col.prop(scene.cpp, "use_warning_action_popup")
-        col.prop(scene.cpp, "use_warning_action_lock")
-
-
-class CPP_PT_memory_options(Panel, CPPOptionsPanel):
-    bl_label = "Memory Management"
-    bl_parent_id = "CPP_PT_warnings_options"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = False
-        layout.use_property_decorate = False
-        col = layout.column(align = False)
-
-        row = col.row()
-        row.label(text = "Images loaded:")
-        row.label(text = "%d" % utils_draw.get_loaded_images_count())
-
-        col.operator(CPP_OT_free_memory.bl_idname)
 
 
 # Utils
@@ -238,6 +187,54 @@ class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
             col.prop(scene.cpp, "tolerance_full")
         elif method == 'DIRECTION':
             col.prop(scene.cpp, "tolerance_direction")
+
+
+class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
+    bl_label = "Warnings"
+    bl_parent_id = "CPP_PT_operator_options"
+    bl_order = 3
+
+    def draw_header(self, context):
+        layout = self.layout
+        scene = context.scene
+        layout.prop(scene.cpp, "use_warnings", text = "")
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = False
+        layout.use_property_decorate = False
+        col = layout.column(align = True)
+
+        scene = context.scene
+
+        col.enabled = scene.cpp.use_warnings
+
+        col.prop(scene.cpp, "distance_warning")
+        col.prop(scene.cpp, "brush_radius_warning")
+        col.prop(scene.cpp, "canvas_size_warning")
+
+        col.label(text = "Actions:")
+        col.use_property_split = True
+
+        col.prop(scene.cpp, "use_warning_action_popup")
+        col.prop(scene.cpp, "use_warning_action_lock")
+
+
+class CPP_PT_memory_options(Panel, CPPOptionsPanel):
+    bl_label = "Memory Management"
+    bl_parent_id = "CPP_PT_warnings_options"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = False
+        layout.use_property_decorate = False
+        col = layout.column(align = False)
+
+        row = col.row()
+        row.label(text = "Images loaded:")
+        row.label(text = "%d" % utils_draw.get_loaded_images_count())
+
+        col.operator(CPP_OT_free_memory.bl_idname)
 
 
 class CPP_PT_current_camera(Panel, CPPOptionsPanel):

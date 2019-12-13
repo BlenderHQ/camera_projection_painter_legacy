@@ -41,8 +41,6 @@ class CPP_MT_camera_pie(Menu):
             col.separator()
 
             text = None
-            if scene.cpp.use_auto_set_camera:
-                text = "Automatic Selection Used"
             if scene.camera == camera_ob:
                 text = "Already active"
             pie.operator(CPP_OT_set_camera_active.bl_idname, text = text, icon_value = get_icon_id("set_active"))

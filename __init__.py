@@ -77,11 +77,11 @@ _classes = (
     ui.image_paint.CPP_PT_camera_options,
     ui.image_paint.CPP_PT_view_projection_options,
     ui.image_paint.CPP_PT_current_image_preview_options,
-    ui.image_paint.CPP_PT_warnings_options,
-    ui.image_paint.CPP_PT_memory_options,
 
     ui.image_paint.CPP_PT_operator_options,
     ui.image_paint.CPP_PT_camera_autocam_options,
+    ui.image_paint.CPP_PT_warnings_options,
+    ui.image_paint.CPP_PT_memory_options,
     ui.image_paint.CPP_PT_current_camera,
     # ui.image_paint.CPP_PT_current_camera_calibration,
     # ui.image_paint.CPP_PT_current_camera_lens_distortion,

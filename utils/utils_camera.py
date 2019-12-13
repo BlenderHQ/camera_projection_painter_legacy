@@ -45,9 +45,7 @@ def bind_camera_image_by_name(ob, file_list):
                         res = bpy.data.images.load(filepath = file_path, check_existing = True)
                     break
         if res:
-            size_x, size_y = res.cpp.static_size
-
-            if size_x and size_y:
+            if not res.cpp.invalid:
                 ob.data.cpp.image = res
             return res
         ob.data.cpp.image = None

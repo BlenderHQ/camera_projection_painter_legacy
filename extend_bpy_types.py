@@ -264,7 +264,7 @@ class SceneProperties(PropertyGroup):
         description = "Show warning when paint may become laggy")
 
     use_warning_action_draw: BoolProperty(
-        name = "Brush Preview", default = True,
+        name = "Warnings", default = True,
         options = {'HIDDEN'},
         description = "Change brush preview when context out of"
                       "recommended parameters")
@@ -360,8 +360,12 @@ class ImageProperties(PropertyGroup):
 
 
 def register():
-    bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False)
-    bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False)
+    bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
+    bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
+    bpy.types.WindowManager.cpp_mouse_pos = bpy.props.IntVectorProperty(
+        size = 2,
+        default = (0, 0),
+        options = {'SKIP_SAVE'})
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)

@@ -16,6 +16,7 @@ from .utils import (
 import os
 import csv
 
+LISTEN_TIME_STEP = 1 / 4
 TIME_STEP = 1 / 60
 
 mouse_position = (0, 0)
@@ -27,16 +28,24 @@ class CPP_OT_listener(Operator):
     bl_label = "Listener"
     bl_options = {'INTERNAL'}
 
+    def cancel(self, context):
+        wm = context.window_manager
+        wm.event_timer_remove(self.timer)
+
     def invoke(self, context, event):
         wm = context.window_manager
-        wm.event_timer_add(time_step = 1 / 4, window = context.window)
+        if wm.cpp_running:
+            return {'CANCELLED'}
+        self.timer = wm.event_timer_add(time_step = LISTEN_TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event):
         wm = context.window_manager
-        if wm.cpp_suspended:
-            return {'PASS_THROUGH'}
+        if wm.cpp_running:
+            self.cancel(context)
+            return {'FINISHED'}
+
         if event.type == 'TIMER':
             if not wm.cpp_running:
                 if utils_poll.full_poll(context):
@@ -70,22 +79,24 @@ class CPP_OT_camera_projection_painter(Operator):
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        wm = context.window_manager
-        wm.cpp_running = False
-        wm.cpp_suspended = False
-
-        wm.event_timer_remove(self.timer)
-
         scene = context.scene
         ob = context.active_object
+        wm = context.window_manager
+        wm.event_timer_remove(self.timer)
 
         utils_draw.clear_image_previews()
         utils_draw.remove_draw_handlers(self)
         utils_base.remove_uv_layer(ob)
         scene.cpp.cameras_hide_set(state = False)
 
+        wm.cpp_running = False
+        wm.cpp_suspended = False
+        #bpy.ops.cpp.listener('INVOKE_DEFAULT')
+
     def modal(self, context, event):
         wm = context.window_manager
+
+        print(time.time())
 
         if not utils_poll.full_poll(context):
             self.cancel(context)
@@ -273,18 +284,16 @@ class CPP_OT_set_camera_active(Operator):
         scene = context.scene
         if scene.camera == tmp_camera:
             return False
-        if scene.cpp.use_auto_set_camera:
-            return False
         return True
 
     def execute(self, context):
         scene = context.scene
+        if scene.cpp.use_auto_set_camera:
+            scene.cpp.use_auto_set_camera = False
         scene.camera = tmp_camera
         for camera in scene.cpp.camera_objects:
             if camera == scene.camera:
                 continue
-            camera.select_set(False)
-        scene.camera.select_set(True)
         if scene.cpp.use_auto_set_image:
             utils_base.set_clone_image_from_camera_data(context)
         self.report(type = {'INFO'}, message = "%s set active" % scene.camera.name)
