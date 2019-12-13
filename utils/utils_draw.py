@@ -1,4 +1,4 @@
-import io
+# <pep8 compliant>
 
 import bpy
 import bgl

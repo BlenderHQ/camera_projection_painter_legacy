@@ -1,4 +1,4 @@
-import time
+# <pep8 compliant>
 
 import bpy
 from bpy.types import Operator

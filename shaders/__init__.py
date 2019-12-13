@@ -1,7 +1,6 @@
 import gpu
 import os
 
-
 SEPARATOR = "_"
 
 SHADER_EXTENSION = "glsl"

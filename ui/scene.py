@@ -1,3 +1,5 @@
+# <pep8 compliant>
+
 import bpy
 
 from .. import operators

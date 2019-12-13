@@ -1,3 +1,5 @@
+# <pep8 compliant>
+
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
@@ -13,6 +15,8 @@ bl_info = {
 if "bpy" in locals():
     import importlib
 
+    unregister()  # live edit(dev only)
+
     importlib.reload(icons)
     importlib.reload(shaders)
     importlib.reload(preferences)
@@ -24,6 +28,12 @@ if "bpy" in locals():
     importlib.reload(operators)
     importlib.reload(gizmos)
 
+    # \\live edit(dev only)
+    _reg = False
+    register()
+    _load_post_register(None)
+    _load_post_handler(None)
+    # //
     del importlib
 
 else:
@@ -100,7 +110,7 @@ def _load_post_register(dummy):
 
 
 @persistent
-def load_post_handler(dummy):
+def _load_post_handler(dummy):
     wm = bpy.context.window_manager
     wm.cpp_running = False
     wm.cpp_suspended = False
@@ -108,12 +118,12 @@ def load_post_handler(dummy):
 
 
 @persistent
-def save_pre_handler(dummy):
+def _save_pre_handler(dummy):
     bpy.context.scene.cpp.cameras_hide_set(state = False)
 
 
 @persistent
-def save_post_handler(dummy):
+def _save_post_handler(dummy):
     from .utils import utils_poll
     if utils_poll.full_poll(bpy.context):
         bpy.context.scene.cpp.cameras_hide_set(state = True)
@@ -122,19 +132,20 @@ def save_post_handler(dummy):
 def register_handlers():
     from bpy.app import handlers
     handlers.load_post.append(_load_post_register)
-    handlers.load_post.append(load_post_handler)
-    handlers.save_pre.append(save_pre_handler)
-    handlers.save_post.append(save_post_handler)
+    handlers.load_post.append(_load_post_handler)
+    handlers.save_pre.append(_save_pre_handler)
+    handlers.save_post.append(_save_post_handler)
 
 
 def unregister_handlers():
     from bpy.app import handlers
-    handlers.save_post.remove(save_post_handler)
-    handlers.save_pre.remove(save_pre_handler)
-    handlers.load_post.remove(load_post_handler)
+    handlers.save_post.remove(_save_post_handler)
+    handlers.save_pre.remove(_save_pre_handler)
+    handlers.load_post.remove(_load_post_handler)
     handlers.load_post.remove(_load_post_register)
 
 
+# Addon register
 def register():
     register_handlers()
     bpy.utils.register_class(preferences.CppPreferences)

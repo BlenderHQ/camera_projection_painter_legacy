@@ -1,9 +1,11 @@
-import os
+# <pep8 compliant>
 
 import bpy
 from mathutils import Vector
 
 from .common import flerp, get_hovered_region_3d
+
+import os
 
 AUTOCAM_MIN = 0.852
 AUTOCAM_MAX = 0.999

@@ -1,11 +1,11 @@
+# <pep8 compliant>
+
 import bpy
 import bmesh
-from mathutils import Vector
 
 from ..constants import TEMP_DATA_NAME
 
 import time
-import numpy as np
 
 
 class PropertyTracker(object):

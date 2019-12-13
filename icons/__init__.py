@@ -1,5 +1,7 @@
-import os
+# <pep8 compliant>
+
 import bpy
+import os
 
 if "_pcoll" not in locals():
     from bpy.utils import previews

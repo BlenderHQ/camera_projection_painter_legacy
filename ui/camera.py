@@ -1,11 +1,11 @@
+# <pep8 compliant>
+
 from bpy.types import Panel
 
 from .templates import (
     template_camera_image,
     template_camera_calibration,
     template_camera_lens_distortion)
-
-from .. import operators
 
 
 class CameraOptionsPanel:

@@ -1,3 +1,5 @@
+# <pep8 compliant>
+
 from bpy.types import Menu
 
 from .. import operators
