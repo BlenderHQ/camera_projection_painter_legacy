@@ -212,7 +212,7 @@ class SceneProperties(PropertyGroup):
 
     # Viewport draw
     use_projection_preview: BoolProperty(
-        name = "Projection Preview", default = False,
+        name = "Projection Preview", default = True,
         options = {'HIDDEN'},
         description = "Show preview of projection")
 

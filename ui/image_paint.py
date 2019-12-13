@@ -234,7 +234,7 @@ class CPP_PT_memory_options(Panel, CPPOptionsPanel):
         row.label(text = "Images loaded:")
         row.label(text = "%d" % utils_draw.get_loaded_images_count())
 
-        col.operator(operator = operators.CPP_OT_free_memory)
+        col.operator(operator = operators.CPP_OT_free_memory.bl_idname)
 
 
 class CPP_PT_current_camera(Panel, CPPOptionsPanel):
