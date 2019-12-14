@@ -19,7 +19,8 @@
 # <pep8 compliant>
 
 from ..icons import get_icon_id
-from ..constants import TEMP_DATA_NAME
+from .. import constants
+from .. import operators
 
 
 class MESH_UL_uvmaps:
@@ -27,8 +28,14 @@ class MESH_UL_uvmaps:
         # assert(isinstance(item, (bpy.types.MeshTexturePolyLayer, bpy.types.MeshLoopColorLayer)))
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             # ----------------------------\
-            if item.name == TEMP_DATA_NAME:
-                layout.label(text = "Camera Paint (Updated Dynamically)", icon_value = get_icon_id("overwriten"))
+            if item.name == constants.TEMP_DATA_NAME:
+                row = layout.row(align = True)
+                row.emboss = 'NONE'
+                row.operator(
+                    operator = operators.CPP_OT_info.bl_idname,
+                    text = "Camera Paint",
+                    icon_value = get_icon_id("overwriten")
+                ).text = constants.message_overwrite_ui
                 return
             # ----------------------------/
             layout.prop(item, "name", text = "", emboss = False, icon = 'GROUP_UVS')
@@ -58,7 +65,7 @@ class DATA_PT_uv_texture:
         enable = True
         uv_layers = me.uv_layers
         if uv_layers.active:
-            if uv_layers.active.name == TEMP_DATA_NAME:
+            if uv_layers.active.name == constants.TEMP_DATA_NAME:
                 enable = False
         scol.enabled = enable
         scol.operator("mesh.uv_texture_remove", icon = 'REMOVE', text = "")

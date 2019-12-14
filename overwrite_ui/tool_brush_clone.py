@@ -19,6 +19,8 @@
 # <pep8 compliant>
 
 from ..icons import get_icon_id
+from .. import operators
+from .. import constants
 
 
 class VIEW3D_PT_tools_brush_clone:
@@ -27,7 +29,12 @@ class VIEW3D_PT_tools_brush_clone:
         layout = self.layout
         row = layout.row(align = True)
         row.prop(settings, "use_clone_layer", text = "")
-        row.label(text = "", icon_value = get_icon_id("overwriten"))
+
+        row.operator(
+            operator = operators.CPP_OT_info.bl_idname,
+            text = "",
+            icon_value = get_icon_id("overwriten")
+        ).text = constants.message_overwrite_ui
 
     def draw(self, context):
         layout = self.layout
@@ -87,7 +94,7 @@ def _brush_texpaint_common_clone(_panel, context, layout, _brush, settings, proj
             sub_row.enabled = not scene.cpp.use_auto_set_image
             sub_row.template_ID(settings, "clone_image")
             icon = "RESTRICT_INSTANCED_OFF" if scene.cpp.use_auto_set_image else "RESTRICT_INSTANCED_ON"
-            #sub_row = row.row()
+            # sub_row = row.row()
             row.prop(scene.cpp, "use_auto_set_image", toggle = True, text = "", icon = icon)
 
             col.label(text = "Source Mapping")

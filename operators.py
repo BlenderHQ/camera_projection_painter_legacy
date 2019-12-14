@@ -654,9 +654,12 @@ class CPP_OT_free_memory(Operator):
 class CPP_OT_info(Operator):
     bl_idname = "cpp.info"
     bl_label = "Info"
-    bl_description = "Show popup help"
 
     text: bpy.props.StringProperty()
+
+    @classmethod
+    def description(self, context, properties):
+        return properties["text"]
 
     def draw(self, context):
         layout = self.layout
