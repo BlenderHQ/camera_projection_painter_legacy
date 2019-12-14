@@ -35,14 +35,23 @@ class CPP_PT_camera_painter(Panel, CPPOptionsPanel):
 
         col = layout.column(align = False)
         scene = context.scene
+        image_paint = scene.tool_settings.image_paint
+        canvas = image_paint.canvas
+        clone_image = image_paint.clone_image
 
         if not scene.camera:
             col.label(text = "Scene has no camera", icon = 'ERROR')
-        image_paint = scene.tool_settings.image_paint
-        if not image_paint.canvas:
-            col.label(text = "Brush has no canvas", icon = 'ERROR')
-        if not image_paint.clone_image:
-            col.label(text = "Brush has no clone image", icon = 'ERROR')
+
+        if not canvas:
+            col.label(text = "Image Paint has no canvas", icon = 'ERROR')
+        else:
+            if canvas.cpp.invalid:
+                col.label(text = "Image Paint canvas invalid", icon = 'ERROR')
+        if not clone_image:
+            col.label(text = "Image Paint has no clone image", icon = 'ERROR')
+        else:
+            if clone_image.cpp.invalid:
+                col.label(text = "Image Paint Clone Image invalid", icon = 'ERROR')
 
 
 # View Options

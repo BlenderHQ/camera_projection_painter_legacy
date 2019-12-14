@@ -21,7 +21,7 @@
 from ..constants import TEMP_DATA_NAME
 
 
-def _check_uv_layers(ob):
+def check_uv_layers(ob):
     uv_layers = ob.data.uv_layers
     uv_layers_count = len(uv_layers)
     if TEMP_DATA_NAME in uv_layers:
@@ -54,7 +54,7 @@ def tool_setup_poll(context):
         return False
 
     ob = context.image_paint_object
-    if not _check_uv_layers(ob):
+    if not check_uv_layers(ob):
         return False
 
     canvas = image_paint.canvas
@@ -68,10 +68,15 @@ def full_poll(context):
         return False
 
     scene = context.scene
+    image_paint = scene.tool_settings.image_paint
+
     if not scene.camera:
         return False
 
-    image_paint = scene.tool_settings.image_paint
+    canvas = image_paint.canvas
+    if canvas.cpp.invalid:
+        return False
+
     if not image_paint.detect_data():
         return False
     if not image_paint.clone_image:

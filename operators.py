@@ -202,6 +202,8 @@ class CPP_OT_image_paint(Operator):
         scene = context.scene
         if not scene.cpp.use_warnings:
             return False
+        if context.area.type != 'VIEW_3D':
+            return False
         return utils_poll.full_poll(context)
 
     def execute(self, context):
@@ -402,11 +404,12 @@ class CPP_OT_enter_context(Operator):
         ],
         default = "ANGLE_BASED"
     )
+    uv_margin: bpy.props.FloatProperty(name = "Margin", default = 0.0001, min = 0.0)
 
     setup_material: bpy.props.BoolProperty(
         name = "Setup simple material",
         default = True,
-        description = "Setup basic PBR material with canvas image as a diffuse."
+        description = "Setup basic PBR material with canvas image as a diffuse"
     )
 
     @classmethod
@@ -432,49 +435,109 @@ class CPP_OT_enter_context(Operator):
 
         col = layout.column(align = True)
 
+        ob = context.active_object
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
-        if image_paint.missing_uvs:
-            col.label(text = "Mesh missing UV")
+        canvas = image_paint.canvas
+
+        num = 1
+
+        if not scene.cpp.has_available_camera_objects:
+            col.label(text = "Scene have no cameras with binded images")
+
+        if ob.mode != 'TEXTURE_PAINT':
+            col.label(text = "%s. Object mode will be changed to Texture Paint" % num)
+            num += 1
+
+        tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
+        if tool.idname != "builtin_brush.Clone":
+            col.label(text = "%s. Tool will be set to Clone" % num)
+            num += 1
+
+        if image_paint.mode != 'IMAGE':
+            col.label(text = "%s. Image Paint Mode will be set to Image" % num)
+            num += 1
+        if not image_paint.use_clone_layer:
+            col.label(text = "%s. Image Paint will Use Clone Layer" % num)
+            num += 1
+        if scene.cpp.mapping != 'CAMERA':
+            col.label(text = "%s. Image Paint Mapping will be set to Camera" % num)
+            num += 1
+        if not scene.cpp.use_auto_set_image:
+            col.label(text = "%s. Image Paint Auto Set Image will be set to True" % num)
+            num += 1
+        if not utils_poll.check_uv_layers(ob):
+            col.label(text = "%s. Object have no any UVs, a new one will be generated:" % num)
+            num += 1
             col.prop(self, "uv_method")
+            col.prop(self, "uv_margin")
 
-        if image_paint.missing_texture:
-            col.label(text = "Image paint missing canvas.")
-            col.label(text = " Select existing image or create a new one:")
-            col.prop(image_paint, "canvas")
-            col.separator()
+        if not canvas:
+            col.label(text = "%s. Image Paint have no Canvas, a new one will be created:" % num)
+            num += 1
             col.prop(self, "image_size")
-
+        else:
+            if canvas.cpp.invalid:
+                col.label(text = "%s. Image Paint Canvas invalid, a new one will be created:" % num)
+                num += 1
+                col.prop(self, "image_size")
         if not scene.camera:
-            col.label(text = "Scene missing camera")
+            col.label(text = "%s. Scene don't have camera (first available will be set):" % num)
+            num += 1
             col.prop(scene, "camera")
         else:
-            if scene.camera.type != 'CAMERA':
-                col.label(text = "Scene camera type should be Camera")
-                col.prop(scene, "camera")
+            image = scene.camera.data.cpp.image
+            if image:
+                if image.cpp.invalid:
+                    col.label(text = "%s. Camera data Image invalid" % num)
+                    num += 1
+                else:
+                    col.label(text = "%s. Image Paint Clone Image will be set from camera data" % num)
+                    col.label(text = "   (%s)" % image.name)
+                    num += 1
+            else:
+                col.label(text = "%s. Can't set Clone Image from camera data" % num)
+                num += 1
 
+        col.separator()
+        col.label(text = "Optional:")
         col.prop(self, "setup_material")
 
     def execute(self, context):
         ob = context.active_object
         scene = context.scene
-
-        bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
-        bpy.ops.wm.tool_set_by_id(name = "builtin_brush.Clone", cycle = False, space_type = 'VIEW_3D')
-
         image_paint = scene.tool_settings.image_paint
+        canvas = image_paint.canvas
 
-        image_paint.use_clone_layer = True
-        image_paint.mode = 'IMAGE'
-        scene.cpp.mapping = 'CAMERA'
-
-        if image_paint.missing_uvs:
-            bpy.ops.object.mode_set(mode = 'EDIT')
-            ob.data.uv_layers.new(do_init = True)
-            bpy.ops.uv.unwrap(method = 'ANGLE_BASED', margin = 0.001)
+        if ob.mode != 'TEXTURE_PAINT':
             bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
 
-        if image_paint.missing_texture:
+        tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
+        if tool.idname != "builtin_brush.Clone":
+            bpy.ops.wm.tool_set_by_id(name = "builtin_brush.Clone", cycle = False, space_type = 'VIEW_3D')
+
+        if image_paint.mode != 'IMAGE':
+            image_paint.mode = 'IMAGE'
+
+        if not image_paint.use_clone_layer:
+            image_paint.use_clone_layer = True
+
+        if scene.cpp.mapping != 'CAMERA':
+            scene.cpp.mapping = 'CAMERA'
+
+        if not scene.cpp.use_auto_set_image:
+            scene.cpp.use_auto_set_image = True
+
+        def _create_uv_layer():
+            bpy.ops.object.mode_set(mode = 'EDIT')
+            ob.data.uv_layers.new(do_init = True)
+            bpy.ops.uv.unwrap(method = self.uv_method, margin = self.uv_margin)
+            bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
+
+        if not utils_poll.check_uv_layers(ob):
+            _create_uv_layer()
+
+        def _create_canvas():
             name = "%s_Diffuse" % ob.name
             if name not in bpy.data.images:
                 w, h = self.image_size
@@ -483,25 +546,19 @@ class CPP_OT_enter_context(Operator):
                     generated_type = 'COLOR_GRID')
             image_paint.canvas = bpy.data.images[name]
 
-        if not scene.cpp.has_available_camera_objects:
-            bpy.ops.cpp.bind_camera_image(mode = 'ALL')
-
-        if not scene.cpp.has_available_camera_objects:
-            self.report(type = {'WARNING'}, message = "You should specify source images path first!")
-
+        if not canvas:
+            _create_canvas()
+        else:
+            if canvas.cpp.invalid:
+                _create_canvas()
         if not scene.camera:
             if scene.cpp.has_available_camera_objects:
                 scene.camera = list(scene.cpp.available_camera_objects)[0]
-
         if scene.camera:
-            utils_base.set_clone_image_from_camera_data(context)
-
-        for area in context.screen.areas:
-            if area.type == 'VIEW_3D':
-                space = area.spaces.active
-
-                space.shading.type = 'SOLID'
-                space.shading.light = 'FLAT'
+            image = scene.camera.data.cpp.image
+            if image:
+                if not image.cpp.invalid:
+                    image_paint.clone_image = image
 
         if self.setup_material:
             if not len(ob.data.materials):

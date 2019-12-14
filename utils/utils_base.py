@@ -75,13 +75,14 @@ def remove_uv_layer(ob):
 
 def set_clone_image_from_camera_data(context):
     scene = context.scene
-    camera = scene.camera.data
-    image_paint = scene.tool_settings.image_paint
-    if camera.cpp.available:
-        image = camera.cpp.image
-        if image:
-            if image_paint.clone_image != image:
-                image_paint.clone_image = image
+    if scene.camera:
+        camera = scene.camera.data
+        image_paint = scene.tool_settings.image_paint
+        if camera.cpp.available:
+            image = camera.cpp.image
+            if image:
+                if image_paint.clone_image != image:
+                    image_paint.clone_image = image
 
 
 def setup_basis_uv_layer(context):

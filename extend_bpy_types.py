@@ -261,7 +261,7 @@ class SceneProperties(PropertyGroup):
 
     # Warnings
     use_warnings: BoolProperty(
-        name = "Use warnings", default = False,
+        name = "Use warnings", default = True,
         options = {'HIDDEN'},
         description = "Show warning when paint may become laggy")
 

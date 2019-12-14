@@ -18,6 +18,7 @@ import numpy as np
 
 _image_previews = {}
 _image_icons = {}
+_image_skip_free = set({})
 
 
 # Operator cls specific func
@@ -155,6 +156,9 @@ def draw_projection_preview(self, context):
 
     if clone_image.gl_load():
         return
+
+    if clone_image not in _image_skip_free:
+        _image_skip_free.add(clone_image)
 
     size_x, size_y = clone_image.cpp.static_size
 
@@ -341,7 +345,8 @@ def check_image_previews(context):
                     bindcode = gen_buffer_preview(preview)
                     _image_previews[image] = bindcode
                 if image not in (clone_image, canvas):
-                    image.buffers_free()
+                    if image not in _image_skip_free:
+                        image.buffers_free()
             else:
                 if any(preview.image_pixels[:]):
                     bindcode = gen_buffer_preview(preview)
@@ -351,14 +356,17 @@ def check_image_previews(context):
                 if any(preview.icon_pixels[:]):
                     _image_icons[image] = True
                 if image not in (clone_image, canvas):
-                    image.buffers_free()
+                    if image not in _image_skip_free:
+                        image.buffers_free()
 
 
 def clear_image_previews():
     global _image_previews
     global _image_icons
+    global _image_skip_free
     _image_previews = {}
     _image_icons = {}
+    _image_skip_free = set({})
 
 
 def get_ready_preview_count():
