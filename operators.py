@@ -116,18 +116,18 @@ class CPP_OT_camera_projection_painter(Operator):
     def modal(self, context, event):
         wm = context.window_manager
 
-        # \\dev purposes
-        if event.type == 'F8':
-            self.cancel(context)
-            return {'FINISHED'}
-        # //
-
         if not utils_poll.full_poll(context):
             self.cancel(context)
             return {'FINISHED'}
 
         if wm.cpp_suspended:
             return {'PASS_THROUGH'}
+
+        # \\dev purposes
+        if event.type == 'F8':
+            self.cancel(context)
+            return {'FINISHED'}
+        # //
 
         scene = context.scene
 
