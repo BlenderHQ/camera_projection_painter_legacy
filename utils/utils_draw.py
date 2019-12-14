@@ -346,11 +346,19 @@ def check_image_previews(context):
                 if any(preview.image_pixels[:]):
                     bindcode = gen_buffer_preview(preview)
                     _image_previews[image] = bindcode
+        if image not in _image_icons:
+            if image.has_data:
+                if any(preview.icon_pixels[:]):
+                    _image_icons[image] = True
+                if image not in (clone_image, canvas):
+                    image.buffers_free()
 
 
 def clear_image_previews():
     global _image_previews
+    global _image_icons
     _image_previews = {}
+    _image_icons = {}
 
 
 def get_ready_preview_count():

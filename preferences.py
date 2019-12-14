@@ -13,7 +13,7 @@ import rna_keymap_ui
 from . import operators
 from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
 from .icons import get_icon_id
-from .constants import WEB_LINKS
+from . import constants
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
@@ -139,9 +139,15 @@ class CppPreferences(bpy.types.AddonPreferences):
             col = layout.column()
             col.label(text = "Please, reload Blender or current file to begin.")
 
+            col.operator(
+                operator = operators.CPP_OT_info.bl_idname,
+                text = "Info",
+                icon = 'INFO'
+            ).text = constants.message_startup_help
+
     def draw_info_tab(self, layout):
         col = layout.column(align = True)
-        for name, url in WEB_LINKS:
+        for name, url in constants.WEB_LINKS:
             col.operator("wm.url_open", text = name, icon = 'URL').url = url
 
     def draw_draw_tab(self, layout):

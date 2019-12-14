@@ -15,8 +15,7 @@ bl_info = {
 if "bpy" in locals():
     import importlib
 
-    unregister()  # live edit(dev only)
-
+    importlib.reload(constants)
     importlib.reload(icons)
     importlib.reload(shaders)
     importlib.reload(preferences)
@@ -28,15 +27,19 @@ if "bpy" in locals():
     importlib.reload(operators)
     importlib.reload(gizmos)
 
-    # \\live edit(dev only)
+    # \\dev purposes
+    # in my opinion I've used my own reloading methods
+    # but also you can press ctrl + F8 key to stop modal operators
+    # and then reload using bpy.ops.script.reload() using your favorite hotkey
     _reg = False
-    register()
     _load_post_register(None)
     _load_post_handler(None)
     # //
+
     del importlib
 
 else:
+    from . import constants
     from . import icons
     from . import shaders
     from . import preferences
@@ -99,12 +102,16 @@ _reg = False
 
 @persistent
 def _load_post_register(dummy):
+    # all important register functions called only on load_post
+    # user should reload file or Blender to start main operators
+    # so when user enable an addon, only preferences are registered
+    # to show a message about required reloading
     global _reg
     if not _reg:
         _reg = True
+        extend_bpy_types.register_types()
         for cls in _classes:
             bpy.utils.register_class(cls)
-        extend_bpy_types.register_types()
         keymap.register()
         overwrite_ui.register()
 
@@ -148,6 +155,7 @@ def unregister_handlers():
 # Addon register
 def register():
     register_handlers()
+    bpy.utils.register_class(operators.CPP_OT_info)
     bpy.utils.register_class(preferences.CppPreferences)
 
 
@@ -163,6 +171,7 @@ def unregister():
 
         for cls in reversed(_classes):
             bpy.utils.unregister_class(cls)
-    bpy.utils.unregister_class(preferences.CppPreferences)
-    icons.unregister()
-    unregister_handlers()
+        bpy.utils.unregister_class(preferences.CppPreferences)
+        bpy.utils.unregister_class(operators.CPP_OT_info)
+        icons.unregister()
+        unregister_handlers()

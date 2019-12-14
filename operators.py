@@ -46,6 +46,13 @@ class CPP_OT_listener(Operator):
 
     def modal(self, context, event):
         wm = context.window_manager
+
+        # \\dev purposes
+        if event.type == 'F8':
+            self.cancel(context)
+            return {'FINISHED'}
+        # //
+
         if wm.cpp_running:
             self.cancel(context)
             return {'FINISHED'}
@@ -108,6 +115,12 @@ class CPP_OT_camera_projection_painter(Operator):
 
     def modal(self, context, event):
         wm = context.window_manager
+
+        # \\dev purposes
+        if event.type == 'F8':
+            self.cancel(context)
+            return {'FINISHED'}
+        # //
 
         if not utils_poll.full_poll(context):
             self.cancel(context)
@@ -578,4 +591,39 @@ class CPP_OT_free_memory(Operator):
 
         self.report(type = {'INFO'}, message = "Freed %d images" % count)
 
+        return {'FINISHED'}
+
+
+class CPP_OT_info(Operator):
+    bl_idname = "cpp.info"
+    bl_label = "Info"
+    bl_description = "Show popup help"
+
+    text: bpy.props.StringProperty()
+
+    def draw(self, context):
+        layout = self.layout
+        layout.emboss = 'NONE'
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        col = layout.column(align = True)
+
+        col.label(text = "Info", icon = 'INFO')
+
+        lines = str(self.text).splitlines()
+
+        for line in lines:
+            if line:
+                if line.startswith("https://"):
+                    col.separator()
+                    col.operator("wm.url_open", text = line, icon = 'URL').url = line
+                else:
+                    col.label(text = line)
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_popup(self)
+
+    def execute(self, context):
         return {'FINISHED'}
