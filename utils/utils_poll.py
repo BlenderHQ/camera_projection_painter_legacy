@@ -57,9 +57,6 @@ def tool_setup_poll(context):
     if not check_uv_layers(ob):
         return False
 
-    canvas = image_paint.canvas
-    if not canvas:
-        return False
     return True
 
 
@@ -70,11 +67,14 @@ def full_poll(context):
     scene = context.scene
     image_paint = scene.tool_settings.image_paint
 
-    if not scene.camera:
-        return False
-
     canvas = image_paint.canvas
-    if canvas.cpp.invalid:
+    if not canvas:
+        return False
+    else:
+        if canvas.cpp.invalid:
+            return False
+
+    if not scene.camera:
         return False
 
     if not image_paint.detect_data():
