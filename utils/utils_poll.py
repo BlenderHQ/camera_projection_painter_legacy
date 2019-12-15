@@ -70,13 +70,10 @@ def full_poll(context):
     canvas = image_paint.canvas
     if not canvas:
         return False
-    else:
-        if canvas.cpp.invalid:
-            return False
-
+    elif canvas.cpp.invalid:
+        return False
     if not scene.camera:
         return False
-
     if not image_paint.detect_data():
         return False
     if not image_paint.clone_image:
