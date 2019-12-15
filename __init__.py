@@ -126,7 +126,9 @@ def _load_post_handler(dummy):
 
 @persistent
 def _save_pre_handler(dummy):
-    bpy.context.scene.cpp.cameras_hide_set(state = False)
+    wm = bpy.context.window_manager
+    if wm.cpp_running:
+        bpy.context.scene.cpp.cameras_hide_set(state = False)
 
 
 @persistent
