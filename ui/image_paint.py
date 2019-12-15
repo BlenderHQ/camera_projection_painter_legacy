@@ -9,7 +9,7 @@ from .templates import (
     template_camera_lens_distortion)
 
 from .. import operators
-from ..utils import utils_poll, utils_draw
+from .. utils import utils_poll, utils_draw
 
 
 class CPPOptionsPanel:
@@ -38,6 +38,11 @@ class CPP_PT_camera_painter(Panel, CPPOptionsPanel):
         image_paint = scene.tool_settings.image_paint
         canvas = image_paint.canvas
         clone_image = image_paint.clone_image
+        v3d = context.space_data
+
+        if v3d.use_local_camera:
+            col.label(text = "Current viewport use Local Camera.")
+            col.label(text = "Some display options may work incorrect")
 
         if not scene.camera:
             col.label(text = "Scene has no camera", icon = 'ERROR')

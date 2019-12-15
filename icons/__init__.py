@@ -1,21 +1,24 @@
 # <pep8 compliant>
 
-import bpy
 import os
 
-if "_pcoll" not in locals():
-    from bpy.utils import previews
-
-    _pcoll = previews.new()
-    del previews
+_preview_collection = None
 
 
 def get_icon_id(key):
-    if key not in _pcoll:
+    global _preview_collection
+    if _preview_collection is None:
+        import bpy.utils.previews
+        _preview_collection = bpy.utils.previews.new()
+    if key not in _preview_collection:
         path = os.path.join(os.path.dirname(__file__), "%s.png" % key)
-        _pcoll.load(key, path, "IMAGE")
-    return _pcoll[key].icon_id
+        _preview_collection.load(key, path, "IMAGE")
+    if key in _preview_collection:
+        return _preview_collection[key].icon_id
+    return 0
 
 
 def unregister():
-    bpy.utils.previews.remove(_pcoll)
+    if _preview_collection is not None:
+        import bpy.utils.previews
+        bpy.utils.previews.remove(_preview_collection)
