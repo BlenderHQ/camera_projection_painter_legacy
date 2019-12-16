@@ -3,6 +3,7 @@ from mathutils import Vector
 
 SPACE_BEETWEEN_NODES = 50
 FRAME_TEXT = "Camera Painter Added"
+FRAME_COLOR = (0.5, 0.6, 0.8)
 
 
 def basic_setup_material(self, ob, target_image, create_new_material = False):
@@ -61,7 +62,7 @@ def basic_setup_material(self, ob, target_image, create_new_material = False):
 
         node_frame.label = FRAME_TEXT
         node_frame.use_custom_color = True
-        node_frame.color = (0.5, 0.6, 0.8)
+        node_frame.color = FRAME_COLOR
         node_frame.select = False
 
         def _add_node(type, next_node, index):
