@@ -10,7 +10,8 @@ from .utils import (
     utils_base,
     utils_poll,
     utils_draw,
-    utils_warning
+    utils_warning,
+    utils_material
 )
 
 import os
@@ -411,6 +412,11 @@ class CPP_OT_enter_context(Operator):
         default = True,
         description = "Setup basic PBR material with canvas image as a diffuse"
     )
+    create_new_material: bpy.props.BoolProperty(
+        name = "Create New",
+        default = True,
+        description = "Create new material"
+    )
 
     @classmethod
     def poll(cls, context):
@@ -501,7 +507,13 @@ class CPP_OT_enter_context(Operator):
 
         col.separator()
         col.label(text = "Optional:")
+        if not ob.active_material:
+            col.label(text = "Active object don't have active material")
+
         col.prop(self, "setup_material")
+        scol = col.column(align = True)
+        scol.enabled = self.setup_material
+        scol.prop(self, "create_new_material")
 
     def execute(self, context):
         ob = context.active_object
@@ -561,41 +573,7 @@ class CPP_OT_enter_context(Operator):
                     image_paint.clone_image = image
 
         if self.setup_material:
-            if not len(ob.data.materials):
-                new_material = bpy.data.materials.new(image_paint.canvas.name)
-                ob.data.materials.append(new_material)
-            material = ob.data.materials[0]
-
-            material.use_nodes = True
-            node_tree = material.node_tree
-
-            for node in node_tree.nodes:
-                node_tree.nodes.remove(node)
-
-            # type, location, options, links(node index, output index, input index)
-            nodes = [
-                ("ShaderNodeUVMap", (0, 0), {}, None),
-                ("ShaderNodeTexImage", (300, 0), {"image": image_paint.canvas}, (0, 0, 0)),
-                ("ShaderNodeBsdfPrincipled", (600, 0), {}, (1, 0, 0)),
-                ("ShaderNodeOutputMaterial", (900, 0), {}, (2, 0, 0)),
-            ]
-
-            _loc_offset = 350
-            _cache = []
-            for node_type, location, options, links in nodes:
-                node = node_tree.nodes.new(type = node_type)
-                node.location = location
-                if options:
-                    for attr, val in options.items():
-                        setattr(node, attr, val)
-
-                if links:
-                    node_index, output_index, input_index = links
-                    node1 = _cache[node_index]
-
-                    node_tree.links.new(node1.outputs[output_index], node.inputs[input_index])
-
-                _cache.append(node)
+            utils_material.basic_setup_material(self, ob, image_paint.canvas, self.create_new_material)
 
         return {'FINISHED'}
 

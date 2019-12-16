@@ -10,6 +10,7 @@ if "bpy" in locals():
     importlib.reload(utils_image)
     importlib.reload(utils_poll)
     importlib.reload(utils_warning)
+    importlib.reload(utils_material)
 
     del importlib
 else:
@@ -20,5 +21,6 @@ else:
     from . import utils_image
     from . import utils_poll
     from . import utils_warning
+    from . import utils_material
 
 import bpy
