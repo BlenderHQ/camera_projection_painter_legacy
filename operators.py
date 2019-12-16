@@ -408,12 +408,12 @@ class CPP_OT_enter_context(Operator):
     uv_margin: bpy.props.FloatProperty(name = "Margin", default = 0.0001, min = 0.0)
 
     setup_material: bpy.props.BoolProperty(
-        name = "Setup simple material",
+        name = "Setup Simple Material",
         default = True,
         description = "Setup basic PBR material with canvas image as a diffuse"
     )
     create_new_material: bpy.props.BoolProperty(
-        name = "Create New",
+        name = "Create New Material",
         default = True,
         description = "Create new material"
     )
