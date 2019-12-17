@@ -251,7 +251,7 @@ def draw_projection_preview(self, context):
     shader.uniform_int("useBrush", use_brush)
 
     if scene.cpp.use_warning_action_draw:
-        danger_zone = get_warning_status(context, active_rv3d)
+        danger_zone = get_warning_status(context, wm.cpp_mouse_pos)
         shader.uniform_int("warning", danger_zone)
         shader.uniform_float("warningColor", preferences.warning_color)
     else:

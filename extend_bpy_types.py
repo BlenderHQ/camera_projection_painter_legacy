@@ -266,7 +266,7 @@ class SceneProperties(PropertyGroup):
         description = "Show warning when paint may become laggy")
 
     use_warning_action_draw: BoolProperty(
-        name = "Warnings", default = True,
+        name = "Brush Preview", default = True,
         options = {'HIDDEN'},
         description = "Change brush preview when context out of"
                       "recommended parameters")
@@ -282,25 +282,12 @@ class SceneProperties(PropertyGroup):
         description = "Lock paint when context out of recommended parameters")
 
     distance_warning: FloatProperty(
-        name = "View Distance",
+        name = "Safe Radius",
         default = 30.0, soft_min = 5, soft_max = 100,
         subtype = 'DISTANCE',
         options = {'HIDDEN'},
-        description = "Safe distance to the view location")
-
-    brush_radius_warning: IntProperty(
-        name = "Brush Radius",
-        default = 150, soft_min = 5, soft_max = 250,
-        subtype = 'PIXEL',
-        options = {'HIDDEN'},
-        description = "Safe brush radius")
-
-    canvas_size_warning: IntProperty(
-        name = "Canvas Size",
-        default = 4096, soft_min = 5, soft_max = 100, step = 10,
-        subtype = 'PIXEL',
-        options = {'HIDDEN'},
-        description = "Safe canvas image resolution")
+        description = "The radius of the brush projected onto the object \n"
+                      "at which the drawing remains acceptable in terms of performance")
 
 
 _image_size_cache = {}

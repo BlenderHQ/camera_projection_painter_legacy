@@ -9,7 +9,7 @@ from .templates import (
     template_camera_lens_distortion)
 
 from .. import operators
-from .. utils import utils_poll, utils_draw
+from ..utils import utils_poll, utils_draw
 
 
 class CPPOptionsPanel:
@@ -125,7 +125,6 @@ class CPP_PT_view_projection_options(Panel, CPPOptionsPanel):
         col.enabled = scene.cpp.use_projection_preview
         col.prop(scene.cpp, "use_normal_highlight")
         col.prop(scene.cpp, "use_projection_outline")
-        col.prop(scene.cpp, "use_warning_action_draw")
 
 
 class CPP_PT_current_image_preview_options(Panel, CPPOptionsPanel):
@@ -226,14 +225,13 @@ class CPP_PT_warnings_options(Panel, CPPOptionsPanel):
         col.enabled = scene.cpp.use_warnings
 
         col.prop(scene.cpp, "distance_warning")
-        col.prop(scene.cpp, "brush_radius_warning")
-        col.prop(scene.cpp, "canvas_size_warning")
 
         col.label(text = "Actions:")
         col.use_property_split = True
 
-        col.prop(scene.cpp, "use_warning_action_popup")
+        col.prop(scene.cpp, "use_warning_action_draw")
         col.prop(scene.cpp, "use_warning_action_lock")
+        col.prop(scene.cpp, "use_warning_action_popup")
 
 
 class CPP_PT_memory_options(Panel, CPPOptionsPanel):

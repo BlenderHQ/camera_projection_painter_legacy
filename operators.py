@@ -1,18 +1,30 @@
 # <pep8 compliant>
 
+
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(utils_camera)
+    importlib.reload(utils_base)
+    importlib.reload(utils_poll)
+    importlib.reload(utils_draw)
+    importlib.reload(utils_warning)
+    importlib.reload(utils_material)
+
+    del importlib
+else:
+    from .utils import (
+        utils_camera,
+        utils_base,
+        utils_poll,
+        utils_draw,
+        utils_warning,
+        utils_material
+    )
+
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
-
-from .utils import (
-    common,
-    utils_camera,
-    utils_base,
-    utils_poll,
-    utils_draw,
-    utils_warning,
-    utils_material
-)
 
 import os
 import csv
@@ -211,15 +223,16 @@ class CPP_OT_image_paint(Operator):
         scene = context.scene
         wm = context.window_manager
         # Danger zone
-        rv3d = common.get_hovered_region_3d(context, wm.cpp_mouse_pos)
-        if rv3d:
-            warning_status = utils_warning.get_warning_status(context, rv3d)
-            if warning_status:
-                self.report(type = {'WARNING'}, message = "Danger zone!")
-                if scene.cpp.use_warning_action_popup:
-                    wm.popup_menu(utils_warning.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
-                if scene.cpp.use_warning_action_lock:
-                    return {'FINISHED'}
+        rv3d = context.region_data
+
+        mpos = wm.cpp_mouse_pos
+        warning_status = utils_warning.get_warning_status(context, mpos)
+        if warning_status:
+            self.report(type = {'WARNING'}, message = "Danger zone!")
+            if scene.cpp.use_warning_action_popup:
+                wm.popup_menu(utils_warning.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
+            if scene.cpp.use_warning_action_lock:
+                return {'FINISHED'}
         bpy.ops.paint.image_paint('INVOKE_DEFAULT')
         return {'FINISHED'}
 
