@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 2, 0),
+    "version": (0, 1, 2, 1),
     "blender": (2, 80, 0),
     "description": "Expanding capabilities of texture paint Clone Brush",
     "location": "Clone Brush tool settings, Scene tab, Camera tab",
@@ -13,46 +13,79 @@ bl_info = {
 }
 
 if "bpy" in locals():
+    # reloading
+    import os
+    import types
     import importlib
 
-    importlib.reload(constants)
-    importlib.reload(icons)
-    importlib.reload(shaders)
-    importlib.reload(preferences)
-    importlib.reload(keymap)
-    importlib.reload(utils)
-    importlib.reload(extend_bpy_types)
-    importlib.reload(ui)
-    importlib.reload(overwrite_ui)
-    importlib.reload(operators)
-    importlib.reload(gizmos)
+    path = os.path.dirname(__file__)
+    module_names = bpy.path.module_names(path, recursive = True)
 
-    # \\dev purposes
-    # in my opinion I've used my own reloading methods
-    # but also you can press ctrl + F8 key to stop modal operators
-    # and then reload using bpy.ops.script.reload() using your favorite hotkey
+    _cache = []
+    for module_name, module_path in sorted(module_names, key = lambda n: n[0]):
+        module = importlib.import_module("." + module_name, package = __package__)
+        importlib.reload(module)
+        _cache.append(module)
+
+    for cached_module in _cache:
+        for attr_name in dir(cached_module):
+            attr = getattr(cached_module, attr_name)
+            if isinstance(attr, types.ModuleType):
+                for module in _cache:
+                    if module.__name__ == attr.__name__:
+                        setattr(cached_module, attr_name, module)
+
     _reg = False
     _load_post_register(None)
     _load_post_handler(None)
-    # //
 
+    del _cache
     del importlib
+    del types
+    del os
 
 else:
-    from . import constants
     from . import icons
-    from . import shaders
-    from . import preferences
-    from . import keymap
-    from . import extend_bpy_types
-    from . import utils
-    from . import ui
     from . import overwrite_ui
-    from . import operators
+    from . import shaders
+    from . import ui
+    from . import utils
+    from . import constants
+    from . import extend_bpy_types
     from . import gizmos
+    from . import keymap
+    from . import operators
+    from . import preferences
 
 import bpy
 from bpy.app.handlers import persistent
+
+_reg = False
+
+
+@persistent
+def _load_post_register(dummy):
+    # all important register functions called only on load_post
+    # user should reload file or Blender to start main operators
+    # so when user enable an addon, only preferences are registered
+    # to show a message about required reloading
+    global _reg
+    if not _reg:
+        _reg = True
+        extend_bpy_types.register_types()
+        for cls in _classes:
+            bpy.utils.register_class(cls)
+        keymap.register()
+        overwrite_ui.register()
+
+
+@persistent
+def _load_post_handler(dummy):
+    wm = bpy.context.window_manager
+    wm.cpp_running = False
+    wm.cpp_suspended = False
+    bpy.ops.cpp.listener('INVOKE_DEFAULT')
+
 
 _classes = (
     # operators
@@ -97,32 +130,6 @@ _classes = (
     ui.context_menu.CPP_MT_camera_pie,
 )
 
-_reg = False
-
-
-@persistent
-def _load_post_register(dummy):
-    # all important register functions called only on load_post
-    # user should reload file or Blender to start main operators
-    # so when user enable an addon, only preferences are registered
-    # to show a message about required reloading
-    global _reg
-    if not _reg:
-        _reg = True
-        extend_bpy_types.register_types()
-        for cls in _classes:
-            bpy.utils.register_class(cls)
-        keymap.register()
-        overwrite_ui.register()
-
-
-@persistent
-def _load_post_handler(dummy):
-    wm = bpy.context.window_manager
-    wm.cpp_running = False
-    wm.cpp_suspended = False
-    bpy.ops.cpp.listener('INVOKE_DEFAULT')
-
 
 @persistent
 def _save_pre_handler(dummy):
@@ -133,8 +140,8 @@ def _save_pre_handler(dummy):
 
 @persistent
 def _save_post_handler(dummy):
-    from .utils import utils_poll
-    if utils_poll.full_poll(bpy.context):
+    from .utils import poll
+    if poll.full_poll(bpy.context):
         bpy.context.scene.cpp.cameras_hide_set(state = True)
 
 
@@ -166,14 +173,14 @@ def unregister():
         cancel = getattr(op, "cancel", None)
         if cancel:
             cancel(bpy.context)
-    if _reg:
-        keymap.unregister()
-        overwrite_ui.unregister()
-        extend_bpy_types.unregister_types()
+    keymap.unregister()
+    overwrite_ui.unregister()
+    extend_bpy_types.unregister_types()
 
-        for cls in reversed(_classes):
-            bpy.utils.unregister_class(cls)
-        bpy.utils.unregister_class(preferences.CppPreferences)
-        bpy.utils.unregister_class(operators.CPP_OT_info)
-        icons.unregister()
-        unregister_handlers()
+    for cls in reversed(_classes):
+        bpy.utils.unregister_class(cls)
+
+    bpy.utils.unregister_class(preferences.CppPreferences)
+    bpy.utils.unregister_class(operators.CPP_OT_info)
+    icons.unregister()
+    unregister_handlers()

@@ -1,30 +1,11 @@
 # <pep8 compliant>
 
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(utils_camera)
-    importlib.reload(utils_base)
-    importlib.reload(utils_poll)
-    importlib.reload(utils_draw)
-    importlib.reload(utils_warning)
-    importlib.reload(utils_material)
-
-    del importlib
-else:
-    from .utils import (
-        utils_camera,
-        utils_base,
-        utils_poll,
-        utils_draw,
-        utils_warning,
-        utils_material
-    )
-
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
+
+from . import utils
 
 import os
 import csv
@@ -72,7 +53,7 @@ class CPP_OT_listener(Operator):
 
         if event.type == 'TIMER':
             if not wm.cpp_running:
-                if utils_poll.full_poll(context):
+                if utils.poll.full_poll(context):
                     wm.cpp_running = True
                     wm.cpp_suspended = False
                     bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
@@ -89,16 +70,16 @@ class CPP_OT_camera_projection_painter(Operator):
         if not self in modal_ops:
             modal_ops.append(self)
 
-        utils_base.set_properties_defaults(self)
+        utils.base.set_properties_defaults(self)
 
         scene = context.scene
         ob = context.image_paint_object
 
-        utils_base.setup_basis_uv_layer(context)
-        self.bm = utils_base.get_bmesh(context, ob)
-        self.mesh_batch = utils_draw.get_bmesh_batch(self.bm)
-        self.camera_batches = utils_draw.get_camera_batches(context)
-        utils_draw.add_draw_handlers(self, context)
+        utils.base.setup_basis_uv_layer(context)
+        self.bm = utils.base.get_bmesh(context, ob)
+        self.mesh_batch = utils.draw.get_bmesh_batch(self.bm)
+        self.camera_batches = utils.draw.get_camera_batches(context)
+        utils.draw.add_draw_handlers(self, context)
         scene.cpp.cameras_hide_set(state = True)
 
         wm = context.window_manager
@@ -115,21 +96,21 @@ class CPP_OT_camera_projection_painter(Operator):
         wm = context.window_manager
         wm.event_timer_remove(self.timer)
 
-        utils_draw.clear_image_previews()
-        utils_draw.remove_draw_handlers(self)
-        utils_base.remove_uv_layer(ob)
+        utils.draw.clear_image_previews()
+        utils.draw.remove_draw_handlers(self)
+        utils.base.remove_uv_layer(ob)
         scene.cpp.cameras_hide_set(state = False)
 
         wm.cpp_running = False
         wm.cpp_suspended = False
 
-        utils_base.set_properties_defaults(self)
+        utils.base.set_properties_defaults(self)
         bpy.ops.cpp.listener('INVOKE_DEFAULT')
 
     def modal(self, context, event):
         wm = context.window_manager
 
-        if not utils_poll.full_poll(context):
+        if not utils.poll.full_poll(context):
             self.cancel(context)
             return {'FINISHED'}
 
@@ -164,22 +145,22 @@ class CPP_OT_camera_projection_painter(Operator):
 
         # Manully call image.buffers_free(). BF does't do this so Blender often crashes
         # Also, it checks if image preview generated
-        utils_draw.check_image_previews(context)
+        utils.draw.check_image_previews(context)
 
         if scene.cpp.use_projection_preview:
-            utils_draw.update_brush_texture_bindcode(self, context)
+            utils.draw.update_brush_texture_bindcode(self, context)
 
         if scene.cpp.use_auto_set_camera:
-            utils_camera.set_camera_by_view(context, wm.cpp_mouse_pos)
+            utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)
 
         if scene.cpp.use_auto_set_image:
-            utils_base.set_clone_image_from_camera_data(context)
+            utils.common.set_clone_image_from_camera_data(context)
 
         camera_ob = scene.camera
         camera = camera_ob.data
 
         if self.check_camera_frame_updated(camera.view_frame()):
-            self.camera_batches[camera_ob] = utils_draw.gen_camera_batch(camera)
+            self.camera_batches[camera_ob] = utils.draw.gen_camera_batch(camera)
             self.full_draw = True
 
         if event.type not in ('TIMER', 'TIMER_REPORT'):
@@ -197,9 +178,9 @@ class CPP_OT_camera_projection_painter(Operator):
                     camera.cpp.lens_distortion_tangential_1,
                     camera.cpp.lens_distortion_tangential_2,
             )):
-                utils_base.setup_basis_uv_layer(context)
+                utils.base.setup_basis_uv_layer(context)
                 if scene.camera.data.cpp.use_calibration:
-                    utils_base.deform_uv_layer(self, context)
+                    utils.base.deform_uv_layer(self, context)
                 self.full_draw = False
 
         return {'PASS_THROUGH'}
@@ -217,7 +198,7 @@ class CPP_OT_image_paint(Operator):
             return False
         if context.area.type != 'VIEW_3D':
             return False
-        return utils_poll.full_poll(context)
+        return utils.poll.full_poll(context)
 
     def execute(self, context):
         scene = context.scene
@@ -226,11 +207,11 @@ class CPP_OT_image_paint(Operator):
         rv3d = context.region_data
 
         mpos = wm.cpp_mouse_pos
-        warning_status = utils_warning.get_warning_status(context, mpos)
+        warning_status = utils.common.get_warning_status(context, mpos)
         if warning_status:
             self.report(type = {'WARNING'}, message = "Danger zone!")
             if scene.cpp.use_warning_action_popup:
-                wm.popup_menu(utils_warning.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
+                wm.popup_menu(utils.common.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
             if scene.cpp.use_warning_action_lock:
                 return {'FINISHED'}
         bpy.ops.paint.image_paint('INVOKE_DEFAULT')
@@ -280,7 +261,7 @@ class CPP_OT_bind_camera_image(Operator):
             ]
 
         for ob in cameras:
-            res = utils_camera.bind_camera_image_by_name(ob, file_list)
+            res = utils.common.bind_camera_image_by_name(ob, file_list)
             if res:
                 count += 1
                 # Also print list of successfully binded cameras to console
@@ -310,7 +291,7 @@ class CPP_OT_set_camera_by_view(Operator):
 
     def execute(self, context):
         wm = context.window_manager
-        utils_camera.set_camera_by_view(context, wm.cpp_mouse_pos)
+        utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)
         return {'FINISHED'}
 
 
@@ -335,7 +316,7 @@ class CPP_OT_set_camera_active(Operator):
             if camera == scene.camera:
                 continue
         if scene.cpp.use_auto_set_image:
-            utils_base.set_clone_image_from_camera_data(context)
+            utils.common.set_clone_image_from_camera_data(context)
         self.report(type = {'INFO'}, message = "%s set active" % scene.camera.name)
         return {'FINISHED'}
 
@@ -433,7 +414,7 @@ class CPP_OT_enter_context(Operator):
 
     @classmethod
     def poll(cls, context):
-        if utils_poll.full_poll(context):
+        if utils.poll.full_poll(context):
             return False
         ob = context.active_object
         scene = context.scene
@@ -485,7 +466,7 @@ class CPP_OT_enter_context(Operator):
         if not scene.cpp.use_auto_set_image:
             col.label(text = "%s. Image Paint Auto Set Image will be set to True" % num)
             num += 1
-        if not utils_poll.check_uv_layers(ob):
+        if not utils.poll.check_uv_layers(ob):
             col.label(text = "%s. Object have no any UVs, a new one will be generated:" % num)
             num += 1
             col.prop(self, "uv_method")
@@ -559,7 +540,7 @@ class CPP_OT_enter_context(Operator):
             bpy.ops.uv.unwrap(method = self.uv_method, margin = self.uv_margin)
             bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
 
-        if not utils_poll.check_uv_layers(ob):
+        if not utils.poll.check_uv_layers(ob):
             _create_uv_layer()
 
         def _create_canvas():
@@ -586,7 +567,7 @@ class CPP_OT_enter_context(Operator):
                     image_paint.clone_image = image
 
         if self.setup_material:
-            utils_material.basic_setup_material(self, ob, image_paint.canvas, self.create_new_material)
+            utils.common.basic_setup_material(self, ob, image_paint.canvas, self.create_new_material)
 
         return {'FINISHED'}
 
@@ -622,7 +603,7 @@ class CPP_OT_free_memory(Operator):
 
     @classmethod
     def poll(cls, context):
-        if utils_draw.get_loaded_images_count() > 2:
+        if utils.draw.get_loaded_images_count() > 2:
             return True
         return False
 

@@ -93,4 +93,4 @@ class ShaderStorage(object):
         self.builtin_3d_uniform_color = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
 
-shaders = ShaderStorage()
+shader = ShaderStorage()

@@ -2,10 +2,7 @@
 
 from bpy.types import Panel
 
-from .templates import (
-    template_camera_image,
-    template_camera_calibration,
-    template_camera_lens_distortion)
+from . import template
 
 
 class CameraOptionsPanel:
@@ -25,7 +22,7 @@ class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
     def draw(self, context):
         layout = self.layout
 
-        template_camera_image(layout, context.active_object)
+        template.camera_image(layout, context.active_object)
 
 
 class CPP_PT_active_camera_calibration(Panel, CameraOptionsPanel):
@@ -45,7 +42,7 @@ class CPP_PT_active_camera_calibration(Panel, CameraOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        template_camera_calibration(layout, context.active_object)
+        template.camera_calibration(layout, context.active_object)
 
 
 class CPP_PT_active_camera_lens_distortion(Panel, CameraOptionsPanel):
@@ -54,4 +51,4 @@ class CPP_PT_active_camera_lens_distortion(Panel, CameraOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        template_camera_lens_distortion(layout, context.scene.camera)
+        template.camera_lens_distortion(layout, context.scene.camera)

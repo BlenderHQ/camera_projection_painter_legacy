@@ -18,16 +18,16 @@
 
 # <pep8 compliant>
 
-from ..constants import TEMP_DATA_NAME
+from .. import constants
 
 
 def check_uv_layers(ob):
     uv_layers = ob.data.uv_layers
     uv_layers_count = len(uv_layers)
-    if TEMP_DATA_NAME in uv_layers:
+    if constants.TEMP_DATA_NAME in uv_layers:
         uv_layers_count -= 1
 
-    if uv_layers_count and uv_layers.active.name != TEMP_DATA_NAME:
+    if uv_layers_count and uv_layers.active.name != constants.TEMP_DATA_NAME:
         return True
     return False
 

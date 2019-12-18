@@ -19,10 +19,10 @@
 # <pep8 compliant>
 
 from .. import operators
-from ..icons import get_icon_id
+from .. import icons
 
 
-def template_camera_image(layout, camera_ob):
+def camera_image(layout, camera_ob):
     layout.use_property_split = True
     layout.use_property_decorate = False
 
@@ -38,7 +38,7 @@ def template_camera_image(layout, camera_ob):
 
     operator = col.operator(
         operator = operators.CPP_OT_bind_camera_image.bl_idname,
-        icon_value = get_icon_id("bind_image"))
+        icon_value = icons.get_icon_id("bind_image"))
     operator.mode = 'ACTIVE'
 
     if image:
@@ -60,7 +60,7 @@ def template_camera_image(layout, camera_ob):
             col.label(text = "Invalid image", icon = 'ERROR')
 
 
-def template_camera_calibration(layout, camera_ob):
+def camera_calibration(layout, camera_ob):
     layout.use_property_decorate = False
 
     col = layout.column(align = True)
@@ -81,7 +81,7 @@ def template_camera_calibration(layout, camera_ob):
     col.prop(data.cpp, "calibration_aspect_ratio")
 
 
-def template_camera_lens_distortion(layout, camera_ob):
+def camera_lens_distortion(layout, camera_ob):
     layout.use_property_decorate = False
     layout.use_property_split = True
 
@@ -98,7 +98,7 @@ def template_camera_lens_distortion(layout, camera_ob):
     col.prop(data.cpp, "lens_distortion_tangential_2")
 
 
-def template_path_with_ops(layout, scene):
+def path_with_ops(layout, scene):
     layout.use_property_split = False
     layout.use_property_decorate = False
     col = layout.column(align = False)
@@ -110,7 +110,7 @@ def template_path_with_ops(layout, scene):
     operator = scol.operator(
         operator = operators.CPP_OT_bind_camera_image,
         text = "Bind All",
-        icon_value = get_icon_id("bind_image"))
+        icon_value = icons.get_icon_id("bind_image"))
     operator.mode = 'ALL'
 
     col.separator()

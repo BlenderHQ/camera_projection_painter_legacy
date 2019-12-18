@@ -7,11 +7,8 @@ from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from bpy.types import SpaceView3D
 
-from .utils_warning import get_warning_status
-from .utils_camera import get_camera_attributes
-from .common import get_hovered_region_3d, iter_curve_values, flerp
-
-from ..shaders import shaders
+from . import common
+from .. import shaders
 from .. import __package__ as addon_pkg
 
 import numpy as np
@@ -47,10 +44,10 @@ def update_brush_texture_bindcode(self, context):
     pixel_width = scene.tool_settings.unified_paint_settings.size
 
     check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
-    check_tuple = tuple((n for n in iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
+    check_tuple = tuple((n for n in common.iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
 
     if self.check_brush_curve_updated(check_tuple):
-        pixels = [int(n * 255) for n in iter_curve_values(brush.curve, pixel_width)]
+        pixels = [int(n * 255) for n in common.iter_curve_values(brush.curve, pixel_width)]
 
         id_buff = bgl.Buffer(bgl.GL_INT, 1)
         bgl.glGenTextures(1, id_buff)
@@ -92,8 +89,8 @@ def get_curr_img_pos_from_context(context):
 
     image_rel_pos = scene.cpp.current_image_position
     rpx, rpy = image_rel_pos
-    apx = flerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
-    apy = flerp(empty_space, area_size.y - image_size.y, rpy)
+    apx = common.f_lerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
+    apy = common.f_lerp(empty_space, area_size.y - image_size.y, rpy)
 
     return Vector((apx, apy)), image_size, possible
 
@@ -176,13 +173,13 @@ def draw_projection_preview(self, context):
         aspect_x = 1.0
         aspect_y = 1.0
 
-    shader = shaders.mesh_preview
+    shader = shaders.shader.mesh_preview
     batch = self.mesh_batch
     if not batch:
         return
 
     mouse_position = wm.cpp_mouse_pos
-    active_rv3d = get_hovered_region_3d(context, mouse_position)
+    active_rv3d = common.get_hovered_region_3d(context, mouse_position)
     current_rv3d = context.area.spaces.active.region_3d
 
     outline_type = 0
@@ -217,7 +214,7 @@ def draw_projection_preview(self, context):
     bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
 
-    position, forward, up = get_camera_attributes(scene.camera)
+    position, forward, up = common.get_camera_attributes(scene.camera)
 
     # Set shader uniforms
     shader.bind()
@@ -251,7 +248,7 @@ def draw_projection_preview(self, context):
     shader.uniform_int("useBrush", use_brush)
 
     if scene.cpp.use_warning_action_draw:
-        danger_zone = get_warning_status(context, wm.cpp_mouse_pos)
+        danger_zone = common.get_warning_status(context, wm.cpp_mouse_pos)
         shader.uniform_int("warning", danger_zone)
         shader.uniform_float("warningColor", preferences.warning_color)
     else:
@@ -264,8 +261,8 @@ def draw_projection_preview(self, context):
 
 
 def gen_camera_batch(camera):
-    shader_camera = shaders.camera
-    shader_camera_image_preview = shaders.camera_image_preview
+    shader_camera = shaders.shader.camera
+    shader_camera_image_preview = shaders.shader.camera_image_preview
 
     view_frame = camera.view_frame()
 
@@ -375,8 +372,8 @@ def get_ready_preview_count():
 
 def draw_cameras(self, context):
     scene = context.scene
-    shader_camera = shaders.camera
-    shader_camera_image_preview = shaders.camera_image_preview
+    shader_camera = shaders.shader.camera
+    shader_camera_image_preview = shaders.shader.camera_image_preview
 
     preferences = context.preferences.addons[addon_pkg].preferences
 

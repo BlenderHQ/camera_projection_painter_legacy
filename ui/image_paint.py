@@ -3,13 +3,10 @@
 import bpy
 from bpy.types import Panel
 
-from .templates import (
-    template_camera_image,
-    template_camera_calibration,
-    template_camera_lens_distortion)
+from . import template
 
 from .. import operators
-from ..utils import utils_poll, utils_draw
+from .. import utils
 
 
 class CPPOptionsPanel:
@@ -26,7 +23,7 @@ class CPP_PT_camera_painter(Panel, CPPOptionsPanel):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.tool_setup_poll(context)
+        return utils.poll.tool_setup_poll(context)
 
     def draw(self, context):
         layout = self.layout
@@ -68,7 +65,7 @@ class CPP_PT_view_options(Panel, CPPOptionsPanel):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.full_poll(context)
+        return utils.poll.full_poll(context)
 
     def draw(self, context):
         pass
@@ -92,7 +89,7 @@ class CPP_PT_camera_options(bpy.types.Panel, CPPOptionsPanel):
         col.prop(scene.cpp, "cameras_viewport_size")
         col.use_property_split = True
 
-        ready_count = utils_draw.get_ready_preview_count()
+        ready_count = utils.draw.get_ready_preview_count()
         valid_count = len([n for n in bpy.data.images if not n.cpp.invalid])
 
         text = "Image previews:"
@@ -159,7 +156,7 @@ class CPP_PT_operator_options(Panel, CPPOptionsPanel):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.full_poll(context)
+        return utils.poll.full_poll(context)
 
     def draw(self, context):
         pass
@@ -172,7 +169,7 @@ class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.full_poll(context)
+        return utils.poll.full_poll(context)
 
     def draw_header(self, context):
         layout = self.layout
@@ -246,7 +243,7 @@ class CPP_PT_memory_options(Panel, CPPOptionsPanel):
 
         row = col.row()
         row.label(text = "Images loaded:")
-        row.label(text = "%d" % utils_draw.get_loaded_images_count())
+        row.label(text = "%d" % utils.draw.get_loaded_images_count())
 
         col.operator(operator = operators.CPP_OT_free_memory.bl_idname)
 
@@ -265,7 +262,7 @@ class CPP_PT_current_camera(Panel, CPPOptionsPanel):
             return False
         if camera_ob.type != 'CAMERA':
             return False
-        return utils_poll.tool_setup_poll(context) and scene.camera
+        return utils.poll.tool_setup_poll(context) and scene.camera
 
     def draw(self, context):
         layout = self.layout
@@ -275,7 +272,7 @@ class CPP_PT_current_camera(Panel, CPPOptionsPanel):
 
         camera_ob = context.scene.camera
 
-        template_camera_image(col, camera_ob)
+        template.camera_image(col, camera_ob)
 
 
 class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
@@ -297,7 +294,7 @@ class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        template_camera_calibration(layout, context.scene.camera)
+        template.camera_calibration(layout, context.scene.camera)
 
 
 class CPP_PT_current_camera_lens_distortion(Panel, CPPOptionsPanel):
@@ -306,4 +303,4 @@ class CPP_PT_current_camera_lens_distortion(Panel, CPPOptionsPanel):
 
     def draw(self, context):
         layout = self.layout
-        template_camera_lens_distortion(layout, context.scene.camera)
+        template.camera_lens_distortion(layout, context.scene.camera)

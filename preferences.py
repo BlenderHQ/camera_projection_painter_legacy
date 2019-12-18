@@ -1,6 +1,7 @@
 # <pep8 compliant>
 
 import bpy
+import rna_keymap_ui
 from bpy.props import (
     FloatProperty,
     IntProperty,
@@ -8,11 +9,8 @@ from bpy.props import (
     FloatVectorProperty
 )
 
-import rna_keymap_ui
-
 from . import operators
-from .operators import CPP_OT_set_camera_by_view, CPP_OT_image_paint
-from .icons import get_icon_id
+from . import icons
 from . import constants
 
 
@@ -41,9 +39,9 @@ class CppPreferences(bpy.types.AddonPreferences):
     outline_type: EnumProperty(
         items = [
             ('NO_OUTLINE', "No outline", 'Outline not used', "", 0),
-            ('FILL', "Fill color", 'Single color outline', get_icon_id("pattern_fill"), 1),
-            ('CHECKER', "Checker", 'Checker pattern outline', get_icon_id("pattern_checker"), 2),
-            ('LINES', "Lines", 'Lines pattern outline', get_icon_id("pattern_lines"), 3)],
+            ('FILL', "Fill color", 'Single color outline', icons.get_icon_id("pattern_fill"), 1),
+            ('CHECKER', "Checker", 'Checker pattern outline', icons.get_icon_id("pattern_checker"), 2),
+            ('LINES', "Lines", 'Lines pattern outline', icons.get_icon_id("pattern_lines"), 3)],
         name = "Type",
         default = 'LINES',
         description = "Outline to be drawn outside camera rectangle for preview")
@@ -195,7 +193,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
         km = kc.keymaps["Image Paint"]
 
-        kmi = get_hotkey_entry_item(km, CPP_OT_image_paint.bl_idname, None, None)
+        kmi = get_hotkey_entry_item(km, operators.CPP_OT_image_paint.bl_idname, None, None)
         if kmi:
             col.context_pointer_set("keymap", km)
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)

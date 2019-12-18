@@ -12,11 +12,8 @@ from bpy.props import (
     PointerProperty
 )
 
-from .icons import get_icon_id
-from .utils import utils_image, utils_base, utils_draw
-
-import io
-import os
+from . import icons
+from . import utils
 
 
 class CameraProperties(PropertyGroup):
@@ -140,11 +137,11 @@ class SceneProperties(PropertyGroup):
 
     def _use_auto_set_image_update(self, context):
         if self.use_auto_set_image:
-            utils_base.set_clone_image_from_camera_data(context)
+            utils.common.set_clone_image_from_camera_data(context)
 
     def _use_camera_image_previews_update(self, context):
         if self.use_camera_image_previews:
-            utils_draw.clear_image_previews()
+            utils.draw.clear_image_previews()
 
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
@@ -183,10 +180,10 @@ class SceneProperties(PropertyGroup):
         items = [
             ('FULL', "Full",
              "Automatic dependent to world orientation and location",
-             get_icon_id("autocam_full"), 0),
+             icons.get_icon_id("autocam_full"), 0),
             ('DIRECTION', "Direction",
              "Automatic dependent to view direction only",
-             get_icon_id("autocam_direction"), 1)
+             icons.get_icon_id("autocam_direction"), 1)
         ],
         name = "Auto Camera Method",
         default = 'DIRECTION',
@@ -290,9 +287,6 @@ class SceneProperties(PropertyGroup):
                       "at which the drawing remains acceptable in terms of performance")
 
 
-_image_size_cache = {}
-
-
 class ImageProperties(PropertyGroup):
     preview_check_passed: BoolProperty(
         default = False,
@@ -300,48 +294,14 @@ class ImageProperties(PropertyGroup):
     )
 
     @property
-    def _image(self):
-        return self.id_data
-
-    @property
     def static_size(self):
-        image = self._image
-
-        if image in _image_size_cache:
-            return _image_size_cache[image]
-
-        size_x, size_y = 0, 0
-
-        if image.source == 'FILE':
-            if image.packed_file:
-                packed_data = image.packed_file.data
-                st_size = image.packed_file.size
-                with io.BytesIO(packed_data) as io_bytes:
-                    size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, st_size)
-            else:
-                file_path = bpy.path.abspath(image.filepath)
-                if os.path.isfile(file_path):
-                    st_size = os.path.getsize(file_path)
-                    with io.open(file_path, "rb") as io_bytes:
-                        size_x, size_y = utils_image.get_image_metadata_from_bytesio(io_bytes, st_size)
-
-        elif image.source == 'GENERATED':
-            size_x, size_y = image.generated_width, image.generated_height
-
-        if size_x and size_y:
-            _image_size_cache[image] = size_x, size_y
-            return size_x, size_y
-
-        size_x, size_y = image.size[:]
-        if size_x and size_y:
-            _image_size_cache[image] = size_x, size_y
-            return size_x, size_y
-
-        return size_x, size_y
+        image = self.id_data
+        width, height = utils.common.get_image_static_size(image)
+        return width, height
 
     @property
     def invalid(self):
-        image = self._image
+        image = self.id_data
         size_x, size_y = image.cpp.static_size
         if size_x and size_y:
             return False

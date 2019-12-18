@@ -10,9 +10,8 @@ from mathutils import Vector
 from mathutils.geometry import intersect_point_quad_2d
 from bpy.types import Gizmo, GizmoGroup
 
-from . import operators
-from .utils import utils_poll, utils_draw
-from .shaders import shaders
+from . import utils
+from . import shaders
 
 
 class CPP_GGT_camera_gizmo_group(GizmoGroup):
@@ -24,7 +23,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        return utils_poll.tool_setup_poll(context)
+        return utils.poll.tool_setup_poll(context)
 
     def setup(self, context):
         for ob in context.scene.cpp.camera_objects:
@@ -71,7 +70,7 @@ class CPP_GT_current_image_preview(Gizmo):
 
     def setup(self):
         self.image_batch = batch_for_shader(
-            shaders.current_image, 'TRI_FAN',
+            shaders.shader.current_image, 'TRI_FAN',
             {"pos": ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)),
              "uv": ((0, 0), (1, 0), (1, 1), (0, 1))})
 
@@ -86,12 +85,12 @@ class CPP_GT_current_image_preview(Gizmo):
 
         # print(image.cpp.static_size)
 
-        shader = shaders.current_image
+        shader = shaders.shader.current_image
         batch = self.image_batch
 
         rv3d = context.region_data
 
-        curr_img_pos = utils_draw.get_curr_img_pos_from_context(context)
+        curr_img_pos = utils.draw.get_curr_img_pos_from_context(context)
         if not curr_img_pos:
             return
 
@@ -142,7 +141,7 @@ class CPP_GT_current_image_preview(Gizmo):
 
         if rv3d.view_perspective == 'CAMERA':
             return -1
-        curr_img_pos = utils_draw.get_curr_img_pos_from_context(context)
+        curr_img_pos = utils.draw.get_curr_img_pos_from_context(context)
         if not curr_img_pos:
             return -1
         pos, size, possible = curr_img_pos
@@ -203,7 +202,7 @@ class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        if not utils_poll.full_poll(context):
+        if not utils.poll.full_poll(context):
             return False
         scene = context.scene
         return scene.cpp.use_current_image_preview and scene.cpp.current_image_alpha

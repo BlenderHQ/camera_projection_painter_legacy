@@ -2,7 +2,8 @@
 
 import os
 
-_preview_collection = None
+if "_preview_collection" not in locals():
+    _preview_collection = None
 
 
 def get_icon_id(key):
@@ -19,6 +20,8 @@ def get_icon_id(key):
 
 
 def unregister():
+    global _preview_collection
     if _preview_collection is not None:
         import bpy.utils.previews
         bpy.utils.previews.remove(_preview_collection)
+        _preview_collection = None

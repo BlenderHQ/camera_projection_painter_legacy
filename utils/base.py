@@ -1,9 +1,12 @@
 # <pep8 compliant>
 
+# this module contains utils relative to CPP_OT_camera_projection_painter only
+
+
 import bpy
 import bmesh
 
-from ..constants import TEMP_DATA_NAME
+from .. import constants
 
 import time
 
@@ -20,8 +23,6 @@ class PropertyTracker(object):
             return True
         return False
 
-
-# Operator cls specific func
 
 def set_properties_defaults(self):
     """
@@ -44,16 +45,7 @@ def set_properties_defaults(self):
     self.check_camera_frame_updated = PropertyTracker()
 
 
-
-# Base utils
-
 def get_bmesh(context, ob):
-    """
-    Get bmesh from evaluated depsgraph
-    :param context: bpy.types.Context
-    :param ob: bpy.types.Object
-    :return: bmesh.types.Bmesh
-    """
     bm = bmesh.new()
     depsgraph = context.evaluated_depsgraph_get()
     bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
@@ -61,28 +53,11 @@ def get_bmesh(context, ob):
 
 
 def remove_uv_layer(ob):
-    """
-    Remove temporary uv layer from given object
-    :param bpy.types.Object:
-    :return: None
-    """
     if ob:
         if ob.type == 'MESH':
             uv_layers = ob.data.uv_layers
-            if TEMP_DATA_NAME in uv_layers:
-                uv_layers.remove(uv_layers[TEMP_DATA_NAME])
-
-
-def set_clone_image_from_camera_data(context):
-    scene = context.scene
-    if scene.camera:
-        camera = scene.camera.data
-        image_paint = scene.tool_settings.image_paint
-        if camera.cpp.available:
-            image = camera.cpp.image
-            if image:
-                if image_paint.clone_image != image:
-                    image_paint.clone_image = image
+            if constants.TEMP_DATA_NAME in uv_layers:
+                uv_layers.remove(uv_layers[constants.TEMP_DATA_NAME])
 
 
 def setup_basis_uv_layer(context):
@@ -97,19 +72,19 @@ def setup_basis_uv_layer(context):
     if not (size_x and size_y):
         return
 
-    if TEMP_DATA_NAME not in uv_layers:
-        uv_layers.new(name = TEMP_DATA_NAME, do_init = False)
-        uv_layer = uv_layers[TEMP_DATA_NAME]
+    if constants.TEMP_DATA_NAME not in uv_layers:
+        uv_layers.new(name = constants.TEMP_DATA_NAME, do_init = False)
+        uv_layer = uv_layers[constants.TEMP_DATA_NAME]
         uv_layer.active = False
         uv_layer.active_clone = True
 
-    if TEMP_DATA_NAME not in ob.modifiers:
+    if constants.TEMP_DATA_NAME not in ob.modifiers:
         bpy.ops.object.modifier_add(type = 'UV_PROJECT')
         modifier = ob.modifiers[-1]
-        modifier.name = TEMP_DATA_NAME
+        modifier.name = constants.TEMP_DATA_NAME
 
-    modifier = ob.modifiers[TEMP_DATA_NAME]
-    uv_layer = uv_layers[TEMP_DATA_NAME]
+    modifier = ob.modifiers[constants.TEMP_DATA_NAME]
+    uv_layer = uv_layers[constants.TEMP_DATA_NAME]
 
     while ob.modifiers[0] != modifier:  # Required when object already has some modifiers on it
         bpy.ops.object.modifier_move_up(modifier = modifier.name)
@@ -132,7 +107,7 @@ def setup_basis_uv_layer(context):
     modifier.projector_count = 1
     modifier.projectors[0].object = scene.camera
 
-    bpy.ops.object.modifier_apply(modifier = TEMP_DATA_NAME)
+    bpy.ops.object.modifier_apply(modifier = constants.TEMP_DATA_NAME)
 
     scene.render.resolution_x = size_x
     scene.render.resolution_y = size_y
@@ -141,7 +116,7 @@ def setup_basis_uv_layer(context):
 def deform_uv_layer(self, context):
     bm = self.bm
     ob = context.image_paint_object
-    uv_layer = bm.loops.layers.uv.get(TEMP_DATA_NAME)
+    uv_layer = bm.loops.layers.uv.get(constants.TEMP_DATA_NAME)
 
     dt = time.time()
 
