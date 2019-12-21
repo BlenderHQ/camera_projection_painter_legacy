@@ -29,7 +29,7 @@ class CameraProperties(PropertyGroup):
     image: PointerProperty(
         type = bpy.types.Image, name = "Image",
         options = {'HIDDEN'},
-        description = "Image for texture paint from this camera")
+        description = "An image binded to a camera for use as a Clone Image in Texture Paint mode")
 
     use_calibration: BoolProperty(
         name = "Calibration", default = False,
@@ -145,9 +145,10 @@ class SceneProperties(PropertyGroup):
 
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
-        description = "Path to source images used. "
-                      "If image named same as object not found in packed images, "
-                      "operator search images there and open them automatically")
+        description = "The path to the image dataset directory."
+                      "Used to automate the binding of images to cameras."
+                      "If it is not specified, the binder operator searches"
+                      "through images that are already open in the Blender")
 
     calibration_source_file: StringProperty(
         name = "Camera Calibration File", subtype = 'FILE_PATH',
@@ -161,19 +162,18 @@ class SceneProperties(PropertyGroup):
         name = "Mapping",
         default = 'UV',
         options = {'HIDDEN'},
-        description = "Mapping method for source image")
+        description = "Source image mapping method")
 
     # Camera section
     use_auto_set_camera: BoolProperty(
-        name = "Use Automatic Camera", default = False,
+        name = "Auto Camera Selection", default = False,
         options = {'HIDDEN'},
-        description = "Automatic/User camera selection\n"
-                      "Warning! Using this option with large images may be laggy")
+        description = "Automatically select a camera based on the direction and location of the viewer")
 
     use_auto_set_image: BoolProperty(
-        name = "Use Automatic Image", default = True,
+        name = "Auto Clone Image Selection", default = True,
         options = {'HIDDEN'},
-        description = "Automatic/User image selection",
+        description = "Automatically set Clone Image to the image attached to the current camera",
         update = _use_auto_set_image_update)
 
     auto_set_camera_method: EnumProperty(
@@ -194,62 +194,65 @@ class SceneProperties(PropertyGroup):
         name = "Tolerance", default = 0.92, soft_min = 0.0, soft_max = 1.0,
         subtype = 'FACTOR',
         options = {'HIDDEN'},
-        description = "Sensitivity for automatic camera selection")
+        description = "Tolerance in the difference between camera and viewer parameters")
 
     tolerance_direction: FloatProperty(
         name = "Tolerance", default = 0.55, soft_min = 0.0, soft_max = 1.0,
         subtype = 'FACTOR',
         options = {'HIDDEN'},
-        description = "Sensitivity for automatic camera selection")
+        description = "Tolerance in the difference between camera and viewer parameters")
 
     cameras_viewport_size: FloatProperty(
         name = "Viewport Display Size",
         default = 1.0, soft_min = 1.0, soft_max = 5.0, step = 0.1,
         subtype = 'DISTANCE',
         options = {'HIDDEN'},
-        description = "Viewport cameras display size")
+        description = "The size of the cameras to display in the viewport. Does not affect camera settings")
 
     # Viewport draw
     use_projection_preview: BoolProperty(
-        name = "Projection Preview", default = True,
+        name = "Brush Preview", default = True,
         options = {'HIDDEN'},
-        description = "Show preview of projection")
+        description = "Display preview overlay projection clone image in brush")
 
     use_projection_outline: BoolProperty(
         name = "Outline", default = True,
         options = {'HIDDEN'},
-        description = "Show projection outline")
+        description = "Display the stroke around the borders of the projected image")
 
     use_normal_highlight: BoolProperty(
         name = "Normal Highlight", default = False,
         options = {'HIDDEN'},
-        description = "Show stretching factor")
+        description = "Visualization of the angle between"
+                      "the direction of the projector and the normal of the mesh in the current fragment")
 
     use_camera_image_previews: BoolProperty(
         name = "Camera Images", default = False,
         options = {'HIDDEN'},
-        description = "Display camera images in the viewport",
+        description = "Display previews of images binded to cameras in the viewport. Uses standard image previews.",
         update = _use_camera_image_previews_update)
 
     # Current image preview
     use_current_image_preview: BoolProperty(
         name = "Current Image", default = True,
         options = {'HIDDEN'},
-        description = "Display currently used source image directly in the viewport")
+        description = "Display an interactive gizmo with the current clone image."
+                      "It works approximately using simple calculations projected onto the plane of the brush.")
 
     current_image_size: IntProperty(
         name = "Scale",
         default = 250, min = 100, soft_max = 1500,
         subtype = 'PIXEL',
         options = {'HIDDEN'},
-        description = "Scale of displayed image in pixels")
+        description = "The size of the displayed gizmo in pixels")
 
     current_image_alpha: FloatProperty(
         name = "Alpha",
         default = 0.25, soft_min = 0.0, soft_max = 1.0, step = 1,
         subtype = 'FACTOR',
         options = {'HIDDEN'},
-        description = "Alpha value for image")
+        description = "The transparency of the displayed gizmo."
+                      "If the cursor is over the gizmo, an opaque image is displayed")
 
     current_image_position: FloatVectorProperty(
         name = "Pos", size = 2,
@@ -260,31 +263,29 @@ class SceneProperties(PropertyGroup):
     use_warnings: BoolProperty(
         name = "Use warnings", default = True,
         options = {'HIDDEN'},
-        description = "Show warning when paint may become laggy")
+        description = "Use warnings if drawing can potentially become lagging")
 
     use_warning_action_draw: BoolProperty(
         name = "Brush Preview", default = True,
         options = {'HIDDEN'},
-        description = "Change brush preview when context out of"
-                      "recommended parameters")
+        description = "Displays a warning in the brush preview. Doesn't depend on Use Brush Preview")
 
     use_warning_action_popup: BoolProperty(
         name = "Info popup", default = False,
         options = {'HIDDEN'},
-        description = "Info popup when context out of recommended parameters")
+        description = "Open popup warning if current context is out of recommended")
 
     use_warning_action_lock: BoolProperty(
         name = "Lock Paint", default = True,
         options = {'HIDDEN'},
-        description = "Lock paint when context out of recommended parameters")
+        description = "Lock paint if current context is out of recommended")
 
     distance_warning: FloatProperty(
         name = "Safe Radius",
         default = 30.0, soft_min = 5, soft_max = 100,
         subtype = 'DISTANCE',
         options = {'HIDDEN'},
-        description = "The radius of the brush projected onto the object \n"
-                      "at which the drawing remains acceptable in terms of performance")
+        description = "User recommended radius projected onto the plane brush")
 
 
 class ImageProperties(PropertyGroup):

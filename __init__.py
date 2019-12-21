@@ -12,9 +12,20 @@ bl_info = {
     "category": "Paint",
 }
 
+# Notes:
+#       - The addon supports live reloading of the module using importlib.reload (...).
+#   The standard operator bpy.ops.script.reload()
+#   is not supported because it is not possible while the modal operators work.
+#       - To simplify the re-import of submodules,
+#   they do not use "from some_module import name" for other submodules,
+#   only full import is used.
+#       - Main classes are registered only after bpy.app.handlers.load_post is triggered,
+#   since only after it is automatic start possible
+#
+
 if "bpy" in locals():
-    # addon support live editing based on importlib.reload(...)
     import importlib
+    unregister()
 
     importlib.reload(icons)
     importlib.reload(overwrite_ui)
@@ -28,6 +39,7 @@ if "bpy" in locals():
     importlib.reload(operators)
     importlib.reload(preferences)
 
+    _module_registered = False
     register()
     _load_post_register(None)
     _load_post_handler(None)
@@ -107,7 +119,8 @@ def _register_handlers():
 
 def _unregister_handlers():
     for handle, func in _handlers:
-        handle.remove(func)
+        if func in handle:
+            handle.remove(func)
 
 
 def register():
@@ -123,6 +136,15 @@ def unregister():
     # stop running operators
     global _module_registered
     # call modules unregister
+    from . import operators
+
+    for op in operators.modal_ops:
+        if hasattr(op, "cancel"):
+            try:
+                op.cancel(bpy.context)
+            except:
+                import traceback
+                print(traceback.format_exc())
     for module in (icons, overwrite_ui, keymap, extend_bpy_types, ui,
                    operators,
                    gizmos):

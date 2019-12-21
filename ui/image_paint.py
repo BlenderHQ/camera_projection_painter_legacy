@@ -172,7 +172,7 @@ class CPP_PT_operator_options(Panel, CPPOptionsPanel):
 
 
 class CPP_PT_camera_autocam_options(Panel, CPPOptionsPanel):
-    bl_label = "Autocam"
+    bl_label = "Auto Camera Selection"
     bl_parent_id = "CPP_PT_operator_options"
     bl_order = 1
 
@@ -279,9 +279,12 @@ class CPP_PT_current_camera(Panel, CPPOptionsPanel):
         layout.use_property_decorate = False
         col = layout.column(align = False)
 
-        camera_ob = context.scene.camera
+        scene = context.scene
+        camera_ob = scene.camera
 
         template.camera_image(col, camera_ob)
+
+        col.prop(scene.cpp, "use_auto_set_image")
 
 
 class CPP_PT_current_camera_calibration(Panel, CPPOptionsPanel):

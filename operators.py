@@ -2,10 +2,13 @@
 
 
 if "bpy" in locals():
-    for op in _modal_ops:
-        cancel = getattr(op, "cancel", None)
-        if cancel:
-            cancel(bpy.context)
+    for op in modal_ops:
+        if hasattr(op, "cancel"):
+            try:
+                op.cancel(bpy.context)
+            except:
+                import traceback
+                print(traceback.format_exc())
 
     import importlib
 
@@ -24,7 +27,7 @@ from bpy.props import StringProperty, EnumProperty
 import os
 import csv
 
-_modal_ops = []
+modal_ops = []
 tmp_camera = None
 
 
@@ -34,16 +37,15 @@ class CPP_OT_listener(Operator):
     bl_options = {'INTERNAL'}
 
     def cancel(self, context):
-        if self in _modal_ops:
-            _modal_ops.remove(self)
+        if self in modal_ops:
+            modal_ops.remove(self)
 
         wm = context.window_manager
         wm.event_timer_remove(self.timer)
 
     def invoke(self, context, event):
-        print("CPP_OT_listener invoke")
-        if not self in _modal_ops:
-            _modal_ops.append(self)
+        if not self in modal_ops:
+            modal_ops.append(self)
 
         wm = context.window_manager
         self.timer = wm.event_timer_add(time_step = constants.LISTEN_TIME_STEP, window = context.window)
@@ -79,9 +81,8 @@ class CPP_OT_camera_projection_painter(Operator):
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
-        print("CPP_OT_camera_projection_painter invoke")
-        if not self in _modal_ops:
-            _modal_ops.append(self)
+        if not self in modal_ops:
+            modal_ops.append(self)
 
         utils.base.set_properties_defaults(self)
 
@@ -101,8 +102,8 @@ class CPP_OT_camera_projection_painter(Operator):
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        if self in _modal_ops:
-            _modal_ops.remove(self)
+        if self in modal_ops:
+            modal_ops.remove(self)
 
         scene = context.scene
         ob = context.active_object
