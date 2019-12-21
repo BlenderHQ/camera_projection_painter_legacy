@@ -380,12 +380,16 @@ def get_warning_status(context, mpos):
 
     lens = context.space_data.lens * 0.01  # convert to meters
 
-    distance = 0.0
+    distances = []
     for p in CHECK_PATTERN:
         ppos = mpos + (p * brush_radius)
         dist = ray_cast(context, ppos)
-        if dist > distance:
-            distance = dist
+        if dist != -1:
+            distances.append(dist)
+
+    distance = 0.0
+    if distances:
+        distance = sum(distances) / len(distances)
 
     if distance != -1:
         a = scr_radius
@@ -405,18 +409,18 @@ def danger_zone_popup_menu(self, context):
 
     scene = context.scene
 
-    layout.label(text = "Warning:")
+    layout.label(text = "Safe Options:")
     layout.separator()
     row = layout.row()
 
     col = row.column()
-    col.label(text = "Distance:")
-    col.label(text = "Brush Radius:")
+    col.label(text = "Unprojected Radius:")
 
     col = row.column()
     col.emboss = 'NORMAL'
-    col.label(text = "%d %s" % (scene.cpp.distance_warning, str(scene.unit_settings.length_unit).capitalize()))
-    col.label(text = "%d Pixels" % scene.cpp.brush_radius_warning)
+    col.label(text = "%d %s" % (
+        scene.cpp.distance_warning,
+        str(scene.unit_settings.length_unit).capitalize()))
 
 
 # Material

@@ -2,6 +2,9 @@
 
 TEMP_DATA_NAME = "cpp_temp_data"
 
+LISTEN_TIME_STEP = 1 / 4
+TIME_STEP = 1 / 60
+
 AUTOCAM_MIN = 0.852
 AUTOCAM_MAX = 0.999
 

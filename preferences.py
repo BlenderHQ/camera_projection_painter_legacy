@@ -1,5 +1,18 @@
 # <pep8 compliant>
 
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(operators)
+    importlib.reload(icons)
+    importlib.reload(constants)
+
+    del importlib
+else:
+    from . import operators
+    from . import icons
+    from . import constants
+
 import bpy
 import rna_keymap_ui
 from bpy.props import (
@@ -8,10 +21,6 @@ from bpy.props import (
     EnumProperty,
     FloatVectorProperty
 )
-
-from . import operators
-from . import icons
-from . import constants
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):

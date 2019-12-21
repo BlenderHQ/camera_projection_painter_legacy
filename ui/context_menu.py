@@ -1,9 +1,18 @@
 # <pep8 compliant>
 
-from bpy.types import Menu
+if "bpy" in locals():
+    import importlib
 
-from .. import operators
-from .. import icons
+    importlib.reload(operators)
+    importlib.reload(icons)
+
+    del importlib
+else:
+    from .. import operators
+    from .. import icons
+
+import bpy
+from bpy.types import Menu
 
 
 class CPP_MT_camera_pie(Menu):

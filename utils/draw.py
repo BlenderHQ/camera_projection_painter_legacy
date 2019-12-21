@@ -138,10 +138,11 @@ def get_bmesh_batch(bm):
 
 def draw_projection_preview(self, context):
     wm = context.window_manager
-    scene = context.scene
-    if not scene.cpp.use_projection_preview:
-        return
     if wm.cpp_suspended:
+        return
+
+    scene = context.scene
+    if not (scene.cpp.use_projection_preview or scene.cpp.use_warning_action_draw):
         return
 
     preferences = context.preferences.addons[addon_pkg].preferences

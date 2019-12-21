@@ -1,5 +1,16 @@
 # <pep8 compliant>
 
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(operators)
+    importlib.reload(icons)
+
+    del importlib
+else:
+    from .. import operators
+    from .. import icons
+
 import bpy
 
 from .. import operators

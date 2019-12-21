@@ -18,7 +18,7 @@
 
 # <pep8 compliant>
 
-from ..icons import get_icon_id
+from .. import icons
 from .. import operators
 from .. import constants
 
@@ -33,7 +33,7 @@ class VIEW3D_PT_tools_brush_clone:
         row.operator(
             operator = operators.CPP_OT_info.bl_idname,
             text = "",
-            icon_value = get_icon_id("overwriten")
+            icon_value = icons.get_icon_id("overwriten")
         ).text = constants.message_overwrite_ui
 
     def draw(self, context):

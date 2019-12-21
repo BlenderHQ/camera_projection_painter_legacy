@@ -1,8 +1,16 @@
 # <pep8 compliant>
 
-from bpy.types import Panel
 
-from . import template
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(template)
+
+    del importlib
+else:
+    from . import template
+
+from bpy.types import Panel
 
 
 class CameraOptionsPanel:

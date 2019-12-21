@@ -315,7 +315,7 @@ _classes = (
 )
 
 
-def register_types():
+def register():
     bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
     bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
     bpy.types.WindowManager.cpp_mouse_pos = bpy.props.IntVectorProperty(
@@ -331,7 +331,7 @@ def register_types():
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
 
 
-def unregister_types():
+def unregister():
     for cls in reversed(_classes):
         bpy.utils.unregister_class(cls)
 

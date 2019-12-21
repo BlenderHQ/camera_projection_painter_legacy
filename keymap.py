@@ -1,8 +1,14 @@
 # <pep8 compliant>
 
+if "bpy" in locals():
+    import importlib
+    importlib.reload(operators)
+    del importlib
+else:
+    from . import operators
+
 import bpy
 
-from . import operators
 
 _keymaps = []
 

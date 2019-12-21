@@ -216,3 +216,12 @@ class CPP_GGT_image_preview_gizmo_group(GizmoGroup):
         mpr.use_grab_cursor = True
 
         self.mpr = mpr
+
+
+_classes = [
+    CPP_GGT_camera_gizmo_group,
+    CPP_GT_current_image_preview,
+    CPP_GGT_image_preview_gizmo_group
+]
+
+register, unregister = bpy.utils.register_classes_factory(_classes)

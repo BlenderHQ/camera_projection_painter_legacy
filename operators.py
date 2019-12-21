@@ -1,19 +1,30 @@
 # <pep8 compliant>
 
 
+if "bpy" in locals():
+    for op in _modal_ops:
+        cancel = getattr(op, "cancel", None)
+        if cancel:
+            cancel(bpy.context)
+
+    import importlib
+
+    importlib.reload(utils)
+    importlib.reload(constants)
+
+    del importlib
+else:
+    from . import utils
+    from . import constants
+
 import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, EnumProperty
 
-from . import utils
-
 import os
 import csv
 
-LISTEN_TIME_STEP = 1 / 4
-TIME_STEP = 1 / 60
-
-modal_ops = []
+_modal_ops = []
 tmp_camera = None
 
 
@@ -23,18 +34,19 @@ class CPP_OT_listener(Operator):
     bl_options = {'INTERNAL'}
 
     def cancel(self, context):
-        if self in modal_ops:
-            modal_ops.remove(self)
+        if self in _modal_ops:
+            _modal_ops.remove(self)
 
         wm = context.window_manager
         wm.event_timer_remove(self.timer)
 
     def invoke(self, context, event):
-        if not self in modal_ops:
-            modal_ops.append(self)
+        print("CPP_OT_listener invoke")
+        if not self in _modal_ops:
+            _modal_ops.append(self)
 
         wm = context.window_manager
-        self.timer = wm.event_timer_add(time_step = LISTEN_TIME_STEP, window = context.window)
+        self.timer = wm.event_timer_add(time_step = constants.LISTEN_TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
@@ -42,9 +54,9 @@ class CPP_OT_listener(Operator):
         wm = context.window_manager
 
         # \\dev purposes
-        if event.type == 'F8':
+        if event.type == 'F8' and event.value == 'PRESS':
             self.cancel(context)
-            return {'FINISHED'}
+            return {'CANCELLED'}
         # //
 
         if wm.cpp_running:
@@ -67,8 +79,9 @@ class CPP_OT_camera_projection_painter(Operator):
     bl_options = {'INTERNAL'}
 
     def invoke(self, context, event):
-        if not self in modal_ops:
-            modal_ops.append(self)
+        print("CPP_OT_camera_projection_painter invoke")
+        if not self in _modal_ops:
+            _modal_ops.append(self)
 
         utils.base.set_properties_defaults(self)
 
@@ -83,13 +96,13 @@ class CPP_OT_camera_projection_painter(Operator):
         scene.cpp.cameras_hide_set(state = True)
 
         wm = context.window_manager
-        self.timer = wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+        self.timer = wm.event_timer_add(time_step = constants.TIME_STEP, window = context.window)
         wm.modal_handler_add(self)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
-        if self in modal_ops:
-            modal_ops.remove(self)
+        if self in _modal_ops:
+            _modal_ops.remove(self)
 
         scene = context.scene
         ob = context.active_object
@@ -105,20 +118,20 @@ class CPP_OT_camera_projection_painter(Operator):
         wm.cpp_suspended = False
 
         utils.base.set_properties_defaults(self)
-        bpy.ops.cpp.listener('INVOKE_DEFAULT')
 
     def modal(self, context, event):
         wm = context.window_manager
 
         if not utils.poll.full_poll(context):
             self.cancel(context)
+            bpy.ops.cpp.listener('INVOKE_DEFAULT')
             return {'FINISHED'}
 
         if wm.cpp_suspended:
             return {'PASS_THROUGH'}
 
         # \\dev purposes
-        if event.type == 'F8':
+        if event.type == 'F8' and event.value == 'PRESS':
             self.cancel(context)
             return {'FINISHED'}
         # //
@@ -203,8 +216,6 @@ class CPP_OT_image_paint(Operator):
     def execute(self, context):
         scene = context.scene
         wm = context.window_manager
-        # Danger zone
-        rv3d = context.region_data
 
         mpos = wm.cpp_mouse_pos
         warning_status = utils.common.get_warning_status(context, mpos)
@@ -659,3 +670,19 @@ class CPP_OT_info(Operator):
 
     def execute(self, context):
         return {'FINISHED'}
+
+
+_classes = [
+    CPP_OT_listener,
+    CPP_OT_camera_projection_painter,
+    CPP_OT_image_paint,
+    CPP_OT_bind_camera_image,
+    CPP_OT_set_camera_by_view,
+    CPP_OT_set_camera_active,
+    CPP_OT_set_camera_calibration_from_file,
+    CPP_OT_enter_context,
+    CPP_OT_call_pie,
+    CPP_OT_free_memory,
+]
+
+register, unregister = bpy.utils.register_classes_factory(_classes)

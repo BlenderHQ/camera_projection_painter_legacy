@@ -13,36 +13,26 @@ bl_info = {
 }
 
 if "bpy" in locals():
-    # reloading
-    import os
-    import types
+    # addon support live editing based on importlib.reload(...)
     import importlib
 
-    path = os.path.dirname(__file__)
-    module_names = bpy.path.module_names(path, recursive = True)
+    importlib.reload(icons)
+    importlib.reload(overwrite_ui)
+    importlib.reload(shaders)
+    importlib.reload(ui)
+    importlib.reload(utils)
+    importlib.reload(constants)
+    importlib.reload(extend_bpy_types)
+    importlib.reload(gizmos)
+    importlib.reload(keymap)
+    importlib.reload(operators)
+    importlib.reload(preferences)
 
-    _cache = []
-    for module_name, module_path in sorted(module_names, key = lambda n: n[0]):
-        module = importlib.import_module("." + module_name, package = __package__)
-        importlib.reload(module)
-        _cache.append(module)
-
-    for cached_module in _cache:
-        for attr_name in dir(cached_module):
-            attr = getattr(cached_module, attr_name)
-            if isinstance(attr, types.ModuleType):
-                for module in _cache:
-                    if module.__name__ == attr.__name__:
-                        setattr(cached_module, attr_name, module)
-
-    _reg = False
+    register()
     _load_post_register(None)
     _load_post_handler(None)
 
-    del _cache
     del importlib
-    del types
-    del os
 
 else:
     from . import icons
@@ -57,78 +47,35 @@ else:
     from . import operators
     from . import preferences
 
+    _module_registered = False
+
 import bpy
 from bpy.app.handlers import persistent
-
-_reg = False
 
 
 @persistent
 def _load_post_register(dummy):
-    # all important register functions called only on load_post
-    # user should reload file or Blender to start main operators
-    # so when user enable an addon, only preferences are registered
-    # to show a message about required reloading
-    global _reg
-    if not _reg:
-        _reg = True
-        extend_bpy_types.register_types()
-        for cls in _classes:
-            bpy.utils.register_class(cls)
-        keymap.register()
-        overwrite_ui.register()
+    global _module_registered
+    if not _module_registered:
+        _module_registered = True
+        for module in (
+                extend_bpy_types,
+                keymap,
+                overwrite_ui,
+                ui,
+                operators,
+                gizmos):
+            reg_func = getattr(module, "register")
+            reg_func()
 
 
 @persistent
 def _load_post_handler(dummy):
+    # start listener
     wm = bpy.context.window_manager
     wm.cpp_running = False
     wm.cpp_suspended = False
     bpy.ops.cpp.listener('INVOKE_DEFAULT')
-
-
-_classes = (
-    # operators
-    operators.CPP_OT_listener,
-    operators.CPP_OT_camera_projection_painter,
-    operators.CPP_OT_image_paint,
-    operators.CPP_OT_bind_camera_image,
-    operators.CPP_OT_set_camera_by_view,
-    operators.CPP_OT_set_camera_active,
-    operators.CPP_OT_set_camera_calibration_from_file,
-    operators.CPP_OT_enter_context,
-    operators.CPP_OT_call_pie,
-    operators.CPP_OT_free_memory,
-
-    # gizmos
-    gizmos.CPP_GGT_camera_gizmo_group,
-    gizmos.CPP_GT_current_image_preview,
-    gizmos.CPP_GGT_image_preview_gizmo_group,
-
-    # ui
-    ui.camera.CPP_PT_active_camera_options,
-    # ui.camera.CPP_PT_active_camera_calibration,
-    # ui.camera.CPP_PT_active_camera_lens_distortion,
-
-    ui.scene.CPP_PT_camera_painter_scene,
-
-    ui.image_paint.CPP_PT_camera_painter,
-
-    ui.image_paint.CPP_PT_view_options,
-    ui.image_paint.CPP_PT_camera_options,
-    ui.image_paint.CPP_PT_view_projection_options,
-    ui.image_paint.CPP_PT_current_image_preview_options,
-
-    ui.image_paint.CPP_PT_operator_options,
-    ui.image_paint.CPP_PT_camera_autocam_options,
-    ui.image_paint.CPP_PT_warnings_options,
-    ui.image_paint.CPP_PT_memory_options,
-    ui.image_paint.CPP_PT_current_camera,
-    # ui.image_paint.CPP_PT_current_camera_calibration,
-    # ui.image_paint.CPP_PT_current_camera_lens_distortion,
-
-    ui.context_menu.CPP_MT_camera_pie,
-)
 
 
 @persistent
@@ -145,42 +92,46 @@ def _save_post_handler(dummy):
         bpy.context.scene.cpp.cameras_hide_set(state = True)
 
 
-def register_handlers():
-    from bpy.app import handlers
-    handlers.load_post.append(_load_post_register)
-    handlers.load_post.append(_load_post_handler)
-    handlers.save_pre.append(_save_pre_handler)
-    handlers.save_post.append(_save_post_handler)
+_handlers = [
+    (bpy.app.handlers.load_post, _load_post_register),
+    (bpy.app.handlers.load_post, _load_post_handler),
+    (bpy.app.handlers.save_pre, _save_pre_handler),
+    (bpy.app.handlers.save_post, _save_post_handler)
+]
 
 
-def unregister_handlers():
-    from bpy.app import handlers
-    handlers.save_post.remove(_save_post_handler)
-    handlers.save_pre.remove(_save_pre_handler)
-    handlers.load_post.remove(_load_post_handler)
-    handlers.load_post.remove(_load_post_register)
+def _register_handlers():
+    for handle, func in _handlers:
+        handle.append(func)
 
 
-# Addon register
+def _unregister_handlers():
+    for handle, func in _handlers:
+        handle.remove(func)
+
+
 def register():
-    register_handlers()
+    from . import operators
+    from . import preferences
     bpy.utils.register_class(operators.CPP_OT_info)
     bpy.utils.register_class(preferences.CppPreferences)
 
+    _register_handlers()
+
 
 def unregister():
-    for op in operators.modal_ops:
-        cancel = getattr(op, "cancel", None)
-        if cancel:
-            cancel(bpy.context)
-    keymap.unregister()
-    overwrite_ui.unregister()
-    extend_bpy_types.unregister_types()
-
-    for cls in reversed(_classes):
-        bpy.utils.unregister_class(cls)
-
-    bpy.utils.unregister_class(preferences.CppPreferences)
+    # stop running operators
+    global _module_registered
+    # call modules unregister
+    for module in (icons, overwrite_ui, keymap, extend_bpy_types, ui,
+                   operators,
+                   gizmos):
+        unreg_func = getattr(module, "unregister")
+        unreg_func()
+    # classes factory
     bpy.utils.unregister_class(operators.CPP_OT_info)
-    icons.unregister()
-    unregister_handlers()
+    bpy.utils.unregister_class(preferences.CppPreferences)
+    # handlers
+    _unregister_handlers()
+
+    _module_registered = False

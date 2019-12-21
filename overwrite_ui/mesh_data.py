@@ -18,7 +18,7 @@
 
 # <pep8 compliant>
 
-from ..icons import get_icon_id
+from .. import icons
 from .. import constants
 from .. import operators
 
@@ -34,7 +34,7 @@ class MESH_UL_uvmaps:
                 row.operator(
                     operator = operators.CPP_OT_info.bl_idname,
                     text = "Camera Paint",
-                    icon_value = get_icon_id("overwriten")
+                    icon_value = icons.get_icon_id("overwriten")
                 ).text = constants.message_overwrite_ui
                 return
             # ----------------------------/

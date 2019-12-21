@@ -1,12 +1,20 @@
 # <pep8 compliant>
 
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(template)
+    importlib.reload(operators)
+    importlib.reload(utils)
+
+    del importlib
+else:
+    from . import template
+    from .. import operators
+    from .. import utils
+
 import bpy
 from bpy.types import Panel
-
-from . import template
-
-from .. import operators
-from .. import utils
 
 
 class CPPOptionsPanel:
@@ -31,6 +39,7 @@ class CPP_PT_camera_painter(Panel, CPPOptionsPanel):
         layout.use_property_decorate = False
 
         col = layout.column(align = False)
+
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
         canvas = image_paint.canvas
