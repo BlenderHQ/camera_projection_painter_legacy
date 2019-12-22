@@ -301,6 +301,23 @@ class ImageProperties(PropertyGroup):
         return width, height
 
     @property
+    def aspect(self):
+        image = self.id_data
+        width, height = image.cpp.static_size
+
+        if width > height:
+            aspect_x = 1.0
+            aspect_y = width / height
+        elif height > width:
+            aspect_x = 1.0
+            aspect_y = width / height
+        else:
+            aspect_x = 1.0
+            aspect_y = 1.0
+
+        return aspect_x, aspect_y
+
+    @property
     def invalid(self):
         image = self.id_data
         size_x, size_y = image.cpp.static_size

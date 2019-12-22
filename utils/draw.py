@@ -142,122 +142,120 @@ def draw_projection_preview(self, context):
         return
 
     scene = context.scene
-    if not (scene.cpp.use_projection_preview or scene.cpp.use_warning_action_draw):
+
+    use_projection_preview = scene.cpp.use_projection_preview
+    use_projection_outline = scene.cpp.use_projection_outline
+    use_normal_highlight = scene.cpp.use_normal_highlight
+    use_warnings = scene.cpp.use_warnings
+    use_warning_action_draw = scene.cpp.use_warning_action_draw
+    full_draw = self.full_draw
+
+    ob = context.image_paint_object
+    preferences = context.preferences.addons[addon_pkg].preferences
+
+    if not (use_projection_preview or (use_warnings and use_warning_action_draw)):
         return
 
-    preferences = context.preferences.addons[addon_pkg].preferences
-    ob = context.image_paint_object
     image_paint = scene.tool_settings.image_paint
     clone_image = image_paint.clone_image
-    brush = image_paint.brush
-    brush_radius = scene.tool_settings.unified_paint_settings.size
 
     if clone_image.gl_load():
+        return
+
+    if clone_image.cpp.invalid:
+        return
+
+    batch = self.mesh_batch
+    if not batch:
         return
 
     if clone_image not in _image_skip_free:
         _image_skip_free.add(clone_image)
 
-    size_x, size_y = clone_image.cpp.static_size
-
-    # size_x, size_y = clone_image.size
-    if clone_image.cpp.invalid:
-        return
-
-    if size_x > size_y:
-        aspect_x = 1.0
-        aspect_y = size_x / size_y
-    elif size_y > size_x:
-        aspect_x = 1.0
-        aspect_y = size_x / size_y
-    else:
-        aspect_x = 1.0
-        aspect_y = 1.0
-
-    shader = shaders.shader.mesh_preview
-    batch = self.mesh_batch
-    if not batch:
-        return
-
-    mouse_position = wm.cpp_mouse_pos
-    active_rv3d = common.get_hovered_region_3d(context, mouse_position)
-    current_rv3d = context.area.spaces.active.region_3d
-
-    outline_type = 0
-    if scene.cpp.use_projection_outline:
-        outline_type = {
-            'NO_OUTLINE': 0,
-            'FILL': 1,
-            'CHECKER': 2,
-            'LINES': 3
-        }[preferences.outline_type]
-
-    outline_width = preferences.outline_width * 0.1
-    outline_scale = preferences.outline_scale
-    outline_color = preferences.outline_color
-    normal_highlight_color = preferences.normal_highlight_color
-
-    # OpenGL setup
+    # openGL setup
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
     bgl.glEnable(bgl.GL_MULTISAMPLE)
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
     bgl.glEnable(bgl.GL_DEPTH_TEST)
-    # Bind textures
-    bgl.glTexParameteri(
-        bgl.GL_TEXTURE_2D,
-        bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T,
-        bgl.GL_REPEAT)  # GL_CLAMP_TO_BORDER
+    # bind textures
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
+    # bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT)
 
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, clone_image.bindcode)
     bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
 
-    position, forward, up = common.get_camera_attributes(scene.camera)
-
-    # Set shader uniforms
+    shader = shaders.shader.mesh_preview
     shader.bind()
 
-    shader.uniform_float("ModelMatrix", ob.matrix_world)
-    shader.uniform_float("projectorPosition", position)
-    shader.uniform_float("projectorForward", forward)
-    shader.uniform_float("projectorUpAxis", up)
-    shader.uniform_float("sourceScale", (aspect_x, aspect_y))
+    # shader uniforms
+    shader.uniform_int("clone_image", 0)
+    shader.uniform_int("brush_img", 1)
 
-    shader.uniform_int("sourceImage", 0)
-    shader.uniform_int("brushImage", 1)
-    shader.uniform_int("fullDraw", self.full_draw)
-    shader.uniform_int("outlineType", outline_type)
-    shader.uniform_float("outlineWidth", outline_width)
-    shader.uniform_float("outlineScale", outline_scale)
-    shader.uniform_float("outlineColor", outline_color)
-    shader.uniform_int("useNormalInspection", scene.cpp.use_normal_highlight)
-    shader.uniform_float("normalHighlightColor", normal_highlight_color)
+    colorspace_srgb = clone_image.colorspace_settings.name == 'sRGB'
+    shader.uniform_bool("colorspace_srgb", (colorspace_srgb,))
 
-    use_brush = False
+    shader.uniform_bool("use_projection_preview", (use_projection_preview,))
+    shader.uniform_bool("use_normal_highlight", (use_normal_highlight,))
+    shader.uniform_bool("use_warnings", (use_warnings,))
+    shader.uniform_bool("use_warning_action_draw", (use_warning_action_draw,))
+    shader.uniform_bool("full_draw", (full_draw,))
+
+    model_matrix = ob.matrix_world
+    shader.uniform_float("model_matrix", model_matrix)
+    projector_position, projector_forward, projector_up_axis = common.get_camera_attributes(scene.camera)
+    shader.uniform_float("projector_position", projector_position)
+    shader.uniform_float("projector_forward", projector_forward)
+    shader.uniform_float("projector_up_axis", projector_up_axis)
+    aspect = clone_image.cpp.aspect
+    shader.uniform_float("aspect", aspect)
+
+    # normal highlight
+    if use_normal_highlight:
+        normal_highlight_color = preferences.normal_highlight_color
+        shader.uniform_float("normal_highlight_color", normal_highlight_color)
+
+    # outline
+    outline_type = 0
+    if use_projection_outline:
+        outline_type = {'NO_OUTLINE': 0, 'FILL': 1, 'CHECKER': 2, 'LINES': 3}[preferences.outline_type]
+
+        outline_color = preferences.outline_color
+        shader.uniform_float("outline_color", outline_color)
+        outline_scale = preferences.outline_scale
+        shader.uniform_float("outline_scale", outline_scale)
+        outline_width = preferences.outline_width * 0.1
+        shader.uniform_float("outline_width", outline_width)
+    shader.uniform_int("outline_type", outline_type)
+
+    # warnings
+    warning_status = False
+    if use_warnings and use_warning_action_draw:
+        warning_status = common.get_warning_status(context, wm.cpp_mouse_pos)
+        shader.uniform_float("warning_color", preferences.warning_color)
+    shader.uniform_bool("warning_status", (warning_status,))
+
+    # multiple viewports support
+    mouse_position = wm.cpp_mouse_pos
+    active_rv3d = common.get_hovered_region_3d(context, mouse_position)
+    current_rv3d = context.area.spaces.active.region_3d
+    active_view = False
     if active_rv3d == current_rv3d:
-        use_brush = True
+        active_view = True
         mx, my = mouse_position
         mx -= context.area.x
         my -= context.area.y
-        shader.uniform_float("mousePos", (mx, my))
-        shader.uniform_float("brushRadius", brush_radius)
-        shader.uniform_float("brushStrength", brush.strength)
+        shader.uniform_float("mouse_pos", (mx, my))
+        brush_radius = scene.tool_settings.unified_paint_settings.size
+        shader.uniform_float("brush_radius", brush_radius)
+        brush_strength = image_paint.brush.strength
+        shader.uniform_float("brush_strength", brush_strength)
+    shader.uniform_int("active_view", active_view)
 
-    shader.uniform_int("useBrush", use_brush)
-
-    if scene.cpp.use_warning_action_draw:
-        danger_zone = common.get_warning_status(context, wm.cpp_mouse_pos)
-        shader.uniform_int("warning", danger_zone)
-        shader.uniform_float("warningColor", preferences.warning_color)
-    else:
-        shader.uniform_int("warning", 0)
-
-    shader.uniform_bool("colorspace_srgb", (clone_image.colorspace_settings.name == 'sRGB',))
-
-    # Finally, draw
+    # finally, draw
     batch.draw(shader)
 
 

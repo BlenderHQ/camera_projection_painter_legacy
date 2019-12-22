@@ -36,14 +36,18 @@ vec4 premultiplied_alpha_blend(vec4 src, vec4 dst) {
     );
 }
 
-float inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right) {
+bool inside_rect(vec2 _coo, vec2 _bottom_left, vec2 _top_right) {
     vec2 st = step(_bottom_left, _coo) - step(_top_right, _coo);
-    return st.x * st.y;
+    float inside = st.x * st.y;
+    if (inside == 0.0) {
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
-float inside_outline(in vec2 _coo, in float _width, in vec2 _scale) {
-    float inside_image = inside_rect(_coo, vec2(0.0), vec2(1.0));
+bool inside_outline(in vec2 _coo, in float _width, in vec2 _scale) {
     vec2 sw = _scale * vec2(_width);
-    float inside = inside_rect(_coo, -sw, vec2(1.0) + sw);
-    return (1.0 - inside_image) * inside;
+    return inside_rect(_coo, -sw, vec2(1.0) + sw);
 }
