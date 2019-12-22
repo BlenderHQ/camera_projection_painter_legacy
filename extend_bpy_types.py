@@ -282,7 +282,7 @@ class SceneProperties(PropertyGroup):
 
     distance_warning: FloatProperty(
         name = "Safe Radius",
-        default = 30.0, soft_min = 5, soft_max = 100,
+        default = 5.0, soft_min = 1.0, soft_max = 15.0,
         subtype = 'DISTANCE',
         options = {'HIDDEN'},
         description = "User recommended radius projected onto the plane brush")
