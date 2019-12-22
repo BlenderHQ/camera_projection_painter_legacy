@@ -8,6 +8,7 @@ if "bpy" in locals():
                 op.cancel(bpy.context)
             except:
                 import traceback
+
                 print(traceback.format_exc())
 
     import importlib
@@ -54,13 +55,6 @@ class CPP_OT_listener(Operator):
 
     def modal(self, context, event):
         wm = context.window_manager
-
-        # \\dev purposes
-        if event.type == 'F8' and event.value == 'PRESS':
-            self.cancel(context)
-            return {'CANCELLED'}
-        # //
-
         if wm.cpp_running:
             self.cancel(context)
             return {'FINISHED'}
@@ -131,12 +125,6 @@ class CPP_OT_camera_projection_painter(Operator):
         if wm.cpp_suspended:
             return {'PASS_THROUGH'}
 
-        # \\dev purposes
-        if event.type == 'F8' and event.value == 'PRESS':
-            self.cancel(context)
-            return {'FINISHED'}
-        # //
-
         scene = context.scene
 
         # update viewports on mouse movements
@@ -146,13 +134,13 @@ class CPP_OT_camera_projection_painter(Operator):
                     area.tag_redraw()
 
         # deal with hotkey adjust brush radius/strength
-        if event.type == 'F' and event.value == 'PRESS':
+        if (event.type == 'F' and event.value == 'PRESS') or (event.type == 'LEFTMOUSE' and event.value == 'PRESS'):
             self.suspended_mouse = True
-        elif event.type in ('LEFTMOUSE', 'RIGHTMOUSE') and event.value == 'RELEASE':
+        if event.value == 'RELEASE':
             self.suspended_mouse = False
 
-        if not (self.suspended_mouse or wm.cpp_suspended):
-            wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
+        #if not wm.cpp_suspended:
+        wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
 
         image_paint = scene.tool_settings.image_paint
         clone_image = image_paint.clone_image
