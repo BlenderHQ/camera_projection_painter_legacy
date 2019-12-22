@@ -27,6 +27,7 @@ def set_properties_defaults(self):
     """
     self.suspended = False
     self.suspended_mouse = False
+    self.suspended_brush = False
     self.setup_required = True
     self.full_draw = False
 

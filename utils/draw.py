@@ -262,7 +262,7 @@ def draw_projection_preview(self, context):
         brush_strength = image_paint.brush.strength
         shader.uniform_float("brush_strength", brush_strength)
 
-    if self.suspended_mouse and (not warning_status):
+    if self.suspended_brush and (not warning_status):
         active_view = False
     shader.uniform_int("active_view", active_view)
 

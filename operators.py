@@ -134,13 +134,18 @@ class CPP_OT_camera_projection_painter(Operator):
                     area.tag_redraw()
 
         # deal with hotkey adjust brush radius/strength
-        if (event.type == 'F' and event.value == 'PRESS') or (event.type == 'LEFTMOUSE' and event.value == 'PRESS'):
+        if event.type == 'F' and event.value == 'PRESS':
             self.suspended_mouse = True
-        if event.value == 'RELEASE':
+            self.suspended_brush = False
+        elif event.type == 'LEFTMOUSE' and event.value == 'PRESS':
             self.suspended_mouse = False
+            self.suspended_brush = True
+        elif event.value == 'RELEASE':
+            self.suspended_mouse = False
+            self.suspended_brush = False
 
-        #if not wm.cpp_suspended:
-        wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
+        if not self.suspended_mouse:
+            wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
 
         image_paint = scene.tool_settings.image_paint
         clone_image = image_paint.clone_image
