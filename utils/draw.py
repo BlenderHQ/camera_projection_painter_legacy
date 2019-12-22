@@ -1,15 +1,23 @@
 # <pep8 compliant>
 
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(common)
+    importlib.reload(shaders)
+
+    del importlib
+else:
+    from . import common
+    from .. import shaders
+    from .. import __package__ as addon_pkg
+
 import bpy
 import bgl
 import gpu
 from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from bpy.types import SpaceView3D
-
-from . import common
-from .. import shaders
-from .. import __package__ as addon_pkg
 
 import numpy as np
 

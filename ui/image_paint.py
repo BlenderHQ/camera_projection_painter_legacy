@@ -282,7 +282,7 @@ class CPP_PT_current_camera(Panel, CPPOptionsPanel):
         scene = context.scene
         camera_ob = scene.camera
 
-        template.camera_image(col, camera_ob)
+        template.camera_image(col, camera_ob, mode = 'CONTEXT')
 
         col.prop(scene.cpp, "use_auto_set_image")
 

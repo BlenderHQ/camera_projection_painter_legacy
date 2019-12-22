@@ -1,4 +1,19 @@
+# <pep8 compliant>
+
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(shaders)
+    importlib.reload(constants)
+
+    del importlib
+else:
+    from .. import shaders
+    from .. import __package__ as addon_pkg
+    from .. import constants
+
 import bpy
+
 import gpu
 import bgl
 from bpy_extras import view3d_utils
@@ -9,9 +24,18 @@ import os
 import io
 import struct
 
-from .. import shaders
-from .. import __package__ as addon_pkg
-from .. import constants
+
+class PropertyTracker(object):
+    __slots__ = ("value",)
+
+    def __init__(self, value = None):
+        self.value = value
+
+    def __call__(self, value = None):
+        if self.value != value:
+            self.value = value
+            return True
+        return False
 
 
 # Math
@@ -316,6 +340,7 @@ def get_image_static_size(image):
     if size_x and size_y:
         _image_size_cache[image] = size_x, size_y
         return size_x, size_y
+    return 0, 0
 
 
 # Warnings

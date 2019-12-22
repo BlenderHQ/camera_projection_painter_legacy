@@ -14,7 +14,7 @@ else:
 import bpy
 
 
-def camera_image(layout, camera_ob):
+def camera_image(layout, camera_ob, mode = 'CONTEXT'):
     layout.use_property_split = True
     layout.use_property_decorate = False
 
@@ -31,7 +31,7 @@ def camera_image(layout, camera_ob):
     operator = col.operator(
         operator = operators.CPP_OT_bind_camera_image.bl_idname,
         icon_value = icons.get_icon_id("bind_image"))
-    operator.mode = 'ACTIVE'
+    operator.mode = mode
 
     if image:
 

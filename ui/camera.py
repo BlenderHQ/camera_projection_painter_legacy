@@ -30,7 +30,7 @@ class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
     def draw(self, context):
         layout = self.layout
 
-        template.camera_image(layout, context.active_object)
+        template.camera_image(layout, context.active_object, mode = 'ACTIVE')
 
 
 class CPP_PT_active_camera_calibration(Panel, CameraOptionsPanel):

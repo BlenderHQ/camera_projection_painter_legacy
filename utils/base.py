@@ -1,27 +1,24 @@
 # <pep8 compliant>
 
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(common)
+    importlib.reload(constants)
+
+    del importlib
+else:
+    from . import common
+    from .. import constants
+
+import bpy
 # this module contains utils relative to CPP_OT_camera_projection_painter only
 
 
 import bpy
 import bmesh
 
-from .. import constants
-
 import time
-
-
-class PropertyTracker(object):
-    __slots__ = ("value",)
-
-    def __init__(self, value = None):
-        self.value = value
-
-    def __call__(self, value = None):
-        if self.value != value:
-            self.value = value
-            return True
-        return False
 
 
 def set_properties_defaults(self):
@@ -40,9 +37,9 @@ def set_properties_defaults(self):
     self.camera_batches = {}
 
     self.brush_texture_bindcode = 0
-    self.data_updated = PropertyTracker()
-    self.check_brush_curve_updated = PropertyTracker()
-    self.check_camera_frame_updated = PropertyTracker()
+    self.data_updated = common.PropertyTracker()
+    self.check_brush_curve_updated = common.PropertyTracker()
+    self.check_camera_frame_updated = common.PropertyTracker()
 
 
 def get_bmesh(context, ob):
