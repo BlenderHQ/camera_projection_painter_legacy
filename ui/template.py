@@ -4,14 +4,17 @@ if "bpy" in locals():
     import importlib
 
     importlib.reload(operators)
+    importlib.reload(utils)
     importlib.reload(icons)
 
     del importlib
 else:
     from .. import operators
+    from .. import utils
     from .. import icons
 
 import bpy
+import re
 
 
 def camera_image(layout, camera_ob, mode = 'CONTEXT'):
@@ -110,3 +113,4 @@ def path_with_ops(layout, scene):
     # col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
     # col.operator(operators.CPP_OT_set_camera_calibration_from_file.bl_idname,
     #             icon_value = get_icon_id("calibration"))
+

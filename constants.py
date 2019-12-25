@@ -17,12 +17,6 @@ WEB_LINKS = [
     ("GitHub", "https://github.com/ivan-perevala")
 ]
 
-message_startup_help = """
-Main operator can be started only after
-reloading Blender or opening any *.blend file
-https://docs.blender.org/api/current/bpy.app.handlers.html#bpy.app.handlers.load_post
-"""
-
 message_overwrite_ui = """
 This part of UI overwriten by
 Camera Projection Painter

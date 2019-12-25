@@ -27,6 +27,7 @@ from bpy.props import StringProperty, EnumProperty
 
 import os
 import csv
+import re
 
 modal_ops = []
 tmp_camera = None
@@ -385,140 +386,138 @@ class CPP_OT_set_camera_calibration_from_file(Operator):
         return {'FINISHED'}
 
 
+class CPP_OT_canvas_to_diffuse(Operator):
+    bl_idname = "cpp.canvas_to_diffuse"
+    bl_label = "Set Canvas To Diffuse"
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.reverse:
+            return "Search for a diffuse texture node and set it as a canvas"
+        else:
+            return "Setting an image in a diffuse texture node with creating missing nodes"
+
+    reverse: bpy.props.BoolProperty(default = False)
+
+    @classmethod
+    def poll(cls, context):
+        ob = context.active_object
+        if not ob:
+            return False
+        return ob.active_material
+
+    def execute(self, context):
+        ob = context.active_object
+        scene = context.scene
+        image_paint = scene.tool_settings.image_paint
+
+        material = ob.active_material
+
+        if self.reverse:
+            if not material.use_nodes:
+                self.report(type = {'WARNING'}, message = "Material not using nodes!")
+                return {'CANCELLED'}
+
+            res = utils.common.set_material_diffuse_to_canvas(image_paint, material)
+            if res == -1:
+                self.report(type = {'INFO'}, message = "Successfully set Canvas from Diffuse")
+            elif res == 1:
+                self.report(type = {'WARNING'}, message = "Material have no active output!")
+            elif res == 2:
+                self.report(type = {'WARNING'}, message = "Found invalid image from nodes!")
+            elif res == 3:
+                self.report(type = {'WARNING'}, message = "Image not found!")
+
+        else:
+            res = utils.common.set_canvas_to_material_diffuse(material, image_paint.canvas)
+
+        return {'FINISHED'}
+
+
 class CPP_OT_enter_context(Operator):
     bl_idname = "cpp.enter_context"
     bl_label = "Setup Context"
-    bl_description = "Setup context to begin"
-
-    image_size: bpy.props.IntVectorProperty(
-        name = "New Canvas Size",
-        size = 2, default = (2048, 2048),
-        description = "Size of newly created canvas (Created when canvas is missing)"
-    )
-
-    uv_method: bpy.props.EnumProperty(
-        name = "Method",
-        items = [
-            ('ANGLE_BASED', "Angle Based", ""),
-            ('CONFORMAL', "Conformal", "")
-        ],
-        default = "ANGLE_BASED"
-    )
-    uv_margin: bpy.props.FloatProperty(name = "Margin", default = 0.0001, min = 0.0)
-
-    setup_material: bpy.props.BoolProperty(
-        name = "Setup Simple Material",
-        default = True,
-        description = "Setup basic PBR material with canvas image as a diffuse"
-    )
-    create_new_material: bpy.props.BoolProperty(
-        name = "Create New Material",
-        default = True,
-        description = "Create new material"
-    )
 
     @classmethod
     def poll(cls, context):
         if utils.poll.full_poll(context):
             return False
         ob = context.active_object
+        if not ob:
+            return False
+        if ob.type != 'MESH':
+            return False
         scene = context.scene
-        if ob:
-            if ob.type == 'MESH':
-                if scene.cpp.has_camera_objects:
-                    return True
-        return False
+        if not scene.cpp.has_camera_objects:
+            return True
+        return True
 
-    def invoke(self, context, event):
-        wm = context.window_manager
-        return wm.invoke_props_dialog(self)
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = True
-        layout.use_property_decorate = False
-
-        col = layout.column(align = True)
-
+    @classmethod
+    def description(cls, context, properties):
         ob = context.active_object
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
-        canvas = image_paint.canvas
 
-        num = 1
-
-        if not scene.cpp.has_available_camera_objects:
-            col.label(text = "Scene have no cameras with binded images")
+        res = ""
+        _num = 1
 
         if ob.mode != 'TEXTURE_PAINT':
-            col.label(text = "%s. Object mode will be changed to Texture Paint" % num)
-            num += 1
+            res += "%s. Object mode will be changed to Texture Paint" % _num
+            res += "\n"
+            _num += 1
 
         tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
         if tool.idname != "builtin_brush.Clone":
-            col.label(text = "%s. Tool will be set to Clone" % num)
-            num += 1
+            res += "%s. Tool will be set to Clone" % _num
+            res += "\n"
+            _num += 1
 
         if image_paint.mode != 'IMAGE':
-            col.label(text = "%s. Image Paint Mode will be set to Image" % num)
-            num += 1
+            res += "%s. Image Paint Mode will be set to Single Image" % _num
+            res += "\n"
+            _num += 1
+
         if not image_paint.use_clone_layer:
-            col.label(text = "%s. Image Paint will Use Clone Layer" % num)
-            num += 1
+            res += "%s. Image Paint will Use Clone Layer" % _num
+            res += "\n"
+            _num += 1
+
         if scene.cpp.mapping != 'CAMERA':
-            col.label(text = "%s. Image Paint Mapping will be set to Camera" % num)
-            num += 1
+            res += "%s. Image Paint Mapping will be set to Camera" % _num
+            res += "\n"
+            _num += 1
+
         if not scene.cpp.use_auto_set_image:
-            col.label(text = "%s. Image Paint Auto Set Image will be set to True" % num)
-            num += 1
-        if not utils.poll.check_uv_layers(ob):
-            col.label(text = "%s. Object have no any UVs, a new one will be generated:" % num)
-            num += 1
-            col.prop(self, "uv_method")
-            col.prop(self, "uv_margin")
+            res += "%s. Image Paint Auto Set Image will be set to True" % _num
+            res += "\n"
+            _num += 1
 
-        if not canvas:
-            col.label(text = "%s. Image Paint have no Canvas, a new one will be created:" % num)
-            num += 1
-            col.prop(self, "image_size")
-        else:
-            if canvas.cpp.invalid:
-                col.label(text = "%s. Image Paint Canvas invalid, a new one will be created:" % num)
-                num += 1
-                col.prop(self, "image_size")
-        if not scene.camera:
-            col.label(text = "%s. Scene don't have camera (first available will be set):" % num)
-            num += 1
-            col.prop(scene, "camera")
-        else:
-            image = scene.camera.data.cpp.image
+        camera_ob = scene.camera
+        if not camera_ob:
+            if scene.cpp.has_available_camera_objects:
+                camera_ob = list(scene.cpp.available_camera_objects)[0]
+                res += "%s. Scene camera will be set to %s" % (_num, camera_ob.name)
+                res += "\n"
+                _num += 1
+
+        if camera_ob:
+            image = camera_ob.data.cpp.image
             if image:
-                if image.cpp.invalid:
-                    col.label(text = "%s. Camera data Image invalid" % num)
-                    num += 1
-                else:
-                    col.label(text = "%s. Image Paint Clone Image will be set from camera data" % num)
-                    col.label(text = "   (%s)" % image.name)
-                    num += 1
-            else:
-                col.label(text = "%s. Can't set Clone Image from camera data" % num)
-                num += 1
+                if not image.cpp.invalid:
+                    if image != image_paint.clone_image:
+                        res += "%s. Image Paint Clone Image will be set to %s" % (_num, image.name)
+                        res += "\n"
+                        _num += 1
 
-        col.separator()
-        col.label(text = "Optional:")
-        if not ob.active_material:
-            col.label(text = "Active object don't have active material")
+        if not res:
+            res = "Context is ready"
 
-        col.prop(self, "setup_material")
-        scol = col.column(align = True)
-        scol.enabled = self.setup_material
-        scol.prop(self, "create_new_material")
+        return res
 
     def execute(self, context):
         ob = context.active_object
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
-        canvas = image_paint.canvas
 
         if ob.mode != 'TEXTURE_PAINT':
             bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
@@ -539,40 +538,15 @@ class CPP_OT_enter_context(Operator):
         if not scene.cpp.use_auto_set_image:
             scene.cpp.use_auto_set_image = True
 
-        def _create_uv_layer():
-            bpy.ops.object.mode_set(mode = 'EDIT')
-            ob.data.uv_layers.new(do_init = True)
-            bpy.ops.uv.unwrap(method = self.uv_method, margin = self.uv_margin)
-            bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
-
-        if not utils.poll.check_uv_layers(ob):
-            _create_uv_layer()
-
-        def _create_canvas():
-            name = "%s_Diffuse" % ob.name
-            if name not in bpy.data.images:
-                w, h = self.image_size
-                bpy.ops.image.new(
-                    name = name, width = w, height = h,
-                    generated_type = 'COLOR_GRID')
-            image_paint.canvas = bpy.data.images[name]
-
-        if not canvas:
-            _create_canvas()
-        else:
-            if canvas.cpp.invalid:
-                _create_canvas()
         if not scene.camera:
             if scene.cpp.has_available_camera_objects:
                 scene.camera = list(scene.cpp.available_camera_objects)[0]
+
         if scene.camera:
             image = scene.camera.data.cpp.image
             if image:
                 if not image.cpp.invalid:
                     image_paint.clone_image = image
-
-        if self.setup_material:
-            utils.common.basic_setup_material(self, ob, image_paint.canvas, self.create_new_material)
 
         return {'FINISHED'}
 
@@ -632,11 +606,11 @@ class CPP_OT_info(Operator):
     bl_idname = "cpp.info"
     bl_label = "Info"
 
-    text: bpy.props.StringProperty()
+    text: bpy.props.StringProperty(default = "Info")
 
     @classmethod
     def description(self, context, properties):
-        return properties["text"]
+        return properties.text
 
     def draw(self, context):
         layout = self.layout
@@ -646,15 +620,25 @@ class CPP_OT_info(Operator):
 
         col = layout.column(align = True)
 
-        col.label(text = "Info", icon = 'INFO')
+        lines = (l for l in str(self.text).splitlines() if l)
 
-        lines = str(self.text).splitlines()
+        icon_list = ['ERROR', 'INFO']
 
         for line in lines:
-            if line:
-                if line.startswith("https://"):
-                    col.separator()
-                    col.operator("wm.url_open", text = line, icon = 'URL').url = line
+            if line.startswith("https://"):
+                col.separator()
+                col.operator("wm.url_open", text = line, icon = 'URL').url = line
+            else:
+                splits = line.split('#')
+                tag = splits[0]
+                if tag in icon_list:
+                    text = "".join(splits[1::])
+                    col.label(text = text, icon = splits[0])
+                elif tag == "WEB":
+                    text = "".join(splits[1::])
+                    row = col.row()
+                    row.emboss = 'NORMAL'
+                    row.operator("wm.url_open", text = text, icon = 'URL').url = text
                 else:
                     col.label(text = line)
 
@@ -675,6 +659,7 @@ _classes = [
     CPP_OT_set_camera_active,
     CPP_OT_set_camera_calibration_from_file,
     CPP_OT_enter_context,
+    CPP_OT_canvas_to_diffuse,
     CPP_OT_call_pie,
     CPP_OT_free_memory,
 ]

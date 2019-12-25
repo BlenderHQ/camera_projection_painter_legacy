@@ -22,6 +22,11 @@ from bpy.props import (
     FloatVectorProperty
 )
 
+message_startup_help = """
+Main operator can be started only after
+reloading Blender or opening any *.blend file
+WEB# https://docs.blender.org/api/current/bpy.app.handlers.html#bpy.app.handlers.load_post
+"""
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
     for i, km_item in enumerate(km.keymap_items):
@@ -150,7 +155,7 @@ class CppPreferences(bpy.types.AddonPreferences):
                 operator = operators.CPP_OT_info.bl_idname,
                 text = "Info",
                 icon = 'INFO'
-            ).text = constants.message_startup_help
+            ).text = message_startup_help
 
     def draw_info_tab(self, layout):
         col = layout.column(align = True)
@@ -207,7 +212,7 @@ class CppPreferences(bpy.types.AddonPreferences):
             col.context_pointer_set("keymap", km)
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
-        kmi = get_hotkey_entry_item(km, CPP_OT_set_camera_by_view.bl_idname, None, None)
+        kmi = get_hotkey_entry_item(km, operators.CPP_OT_set_camera_by_view.bl_idname, None, None)
         if kmi:
             col.context_pointer_set("keymap", km)
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)

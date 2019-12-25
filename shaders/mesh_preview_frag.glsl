@@ -110,6 +110,10 @@ void main() {
             }
             if (outline_type != 0) {
                 bool outlineMask = inside_outline(_pos_interp, outline_width, aspect);
+                bool outlineMaskFrame = inside_outline(_pos_interp, outline_width * 0.1, aspect);
+                if (outlineMaskFrame == true) {
+                    outline_pattern = 1.0;
+                }
                 frag = linearrgb_to_srgb(outline_color);
                 if (outlineMask == true) {
                     frag.a = outline_pattern;

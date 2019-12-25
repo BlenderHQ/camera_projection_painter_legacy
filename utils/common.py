@@ -99,8 +99,10 @@ def get_camera_attributes(ob):
     matrix_world = ob.matrix_world
     camera_pos = ob.matrix_world.translation
     camera_forward = (
-            matrix_world.translation + (
-            Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted()))
+            camera_pos + (
+            Vector([0.0, 0.0, ob.data.lens / camera_size]) @ matrix_world.inverted()))
+
+    print(camera_forward)
 
     camera_up = (Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted())
 
@@ -450,35 +452,14 @@ def danger_zone_popup_menu(self, context):
 
 # Material
 
-def basic_setup_material(self, ob, target_image, create_new_material = False):
-    if create_new_material:
-        material = bpy.data.materials.new(target_image.name)
-        ob.data.materials.append(material)
-        ob.active_material = material
-
-    if not ob.active_material:
-        self.report(type = {'WARNING'}, message = "Object have no active material!")
-        return
-
-    material = ob.active_material
-
-    material.use_nodes = True
-    node_tree = material.node_tree
-
-    nodes = node_tree.nodes
-
-    # get active output
-    active_output = None
-
+def get_active_output_node(nodes):
     for node in nodes:
         if node.bl_idname == "ShaderNodeOutputMaterial":
             if node.is_active_output:
-                active_output = node
-                break
-    if not active_output:
-        self.report(type = {'WARNING'}, message = "Node tree has no active output!")
-        return
+                return node
 
+
+def recursive_search_tex(nodes, active_output):
     _node = active_output
     _index = 0
     _socket = None
@@ -495,6 +476,21 @@ def basic_setup_material(self, ob, target_image, create_new_material = False):
                     _index = i
                 break
         _cou += -1
+
+    return _node, _socket, _index, _cou
+
+
+def set_canvas_to_material_diffuse(material, image):
+    material.use_nodes = True
+    node_tree = material.node_tree
+    nodes = node_tree.nodes
+
+    # get active output
+    active_output = get_active_output_node(nodes)
+    if not active_output:
+        active_output = node_tree.nodes.new(type = "ShaderNodeOutputMaterial")
+
+    _node, _socket, _index, _cou = recursive_search_tex(nodes, active_output)
 
     if _node.bl_idname != "ShaderNodeTexImage" and _socket:
         node_frame = None
@@ -531,4 +527,24 @@ def basic_setup_material(self, ob, target_image, create_new_material = False):
             _node = tex_image_node
 
     if _node.bl_idname == "ShaderNodeTexImage":
-        _node.image = target_image
+        _node.image = image
+
+
+def set_material_diffuse_to_canvas(image_paint, material):
+    node_tree = material.node_tree
+    nodes = node_tree.nodes
+
+    active_output = get_active_output_node(nodes)
+    if not active_output:
+        return 1
+    _node, _socket, _index, _cou = recursive_search_tex(nodes, active_output)
+
+    if _node.bl_idname == "ShaderNodeTexImage":
+        image = _node.image
+        if image:
+            if not image.cpp.invalid:
+                image_paint.canvas = image
+                return -1
+            else:
+                return 2
+    return 3

@@ -24,6 +24,9 @@ _classes = [
     # ui.camera.CPP_PT_active_camera_lens_distortion,
 
     scene.CPP_PT_camera_painter_scene,
+    scene.CPP_PT_enter_context,
+    #scene.CPP_PT_material_setup,
+    #scene.CPP_PT_canvas_setup,
 
     image_paint.CPP_PT_camera_painter,
 
@@ -33,6 +36,7 @@ _classes = [
     image_paint.CPP_PT_current_image_preview_options,
 
     image_paint.CPP_PT_operator_options,
+    image_paint.CPP_PT_material_options,
     image_paint.CPP_PT_camera_autocam_options,
     image_paint.CPP_PT_warnings_options,
     image_paint.CPP_PT_memory_options,
