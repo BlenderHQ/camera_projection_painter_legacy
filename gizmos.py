@@ -30,7 +30,7 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
     def setup(self, context):
         self._camera_gizmos = {}
         for camera_ob in context.scene.cpp.camera_objects:
-            mpr = self.gizmos.new("GIZMO_GT_dial_3d")
+            mpr = self.gizmos.new("GIZMO_GT_primitive_3d")
             props = mpr.target_set_operator("cpp.call_pie")
             props.camera_name = camera_ob.name
 
