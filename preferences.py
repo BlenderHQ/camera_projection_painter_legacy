@@ -92,7 +92,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     camera_line_width: FloatProperty(
         name = "Line Width",
-        default = 1.0, soft_min = 1.0, soft_max = 5.0,
+        default = 0.5, soft_min = 0.5, soft_max = 5.0,
         subtype = 'PIXEL',
         description = "Width of camera primitive")
 
@@ -191,7 +191,6 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "camera_color_loaded_data")
 
         col.label(text = "Camera Gizmo:")
-        col.label(text = "(Updated after refreshing gizmo)")
         col.prop(self, "gizmo_radius")
         col.prop(self, "gizmo_color")
 

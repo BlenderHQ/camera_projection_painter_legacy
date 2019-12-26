@@ -21,22 +21,42 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
     bl_region_type = 'WINDOW'
     bl_options = {'3D', 'PERSISTENT', 'DEPTH_3D', 'SCALE'}
 
+    __slots__ = ("_camera_gizmos",)
+
     @classmethod
     def poll(cls, context):
         return utils.poll.tool_setup_poll(context)
 
     def setup(self, context):
-        for ob in context.scene.cpp.camera_objects:
+        self._camera_gizmos = {}
+        for camera_ob in context.scene.cpp.camera_objects:
             mpr = self.gizmos.new("GIZMO_GT_dial_3d")
             props = mpr.target_set_operator("cpp.call_pie")
-            props.camera_name = ob.name
+            props.camera_name = camera_ob.name
 
-            mpr.matrix_basis = ob.matrix_world.normalized()
+            mpr.matrix_basis = camera_ob.matrix_world
 
             mpr.use_select_background = True
             mpr.use_event_handle_all = False
 
+            self._camera_gizmos[camera_ob] = mpr
+
     def refresh(self, context):
+        _invalid_camera_gizmos = {}
+        for camera_ob, mpr in self._camera_gizmos.items():
+            try:
+                _name = camera_ob.name
+            except ReferenceError:
+                _invalid_camera_gizmos[camera_ob] = mpr
+
+        for camera_ob, mpr in _invalid_camera_gizmos.items():
+            self._camera_gizmos.pop(camera_ob)
+            self.gizmos.remove(mpr)
+
+        for camera_ob, mpr in self._camera_gizmos.items():
+            mpr.matrix_basis = camera_ob.matrix_world
+
+    def draw_prepare(self, context):
         preferences = context.preferences.addons[__package__].preferences
         for mpr in self.gizmos:
             mpr.color = preferences.gizmo_color[0:3]
