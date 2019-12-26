@@ -100,7 +100,7 @@ def get_camera_attributes(ob):
     camera_pos = ob.matrix_world.translation
     camera_forward = (
             camera_pos + (
-            Vector([0.0, 0.0, ob.data.lens / camera_size]) @ matrix_world.inverted()))
+            Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted().normalized()))
 
     print(camera_forward)
 
