@@ -3,7 +3,7 @@
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 2, 2),
+    "version": (0, 1, 2, 3),
     "blender": (2, 80, 0),
     "description": "Expanding capabilities of texture paint Clone Brush",
     "location": "Clone Brush tool settings, Scene tab, Camera tab",
