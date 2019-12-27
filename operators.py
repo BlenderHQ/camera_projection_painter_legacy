@@ -390,14 +390,16 @@ class CPP_OT_canvas_to_diffuse(Operator):
     bl_idname = "cpp.canvas_to_diffuse"
     bl_label = "Set Canvas To Diffuse"
 
+    bl_options = {'REGISTER', 'UNDO'}
+
+    reverse: bpy.props.BoolProperty(default = False)
+
     @classmethod
     def description(cls, context, properties):
         if properties.reverse:
             return "Search for a diffuse texture node and set it as a canvas"
         else:
             return "Setting an image in a diffuse texture node with creating missing nodes"
-
-    reverse: bpy.props.BoolProperty(default = False)
 
     @classmethod
     def poll(cls, context):
@@ -414,6 +416,7 @@ class CPP_OT_canvas_to_diffuse(Operator):
         material = ob.active_material
 
         if self.reverse:
+            print("set_material_diffuse_to_canvas")
             if not material.use_nodes:
                 self.report(type = {'WARNING'}, message = "Material not using nodes!")
                 return {'CANCELLED'}
@@ -429,6 +432,7 @@ class CPP_OT_canvas_to_diffuse(Operator):
                 self.report(type = {'WARNING'}, message = "Image not found!")
 
         else:
+            print("set_canvas_to_material_diffuse")
             res = utils.common.set_canvas_to_material_diffuse(material, image_paint.canvas)
 
         return {'FINISHED'}

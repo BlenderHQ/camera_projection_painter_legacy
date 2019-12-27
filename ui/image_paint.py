@@ -189,12 +189,12 @@ class CPP_PT_material_options(Panel, ImagePaintOptions):
 
         col.operator(
             operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text = "Canvas To Diffuse"
-        )
+            text = "Canvas Image To Diffuse"
+        ).reverse = False
 
         col.operator(
             operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text = "Diffuse To Canvas"
+            text = "Diffuse To Canvas Image"
         ).reverse = True
 
 
