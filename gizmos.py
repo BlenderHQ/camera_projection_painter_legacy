@@ -27,19 +27,24 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
     def poll(cls, context):
         return utils.poll.tool_setup_poll(context)
 
+    def _create_gizmo(self, camera_ob):
+        mpr = self.gizmos.new("GIZMO_GT_primitive_3d")
+        props = mpr.target_set_operator("cpp.call_pie")
+        props.camera_name = camera_ob.name
+
+        mpr.matrix_basis = camera_ob.matrix_world
+
+        mpr.use_select_background = True
+        mpr.use_event_handle_all = False
+
+        self._camera_gizmos[camera_ob] = mpr
+
+        return mpr
+
     def setup(self, context):
         self._camera_gizmos = {}
         for camera_ob in context.scene.cpp.camera_objects:
-            mpr = self.gizmos.new("GIZMO_GT_primitive_3d")
-            props = mpr.target_set_operator("cpp.call_pie")
-            props.camera_name = camera_ob.name
-
-            mpr.matrix_basis = camera_ob.matrix_world
-
-            mpr.use_select_background = True
-            mpr.use_event_handle_all = False
-
-            self._camera_gizmos[camera_ob] = mpr
+            self._create_gizmo(camera_ob)
 
     def refresh(self, context):
         _invalid_camera_gizmos = {}
@@ -53,8 +58,12 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
             self._camera_gizmos.pop(camera_ob)
             self.gizmos.remove(mpr)
 
-        for camera_ob, mpr in self._camera_gizmos.items():
-            mpr.matrix_basis = camera_ob.matrix_world
+        for camera_ob in context.scene.cpp.camera_objects:
+            if camera_ob in self._camera_gizmos.keys():
+                mpr = self._camera_gizmos[camera_ob]
+                mpr.matrix_basis = camera_ob.matrix_world
+            else:
+                mpr = self._create_gizmo(camera_ob)
 
     def draw_prepare(self, context):
         preferences = context.preferences.addons[__package__].preferences
