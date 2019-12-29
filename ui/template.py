@@ -31,12 +31,21 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
     else:
         col.template_ID(camera.cpp, "image", open = "image.open")
 
-    col.label(text = "Previous:")
-    col.template_list(
+    col.label(text = "Binding History:")
+
+    row = col.row(align = False)
+
+    row.template_list(
         "DATA_UL_bind_history_item", "",
         camera_ob.data, "cpp_bind_history",
         camera_ob.data.cpp, "active_bind_index",
         rows = 1)
+
+    if mode in ('CONTEXT', 'TMP'):
+        row.operator(
+            operator = operators.CPP_OT_bind_history_remove.bl_idname,
+            text = "", icon = "REMOVE"
+        ).mode = mode
 
     col.separator()
 

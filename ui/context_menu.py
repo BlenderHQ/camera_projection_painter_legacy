@@ -37,7 +37,7 @@ class CPP_MT_camera_pie(Menu):
 
             scene = context.scene
 
-            template.camera_image(col, camera_ob, mode = 'ACTIVE')
+            template.camera_image(col, camera_ob, mode = 'TMP')
 
             operator = pie.operator(
                 operator = operators.CPP_OT_bind_camera_image.bl_idname,

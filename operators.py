@@ -654,6 +654,32 @@ class CPP_OT_info(Operator):
         return {'FINISHED'}
 
 
+class CPP_OT_bind_history_remove(Operator):
+    bl_idname = "cpp.bind_history_remove"
+    bl_label = "Remove Image From List"
+    bl_options = {'INTERNAL'}
+
+    mode: EnumProperty(
+        items = [('CONTEXT', "Context", ""),
+                 ('TMP', "Tmp", "")],
+        name = "Mode",
+        default = 'CONTEXT')
+
+    def execute(self, context):
+        scene = context.scene
+        if self.mode == 'CONTEXT':
+            camera_ob = scene.camera
+        else:
+            # 'TMP'
+            camera_ob = tmp_camera
+
+        camera = camera_ob.data
+        bind_history = camera.cpp_bind_history
+        active_bind_index = camera.cpp.active_bind_index
+        bind_history.remove(active_bind_index)
+        return {'FINISHED'}
+
+
 _classes = [
     CPP_OT_listener,
     CPP_OT_camera_projection_painter,
@@ -666,6 +692,7 @@ _classes = [
     CPP_OT_canvas_to_diffuse,
     CPP_OT_call_pie,
     CPP_OT_free_memory,
+    CPP_OT_bind_history_remove,
 ]
 
 register, unregister = bpy.utils.register_classes_factory(_classes)
