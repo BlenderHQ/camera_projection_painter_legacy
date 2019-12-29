@@ -9,11 +9,18 @@ from bpy.props import (
     FloatVectorProperty,
     EnumProperty,
     StringProperty,
-    PointerProperty
+    PointerProperty,
+    CollectionProperty
 )
 
 from . import icons
 from . import utils
+
+
+class BindImageHistory(PropertyGroup):
+    image: PointerProperty(
+        type = bpy.types.Image, name = "Image",
+        options = {'HIDDEN'})
 
 
 class CameraProperties(PropertyGroup):
@@ -26,10 +33,38 @@ class CameraProperties(PropertyGroup):
             return False
         return True
 
+    def _image_update(self, context):
+        camera = self.id_data
+        bind_history = camera.cpp_bind_history
+        images = [n.image for n in bind_history]
+        if self.image not in images:
+            item = camera.cpp_bind_history.add()
+            item.image = self.image
+            check_index = len(camera.cpp_bind_history) - 1
+        else:
+            check_index = images.index(self.image)
+
+        item = bind_history[self.active_bind_index]
+        if item.image != self.image:
+            self.active_bind_index = check_index
+
+    def _active_bind_index_update(self, context):
+        camera = self.id_data
+        bind_history = camera.cpp_bind_history
+        item = bind_history[self.active_bind_index]
+        if item.image != self.image:
+            self.image = item.image
+
+    active_bind_index: IntProperty(
+        name = "Active Bind History Index",
+        default = 0,
+        update = _active_bind_index_update)
+
     image: PointerProperty(
         type = bpy.types.Image, name = "Image",
         options = {'HIDDEN'},
-        description = "An image binded to a camera for use as a Clone Image in Texture Paint mode")
+        description = "An image binded to a camera for use as a Clone Image in Texture Paint mode",
+        update = _image_update)
 
     use_calibration: BoolProperty(
         name = "Calibration", default = False,
@@ -327,6 +362,7 @@ class ImageProperties(PropertyGroup):
 
 
 _classes = (
+    BindImageHistory,
     CameraProperties,
     SceneProperties,
     ImageProperties,
@@ -344,6 +380,7 @@ def register():
     for cls in _classes:
         bpy.utils.register_class(cls)
 
+    bpy.types.Camera.cpp_bind_history = CollectionProperty(type = BindImageHistory)
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
@@ -356,6 +393,7 @@ def unregister():
     del bpy.types.Image.cpp
     del bpy.types.Scene.cpp
     del bpy.types.Camera.cpp
+    del bpy.types.Camera.cpp_bind_history
     del bpy.types.WindowManager.cpp_running
     del bpy.types.WindowManager.cpp_suspended
     del bpy.types.WindowManager.cpp_mouse_pos

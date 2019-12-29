@@ -3,11 +3,13 @@
 if "bpy" in locals():
     import importlib
 
+    importlib.reload(template)
     importlib.reload(operators)
     importlib.reload(icons)
 
     del importlib
 else:
+    from . import template
     from .. import operators
     from .. import icons
 
@@ -35,13 +37,7 @@ class CPP_MT_camera_pie(Menu):
 
             scene = context.scene
 
-            scol = col.column()
-            scol.emboss = 'NONE'
-
-            if camera_ob.data.cpp.image:
-                col.template_ID_preview(camera_ob.data.cpp, "image", open = "image.open", rows = 3, cols = 8)
-            else:
-                col.template_ID(camera_ob.data.cpp, "image")
+            template.camera_image(col, camera_ob, mode = 'ACTIVE')
 
             operator = pie.operator(
                 operator = operators.CPP_OT_bind_camera_image.bl_idname,

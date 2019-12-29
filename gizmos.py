@@ -23,6 +23,8 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
 
     __slots__ = ("_camera_gizmos",)
 
+    _camera_gizmos: dict
+
     @classmethod
     def poll(cls, context):
         return utils.poll.tool_setup_poll(context)
@@ -42,7 +44,10 @@ class CPP_GGT_camera_gizmo_group(GizmoGroup):
         return mpr
 
     def setup(self, context):
+        scene = context.scene
+
         self._camera_gizmos = {}
+
         for camera_ob in context.scene.cpp.camera_objects:
             self._create_gizmo(camera_ob)
 

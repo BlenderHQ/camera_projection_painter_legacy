@@ -19,6 +19,7 @@ import bpy
 
 _classes = [
     # ui
+    camera.DATA_UL_bind_history_item,
     camera.CPP_PT_active_camera_options,
     # ui.camera.CPP_PT_active_camera_calibration,
     # ui.camera.CPP_PT_active_camera_lens_distortion,

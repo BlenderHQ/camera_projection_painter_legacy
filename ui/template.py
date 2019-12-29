@@ -31,26 +31,41 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
     else:
         col.template_ID(camera.cpp, "image", open = "image.open")
 
-    operator = col.operator(
-        operator = operators.CPP_OT_bind_camera_image.bl_idname,
-        icon_value = icons.get_icon_id("bind_image"))
-    operator.mode = mode
+    col.label(text = "Previous:")
+    col.template_list(
+        "DATA_UL_bind_history_item", "",
+        camera_ob.data, "cpp_bind_history",
+        camera_ob.data.cpp, "active_bind_index",
+        rows = 1)
+
+    col.separator()
+
+    if mode == 'CONTEXT':
+        operator = col.operator(
+            operator = operators.CPP_OT_bind_camera_image.bl_idname,
+            icon_value = icons.get_icon_id("bind_image"))
+        operator.mode = mode
 
     if image:
-
         if not image.cpp.invalid:
-            size_x, size_y = image.cpp.static_size
+            width, height = image.cpp.static_size
+            depth = image.depth
+            colorspace = image.colorspace_settings.name
             row = col.row()
-            row.label(text = "Width:")
-            row.label(text = "%d px" % size_x)
+            if mode == 'CONTEXT':
+                row.label(text = "Width:")
+                row.label(text = "%d px" % width)
 
-            row = col.row()
-            row.label(text = "Height:")
-            row.label(text = "%d px" % size_y)
+                row = col.row()
+                row.label(text = "Height:")
+                row.label(text = "%d px" % height)
 
-            row = col.row()
-            row.label(text = "Pixel Format:")
-            row.label(text = "%d-bit %s" % (image.depth, image.colorspace_settings.name))
+                row = col.row()
+                row.label(text = "Pixel Format:")
+                row.label(text = "%d-bit %s" % (depth, colorspace))
+            #else:
+                #row.label(text = "%dx%d %d-bit %s" % (width, height, depth, colorspace))
+
         else:
             col.label(text = "Invalid image", icon = 'ERROR')
 
@@ -113,4 +128,3 @@ def path_with_ops(layout, scene):
     # col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
     # col.operator(operators.CPP_OT_set_camera_calibration_from_file.bl_idname,
     #             icon_value = get_icon_id("calibration"))
-

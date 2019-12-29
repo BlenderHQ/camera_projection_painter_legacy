@@ -10,7 +10,17 @@ if "bpy" in locals():
 else:
     from . import template
 
-from bpy.types import Panel
+from bpy.types import Panel, UIList
+
+
+class DATA_UL_bind_history_item(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        image = item.image
+        icon = image.preview.icon_id
+
+        row = layout.row(align = True)
+        row.template_icon(icon_value = icon)
+        row.prop(image, "name", text = "", emboss = False)
 
 
 class CameraOptionsPanel:
