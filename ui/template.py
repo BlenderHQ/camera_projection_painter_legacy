@@ -31,7 +31,7 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
     else:
         col.template_ID(camera.cpp, "image", open = "image.open")
 
-    col.label(text = "Binding History:")
+    col.label(text = "Binding Palette:")
 
     row = col.row(align = False)
 

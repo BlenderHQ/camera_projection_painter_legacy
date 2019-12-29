@@ -677,6 +677,8 @@ class CPP_OT_bind_history_remove(Operator):
         bind_history = camera.cpp_bind_history
         active_bind_index = camera.cpp.active_bind_index
         bind_history.remove(active_bind_index)
+        if len(camera.cpp_bind_history):
+            camera.cpp.active_bind_index = len(camera.cpp_bind_history) - 1
         return {'FINISHED'}
 
 
