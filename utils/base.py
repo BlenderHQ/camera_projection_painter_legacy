@@ -125,7 +125,7 @@ def deform_uv_layer(self, context):
             loop_uv = loop[uv_layer]
 
             # And some deformations here
-            loop_uv.uv = loop_uv.uv[0] + 0.05, loop_uv.uv[1] + 0.1
+            #loop_uv.uv = loop_uv.uv[0] + 0.05, loop_uv.uv[1] + 0.1
 
     bm.to_mesh(ob.data)
 
