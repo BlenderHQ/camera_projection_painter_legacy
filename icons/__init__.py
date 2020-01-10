@@ -1,24 +1,32 @@
 # <pep8 compliant>
 
+__doc__ = """
+Icon ids are available as icons.get_icon_id ("icon_key"), where "icon_key" is the name of the file name.
+without extension inside the module directory. All previews are loaded into the collection
+during the registration method call to avoid delayed loading of icons with a delay
+"""
+
 import bpy.utils.previews
 import os
 
 ICON_EXTENSIONS = (".png",)
 
-if "_preview_collection" not in locals():
+if "_preview_collection" not in locals():  # In case of module reloading
     _preview_collection = None
 
 
 def get_icon_id(key):
+    """
+    Returns the identifier of an icon from existing image files in the module directory
+    @param key: str - File name without extension
+    @return: int - icon_id
+    """
     if _preview_collection and key in _preview_collection:
         return _preview_collection[key].icon_id
     return 0
 
 
 def register():
-    # Load all previews into the collection at once in order
-    # to eliminate the often observed loading of icons with a delay
-
     global _preview_collection
 
     if _preview_collection is None:

@@ -40,6 +40,7 @@ CPP_OT_set_camera_active = set_camera_active.CPP_OT_set_camera_active
 CPP_OT_enter_context = enter_context.CPP_OT_enter_context
 CPP_OT_canvas_to_diffuse = canvas_to_diffuse.CPP_OT_canvas_to_diffuse
 CPP_OT_call_pie = call_pie.CPP_OT_call_pie
+CPP_OT_info = info.CPP_OT_info
 CPP_OT_free_memory = free_memory.CPP_OT_free_memory
 CPP_OT_bind_history_remove = bind_history_remove.CPP_OT_bind_history_remove
 
@@ -58,3 +59,4 @@ _classes = [
 ]
 
 register, unregister = bpy.utils.register_classes_factory(_classes)
+

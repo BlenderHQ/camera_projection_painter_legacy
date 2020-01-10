@@ -21,3 +21,4 @@ message_overwrite_ui = """
 This part of UI overwriten by
 Camera Projection Painter
 """
+

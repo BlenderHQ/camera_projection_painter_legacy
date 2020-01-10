@@ -25,8 +25,8 @@ from bpy.props import (
 message_startup_help = """
 Main operator can be started only after
 reloading Blender or opening any *.blend file
-WEB# https://docs.blender.org/api/current/bpy.app.handlers.html#bpy.app.handlers.load_post
 """
+
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
     for i, km_item in enumerate(km.keymap_items):
