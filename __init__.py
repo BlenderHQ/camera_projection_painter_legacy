@@ -14,7 +14,7 @@ bl_info = {
 
 # Notes:
 #       - The addon supports live reloading of the module using importlib.reload (...).
-#   The standard operator bpy.ops.script.reload()
+#   The standard operator bpy.operators.script.reload()
 #   is not supported because it is not possible while the modal operators work.
 #       - To simplify the re-import of submodules,
 #   they do not use "from some_module import name" for other submodules,
@@ -71,6 +71,7 @@ def _load_post_register(dummy):
     if not _module_registered:
         _module_registered = True
         for module in (
+                icons,
                 extend_bpy_types,
                 keymap,
                 overwrite_ui,
@@ -124,9 +125,7 @@ def _unregister_handlers():
 
 
 def register():
-    from . import operators
-    from . import preferences
-    bpy.utils.register_class(operators.CPP_OT_info)
+    bpy.utils.register_class(operators.info.CPP_OT_info)
     bpy.utils.register_class(preferences.CppPreferences)
 
     _register_handlers()
@@ -136,9 +135,8 @@ def unregister():
     # stop running operators
     global _module_registered
     # call modules unregister
-    from . import operators
 
-    for op in operators.modal_ops:
+    for op in operators.camera_projection_painter.cpp.modal_ops:
         if hasattr(op, "cancel"):
             try:
                 op.cancel(bpy.context)
@@ -151,7 +149,7 @@ def unregister():
         unreg_func = getattr(module, "unregister")
         unreg_func()
     # classes factory
-    bpy.utils.unregister_class(operators.CPP_OT_info)
+    bpy.utils.unregister_class(operators.info.CPP_OT_info)
     bpy.utils.unregister_class(preferences.CppPreferences)
     # handlers
     _unregister_handlers()

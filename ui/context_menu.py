@@ -25,8 +25,10 @@ class CPP_MT_camera_pie(Menu):
 
         pie = layout.menu_pie()
         col = pie.column(align = True)
+        scene = context.scene
+        wm = context.window_manager
 
-        camera_ob = operators.tmp_camera
+        camera_ob = wm.cpp_current_selected_camera_ob
 
         if camera_ob:
             col.label(text = "Camera:")

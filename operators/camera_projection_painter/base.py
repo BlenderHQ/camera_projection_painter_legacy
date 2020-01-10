@@ -3,22 +3,16 @@
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(common)
     importlib.reload(constants)
+    importlib.reload(utils)
 
     del importlib
 else:
-    from . import common
-    from .. import constants
-
-import bpy
-# this module contains utils relative to CPP_OT_camera_projection_painter only
-
+    from ... import constants
+    from ... import utils
 
 import bpy
 import bmesh
-
-from mathutils import Vector
 
 import time
 
@@ -40,9 +34,9 @@ def set_properties_defaults(self):
     self.camera_batches = {}
 
     self.brush_texture_bindcode = 0
-    self.data_updated = common.PropertyTracker()
-    self.check_brush_curve_updated = common.PropertyTracker()
-    self.check_camera_frame_updated = common.PropertyTracker()
+    self.data_updated = utils.common.PropertyTracker()
+    self.check_brush_curve_updated = utils.common.PropertyTracker()
+    self.check_camera_frame_updated = utils.common.PropertyTracker()
 
 
 def get_bmesh(context, ob):

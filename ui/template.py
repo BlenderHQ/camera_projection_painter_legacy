@@ -10,11 +10,7 @@ if "bpy" in locals():
     del importlib
 else:
     from .. import operators
-    from .. import utils
     from .. import icons
-
-import bpy
-import re
 
 
 def camera_image(layout, camera_ob, mode = 'CONTEXT'):
@@ -72,49 +68,11 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
                 row = col.row()
                 row.label(text = "Pixel Format:")
                 row.label(text = "%d-bit %s" % (depth, colorspace))
-            #else:
-                #row.label(text = "%dx%d %d-bit %s" % (width, height, depth, colorspace))
+            # else:
+            # row.label(text = "%dx%d %d-bit %s" % (width, height, depth, colorspace))
 
         else:
             col.label(text = "Invalid image", icon = 'ERROR')
-
-
-def camera_calibration(layout, camera_ob):
-    layout.use_property_decorate = False
-
-    col = layout.column(align = True)
-
-    data = camera_ob.data
-
-    col.enabled = data.cpp.use_calibration
-
-    col.use_property_split = True
-    col.prop(data, "lens")
-    col.separator()
-    layout.use_property_split = False
-    col.prop(data.cpp, "calibration_principal_point")
-    col.separator()
-
-    col.use_property_split = True
-    col.prop(data.cpp, "calibration_skew")
-    col.prop(data.cpp, "calibration_aspect_ratio")
-
-
-def camera_lens_distortion(layout, camera_ob):
-    layout.use_property_decorate = False
-    layout.use_property_split = True
-
-    col = layout.column(align = True)
-
-    data = camera_ob.data
-
-    col.enabled = data.cpp.use_calibration
-
-    col.prop(data.cpp, "lens_distortion_radial_1")
-    col.prop(data.cpp, "lens_distortion_radial_2")
-    col.prop(data.cpp, "lens_distortion_radial_3")
-    col.prop(data.cpp, "lens_distortion_tangential_1")
-    col.prop(data.cpp, "lens_distortion_tangential_2")
 
 
 def path_with_ops(layout, scene):
@@ -133,7 +91,3 @@ def path_with_ops(layout, scene):
     operator.mode = 'ALL'
 
     col.separator()
-
-    # col.prop(scene.cpp, "calibration_source_file", text = "", icon = 'FILE_CACHE')
-    # col.operator(operators.CPP_OT_set_camera_calibration_from_file.bl_idname,
-    #             icon_value = get_icon_id("calibration"))

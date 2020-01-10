@@ -22,9 +22,6 @@ _classes = [
     camera.DATA_UL_bind_history_item,
     camera.CPP_PT_active_camera_options,
 
-    camera.CPP_PT_active_camera_calibration,
-    camera.CPP_PT_active_camera_lens_distortion,
-
     scene.CPP_PT_camera_painter_scene,
     scene.CPP_PT_enter_context,
 
@@ -41,9 +38,6 @@ _classes = [
     image_paint.CPP_PT_warnings_options,
     image_paint.CPP_PT_memory_options,
     image_paint.CPP_PT_current_camera,
-
-    image_paint.CPP_PT_current_camera_calibration,
-    image_paint.CPP_PT_current_camera_lens_distortion,
 
     context_menu.CPP_MT_camera_pie
 ]

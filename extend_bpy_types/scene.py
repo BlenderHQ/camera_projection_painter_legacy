@@ -1,6 +1,16 @@
 # <pep8 compliant>
 
-import bpy
+if "bpy" in locals():
+    import importlib
+
+    importlib.reload(utils)
+    importlib.reload(icons)
+
+    del importlib
+else:
+    from .. import utils
+    from .. import icons
+
 from bpy.types import PropertyGroup
 from bpy.props import (
     BoolProperty,
@@ -8,129 +18,8 @@ from bpy.props import (
     FloatProperty,
     FloatVectorProperty,
     EnumProperty,
-    StringProperty,
-    PointerProperty,
-    CollectionProperty
+    StringProperty
 )
-
-from . import icons
-from . import utils
-
-
-class BindImageHistory(PropertyGroup):
-    image: PointerProperty(
-        type = bpy.types.Image, name = "Image",
-        options = {'HIDDEN'})
-
-
-class CameraProperties(PropertyGroup):
-    @property
-    def available(self):
-        image = self.id_data.cpp.image
-        if not image:
-            return False
-        if image.cpp.invalid:
-            return False
-        return True
-
-    def _image_update(self, context):
-        camera = self.id_data
-        bind_history = camera.cpp_bind_history
-        images = [n.image for n in bind_history]
-        if self.image not in images:
-            item = camera.cpp_bind_history.add()
-            item.image = self.image
-            check_index = len(camera.cpp_bind_history) - 1
-        else:
-            check_index = images.index(self.image)
-
-        item = bind_history[self.active_bind_index]
-        if item.image != self.image:
-            self.active_bind_index = check_index
-
-    def _active_bind_index_update(self, context):
-        camera = self.id_data
-        bind_history = camera.cpp_bind_history
-        item = bind_history[self.active_bind_index]
-        if item.image != self.image:
-            self.image = item.image
-
-    active_bind_index: IntProperty(
-        name = "Active Bind History Index",
-        default = 0,
-        update = _active_bind_index_update)
-
-    image: PointerProperty(
-        type = bpy.types.Image, name = "Image",
-        options = {'HIDDEN'},
-        description = "An image binded to a camera for use as a Clone Image in Texture Paint mode",
-        update = _image_update)
-
-    use_calibration: BoolProperty(
-        name = "Calibration", default = False,
-        options = {'HIDDEN'},
-        description = "Use camera calibration")
-
-    calibration_principal_point: FloatVectorProperty(
-        name = "Principal Point",
-        size = 2,
-        default = (0.0, 0.0),
-        step = 0.0001,
-        precision = 6,
-        subtype = 'TRANSLATION',
-        unit = 'CAMERA',
-        options = {'HIDDEN'},
-        description = "A point at the intersection of the optical axis and the image plane."
-                      "This point is referred to as the principal point or image center")
-
-    calibration_skew: FloatProperty(
-        name = "Skew",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
-
-    calibration_aspect_ratio: FloatProperty(
-        name = "Aspect Ratio",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
-
-    lens_distortion_radial_1: FloatProperty(
-        name = "Radial 1",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
-
-    lens_distortion_radial_2: FloatProperty(
-        name = "Radial 2",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
-
-    lens_distortion_radial_3: FloatProperty(
-        name = "Radial 3",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
-
-    lens_distortion_tangential_1: FloatProperty(
-        name = "Tangential 1",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
-
-    lens_distortion_tangential_2: FloatProperty(
-        name = "Tangential 2",
-        default = 0.0, step = 0.001, precision = 6, soft_min = -1.0, soft_max = 1.0,
-        subtype = 'FACTOR',
-        options = {'HIDDEN'},
-        description = "")
 
 
 class SceneProperties(PropertyGroup):
@@ -321,79 +210,3 @@ class SceneProperties(PropertyGroup):
         subtype = 'DISTANCE',
         options = {'HIDDEN'},
         description = "User recommended radius projected onto the plane brush")
-
-
-class ImageProperties(PropertyGroup):
-    preview_check_passed: BoolProperty(
-        default = False,
-        options = {'HIDDEN', 'SKIP_SAVE'}
-    )
-
-    @property
-    def static_size(self):
-        image = self.id_data
-        width, height = utils.common.get_image_static_size(image)
-        return width, height
-
-    @property
-    def aspect(self):
-        image = self.id_data
-        width, height = image.cpp.static_size
-
-        if width > height:
-            aspect_x = 1.0
-            aspect_y = width / height
-        elif height > width:
-            aspect_x = 1.0
-            aspect_y = width / height
-        else:
-            aspect_x = 1.0
-            aspect_y = 1.0
-
-        return aspect_x, aspect_y
-
-    @property
-    def invalid(self):
-        image = self.id_data
-        size_x, size_y = image.cpp.static_size
-        if size_x and size_y:
-            return False
-        return True
-
-
-_classes = (
-    BindImageHistory,
-    CameraProperties,
-    SceneProperties,
-    ImageProperties,
-)
-
-
-def register():
-    bpy.types.WindowManager.cpp_running = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
-    bpy.types.WindowManager.cpp_suspended = bpy.props.BoolProperty(default = False, options = {'SKIP_SAVE'})
-    bpy.types.WindowManager.cpp_mouse_pos = bpy.props.IntVectorProperty(
-        size = 2,
-        default = (0, 0),
-        options = {'SKIP_SAVE'})
-
-    for cls in _classes:
-        bpy.utils.register_class(cls)
-
-    bpy.types.Camera.cpp_bind_history = CollectionProperty(type = BindImageHistory)
-    bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
-    bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
-    bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
-
-
-def unregister():
-    for cls in reversed(_classes):
-        bpy.utils.unregister_class(cls)
-
-    del bpy.types.Image.cpp
-    del bpy.types.Scene.cpp
-    del bpy.types.Camera.cpp
-    del bpy.types.Camera.cpp_bind_history
-    del bpy.types.WindowManager.cpp_running
-    del bpy.types.WindowManager.cpp_suspended
-    del bpy.types.WindowManager.cpp_mouse_pos
