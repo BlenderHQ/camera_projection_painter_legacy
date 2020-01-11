@@ -1,10 +1,9 @@
 # <pep8 compliant>
 
-__doc__ = """
-Icon ids are available as icons.get_icon_id ("icon_key"), where "icon_key" is the name of the file name.
-without extension inside the module directory. All previews are loaded into the collection
-during the registration method call to avoid delayed loading of icons with a delay
-"""
+# Icon ids are available as icons.get_icon_id ("icon_key"), where "icon_key" is the name of the file name.
+# without extension inside the module directory. All previews are loaded into the collection
+# during the registration method call to avoid delayed loading of icons with a delay
+
 
 import bpy.utils.previews
 import os
