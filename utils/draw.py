@@ -71,37 +71,6 @@ def update_brush_texture_bindcode(self, context):
         self.brush_texture_bindcode = bindcode
 
 
-def get_curr_img_pos_from_context(context):
-    area = context.area
-    scene = context.scene
-    image_paint = scene.tool_settings.image_paint
-    image = image_paint.clone_image
-
-    if not image:
-        return
-    size_x, size_y = image.cpp.static_size
-    if not (size_x and size_y):
-        return
-
-    preferences = context.preferences.addons[addon_pkg].preferences
-    empty_space = preferences.border_empty_space
-
-    tools_width = [n for n in area.regions if n.type == 'TOOLS'][-1].width  # N-panel width
-    ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
-    area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
-
-    image_size = Vector([1.0, size_y / size_x]) * scene.cpp.current_image_size
-    possible = True
-    if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
-        possible = False
-
-    image_rel_pos = scene.cpp.current_image_position
-    rpx, rpy = image_rel_pos
-    apx = common.f_lerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
-    apy = common.f_lerp(empty_space, area_size.y - image_size.y, rpy)
-
-    return Vector((apx, apy)), image_size, possible
-
 
 def get_batch_attributes(bm):
     loop_triangles = bm.calc_loop_triangles()
@@ -270,51 +239,74 @@ def draw_projection_preview(self, context):
     batch.draw(shader)
 
 
-def gen_camera_batch(camera):
-    shader_camera = shaders.shader.camera
-    shader_camera_image_preview = shaders.shader.camera_image_preview
+def get_camera_batches():
+    # Camera and binded image batches
+    vertices = (
+        (0.0, 0.0, 0.0),
+        (0.5, 0.5, -1.0),
+        (0.5, -0.5, -1.0),
+        (-0.5, -0.5, -1.0),
+        (-0.5, 0.5, -1.0)
+    )
 
-    view_frame = camera.view_frame()
-
-    vertices = [Vector((0.0, 0.0, 0.0))]
-    vertices.extend(view_frame)
-
-    indices_frame = (
+    wire_indices = (
         (0, 1), (0, 2), (0, 3), (0, 4),
         (1, 2), (2, 3), (3, 4), (1, 4)
     )
 
-    indices_image = (
+    image_rect_indices = (
         (1, 2, 3), (3, 4, 1)
     )
 
-    uv = (
+    image_rect_uv = (
         (0.0, 0.0),
         (1.0, 1.0), (1.0, 0.0), (0.0, 0.0), (0.0, 1.0),
     )
 
-    batch_frame = batch_for_shader(
+    shader_camera = shaders.shader.camera
+    shader_camera_image_preview = shaders.shader.camera_image_preview
+
+    camera_wire_batch = batch_for_shader(
         shader_camera, 'LINES',
         {"pos": vertices},
-        indices = indices_frame,
+        indices = wire_indices,
     )
-    batch_image = batch_for_shader(
+
+    image_rect_batch = batch_for_shader(
         shader_camera_image_preview, 'TRIS',
-        {"pos": vertices, "uv": uv},
-        indices = indices_image,
+        {"pos": vertices, "uv": image_rect_uv},
+        indices = image_rect_indices,
     )
 
-    return batch_frame, batch_image
+    return camera_wire_batch, image_rect_batch
 
 
-def get_camera_batches(context):
-    res = {}
-    scene = context.scene
-    for ob in scene.cpp.camera_objects:
-        camera = ob.data
-        batch_frame, batch_image = gen_camera_batch(camera)
-        res[ob] = batch_frame, batch_image
-    return res
+def get_axes_batch():
+    vertices = (
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+        (0.0, 1.0, 0.0),
+        (0.0, 0.0, 1.0)
+    )
+
+    vertex_colors = (
+        (0.5, 0.5, 0.5, 0.0),
+        (1.0, 0.0, 0.0, 0.6),
+        (0.0, 1.0, 0.0, 0.6),
+        (0.0, 0.0, 1.0, 0.6)
+    )
+
+    indices = ((0, 1), (0, 2), (0, 3))
+
+    shader_axes = shaders.shader.axes
+
+    batch_axes = batch_for_shader(
+        shader_axes, 'LINES',
+        {"pos": vertices, "color": vertex_colors},
+        indices = indices,
+    )
+
+    return batch_axes
 
 
 def gen_buffer_preview(preview):
@@ -330,7 +322,7 @@ def gen_buffer_preview(preview):
     bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
     bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RGBA,
                      width, height, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
-    # glTexSubImage2d
+
     return bindcode
 
 
@@ -381,78 +373,90 @@ def get_ready_preview_count():
 
 
 def draw_cameras(self, context):
+    preferences = context.preferences.addons[addon_pkg].preferences
     scene = context.scene
+    cameras_viewport_size = scene.cpp.cameras_viewport_size
+
+    # Shaders
     shader_camera = shaders.shader.camera
     shader_camera_image_preview = shaders.shader.camera_image_preview
+    shader_axes = shaders.shader.axes
 
-    preferences = context.preferences.addons[addon_pkg].preferences
+    # Batches
+    axes_batch = self.axes_batch
+    camera_wire_batch = self.camera_batch
+    image_rect_batch = self.image_rect_batch
 
+    # OpenGL setup
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
     bgl.glEnable(bgl.GL_MULTISAMPLE)
 
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
-    bgl.glLineWidth(preferences.camera_line_width)
-
     bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-    for ob in scene.cpp.camera_objects:
-        batches = None
-        if ob in self.camera_batches.keys():
-            batches = self.camera_batches[ob]
-        if not batches:
-            continue
+    for camera_ob in scene.cpp.camera_objects:
+        camera = camera_ob.data
 
-        batch_frame, batch_image = batches
+        bgl.glLineWidth(preferences.camera_line_width)
 
-        mat = ob.matrix_world
-        display_size = scene.cpp.cameras_viewport_size
-        image = ob.data.cpp.image
+        model_matrix = camera_ob.matrix_world
+        camera_lens_size = camera.lens / camera.sensor_width
 
-        has_data = False
-        size_x, size_y = (1, 1)
-        if image:
-            static_size = image.cpp.static_size
-            if static_size[0] and static_size[1]:
-                size_x, size_y = static_size
-                has_data = image.has_data
+        image = camera.cpp.image
 
-        if size_x > size_y:
-            aspect_x = 1.0
-            aspect_y = size_y / size_x
-        elif size_y > size_x:
-            aspect_x = 1.0
-            aspect_y = size_y / size_x
-        else:
-            aspect_x = 1.0
-            aspect_y = 1.0
+        image_has_data = False
+        image_aspect_scale = 1.0, 1.0
 
-        rv3d = context.region_data
-        if image and scene.cpp.use_camera_image_previews:
-            if rv3d.view_perspective != 'CAMERA':
-                if image in _image_previews.keys():
-                    bindcode = _image_previews[image]
-                    bgl.glActiveTexture(bgl.GL_TEXTURE0)
-                    bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+        if image and (not image.cpp.invalid):
+            image_aspect_scale = image.cpp.aspect_scale
 
-                    shader_camera_image_preview.bind()
-                    shader_camera_image_preview.uniform_int("image", 0)
-                    shader_camera_image_preview.uniform_float("display_size", display_size)
-                    shader_camera_image_preview.uniform_float("scale", (aspect_x, aspect_y))
-                    shader_camera_image_preview.uniform_float("modelMatrix", mat)
-                    batch_image.draw(shader_camera_image_preview)
+            if (scene.cpp.use_camera_image_previews and
+                    context.region_data.view_perspective != 'CAMERA' and
+                    image in _image_previews):
+                bindcode = _image_previews[image]
+                bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
+
+                shader_camera_image_preview.bind()
+
+                shader_camera_image_preview.uniform_int("image", 0)
+                shader_camera_image_preview.uniform_float("cameras_viewport_size", cameras_viewport_size)
+                shader_camera_image_preview.uniform_float("image_aspect_scale", image_aspect_scale)
+                shader_camera_image_preview.uniform_float("camera_lens_size", camera_lens_size)
+                shader_camera_image_preview.uniform_float("model_matrix", model_matrix)
+
+                image_rect_batch.draw(shader_camera_image_preview)
 
         shader_camera.bind()
-        if has_data:
-            color = preferences.camera_color_loaded_data
+        if image_has_data:
+            wire_color = preferences.camera_color_loaded_data
         else:
-            color = preferences.camera_color
-        if ob == scene.camera:
-            color = preferences.camera_color_highlight
+            wire_color = preferences.camera_color
+        if camera_ob == scene.camera:
+            wire_color = preferences.camera_color_highlight
 
-        shader_camera.uniform_float("color", color)
-        shader_camera.uniform_float("scale", (aspect_x, aspect_y))
-        shader_camera.uniform_float("display_size", display_size)
-        shader_camera.uniform_float("modelMatrix", mat)
+        shader_camera.uniform_float("wire_color", wire_color)
+        shader_camera.uniform_float("image_aspect_scale", image_aspect_scale)
+        shader_camera.uniform_float("cameras_viewport_size", cameras_viewport_size)
+        shader_camera.uniform_float("camera_lens_size", camera_lens_size)
+        shader_camera.uniform_float("model_matrix", model_matrix)
 
-        batch_frame.draw(shader_camera)
+        camera_wire_batch.draw(shader_camera)
+
+        # Display the axes of the camera object
+        if scene.cpp.use_camera_axes:
+            camera_axes_size = scene.cpp.camera_axes_size
+
+            bgl.glLineWidth(2.0)
+            shader_axes.bind()
+            shader_axes.uniform_float("modelMatrix", model_matrix)
+            shader_axes.uniform_float("camera_axes_size", camera_axes_size)
+            axes_batch.draw(shader_axes)
+
+    # OpenGL restore defaults
+    bgl.glDisable(bgl.GL_BLEND)
+    bgl.glDisable(bgl.GL_MULTISAMPLE)
+    bgl.glDisable(bgl.GL_LINE_SMOOTH)
+    bgl.glDisable(bgl.GL_DEPTH_TEST)
+    bgl.glLineWidth(1.0)

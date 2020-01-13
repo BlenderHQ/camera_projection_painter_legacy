@@ -39,7 +39,7 @@ class CPP_PT_camera_painter_scene(Panel, SceneOptions):
         scene = context.scene
 
         col.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
-        # col.prop(scene.cpp, "calibration_source_file", icon = 'FILE_CACHE')
+        # col.prop(scene.cpp, "calibration_source_file", icon_id = 'FILE_CACHE')
 
         col.separator()
 

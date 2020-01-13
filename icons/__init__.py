@@ -16,7 +16,7 @@ if "_preview_collection" not in locals():  # In case of module reloading
 
 def get_icon_id(key):
     """
-    Returns the identifier of an icon from existing image files in the module directory
+    Returns the identifier of an icon_id from existing image files in the module directory
     @param key: str - File name without extension
     @return: int - icon_id
     """

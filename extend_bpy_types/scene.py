@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+if "bpy" in locals():  # Case of module reloading
     import importlib
 
     importlib.reload(utils)
@@ -23,12 +23,20 @@ from bpy.props import (
 
 
 class SceneProperties(PropertyGroup):
+    """
+    Contains properties and methods related to the Scene
+    """
+
     @property
     def _scene(self):
         return self.id_data
 
     @property
     def has_camera_objects(self):
+        """
+        True if there are camera objects in the scene
+        @return: bool
+        """
         for ob in self._scene.objects:
             if ob.type != 'CAMERA':
                 continue
@@ -37,28 +45,53 @@ class SceneProperties(PropertyGroup):
 
     @property
     def camera_objects(self):
+        """
+        Generates a list of camera objects
+        @return: generator
+        """
         return (ob for ob in self._scene.objects if ob.type == 'CAMERA')
 
     @property
     def has_available_camera_objects(self):
+        """
+        True if there are cameras available for automation in the scene
+        @return: bool
+        """
         return len(list(self._scene.cpp.available_camera_objects)) != 0
 
     @property
     def available_camera_objects(self):
+        """
+        Generates a list of available camera objects
+        @return: generator
+        """
         return (ob for ob in self._scene.cpp.camera_objects if ob.data.cpp.available)
 
     @property
     def has_camera_objects_selected(self):
+        """
+        True if there are selected cameras in the scene
+        @return: bool
+        """
         return len(list(self._scene.cpp.selected_camera_objects)) != 0
 
     @property
     def selected_camera_objects(self):
+        """
+        Generates a list of selected camera objects
+        @return: generator
+        """
         return (ob for ob in self._scene.cpp.camera_objects if ob.select_get())
 
     def cameras_hide_set(self, state):
+        """
+        Sets the visibility status of camera objects in the scene.
+        @param state: bool
+        """
         for ob in self.camera_objects:
             ob.hide_viewport = state
 
+    # Update methods
     def _use_auto_set_image_update(self, context):
         if self.use_auto_set_image:
             utils.common.set_clone_image_from_camera_data(context)
@@ -67,6 +100,7 @@ class SceneProperties(PropertyGroup):
         if self.use_camera_image_previews:
             utils.draw.clear_image_previews()
 
+    # Properties
     source_images_path: StringProperty(
         name = "Source Images Directory", subtype = 'DIR_PATH',
         description = "The path to the image dataset directory."
@@ -155,6 +189,18 @@ class SceneProperties(PropertyGroup):
         options = {'HIDDEN'},
         description = "Display previews of images binded to cameras in the viewport. Uses standard image previews.",
         update = _use_camera_image_previews_update)
+
+    use_camera_axes: BoolProperty(
+        name = "Axes", default = False,
+        options = {'HIDDEN'},
+        description = "Display the axes of the camera object")
+
+    camera_axes_size: FloatProperty(
+        name = "Axes Size",
+        default = 0.5, soft_min = 0.1, soft_max = 1.0, step = 0.1,
+        subtype = 'DISTANCE',
+        options = {'HIDDEN'},
+        description = "Axis display length in viewport")
 
     # Current image preview
     use_current_image_preview: BoolProperty(

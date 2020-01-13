@@ -5,4 +5,5 @@ out vec4 fragColor;
 void main()
 {
     fragColor = texture(image, uvInterp);
+    fragColor.a = 1.0;
 }

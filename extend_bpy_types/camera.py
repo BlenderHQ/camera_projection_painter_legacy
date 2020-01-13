@@ -11,15 +11,27 @@ from bpy.props import (
 )
 
 
-class BindImageHistory(PropertyGroup):
+class BindImageHistoryItem(PropertyGroup):
+    """
+    Used to store a palette of previously used images
+    """
     image: PointerProperty(
         type = bpy.types.Image, name = "Image",
         options = {'HIDDEN'})
 
 
 class CameraProperties(PropertyGroup):
+    """
+    Serves for storing the properties associated with the data of each individual camera,
+    the main here is the image binded to the camera
+    """
+
     @property
     def available(self):
+        """
+        Returns camera accessibility status for projection automation
+        @return: bool
+        """
         image = self.id_data.cpp.image
         if not image:
             return False
@@ -27,28 +39,40 @@ class CameraProperties(PropertyGroup):
             return False
         return True
 
+    # Update methods
     def _image_update(self, context):
-        camera = self.id_data
-        bind_history = camera.cpp_bind_history
-        images = [n.image for n in bind_history]
-        if self.image not in images:
-            item = camera.cpp_bind_history.add()
-            item.image = self.image
-            check_index = len(camera.cpp_bind_history) - 1
-        else:
-            check_index = images.index(self.image)
+        if not self.image:
+            return
 
-        item = bind_history[self.active_bind_index]
-        if item.image != self.image:
-            self.active_bind_index = check_index
+        if self.image.cpp.invalid:
+            self.image = None
+        else:
+            camera = self.id_data
+            bind_history = camera.cpp_bind_history
+            bind_history_images = []
+            for item in bind_history:
+                if item.image and (not item.image.cpp.invalid):
+                    bind_history_images.append(item.image)
+
+            if self.image in bind_history_images:
+                check_index = bind_history_images.index(self.image)
+            else:
+                item = camera.cpp_bind_history.add()
+                item.image = self.image
+                check_index = len(camera.cpp_bind_history) - 1
+
+            item = bind_history[self.active_bind_index]
+            if item.image != self.image:
+                self.active_bind_index = check_index
 
     def _active_bind_index_update(self, context):
         camera = self.id_data
         bind_history = camera.cpp_bind_history
         item = bind_history[self.active_bind_index]
-        if item.image != self.image:
+        if item.image and (not item.image.cpp.invalid) and (item.image != self.image):
             self.image = item.image
 
+    # Properties
     active_bind_index: IntProperty(
         name = "Active Bind History Index",
         default = 0,
@@ -60,6 +84,8 @@ class CameraProperties(PropertyGroup):
         description = "An image binded to a camera for use as a Clone Image in Texture Paint mode",
         update = _image_update)
 
+    # Calibration properties
+    # TODO: Currently not used
     use_calibration: BoolProperty(
         name = "Calibration", default = False,
         options = {'HIDDEN'},

@@ -1,6 +1,8 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+# Extending the properties of the standard classes of the Scene, Object, Image and WindowManager
+
+if "bpy" in locals():  # In case of module reloading
     import importlib
 
     importlib.reload(camera)
@@ -21,17 +23,17 @@ from bpy.props import (
     CollectionProperty
 )
 
-BindImageHistory = camera.BindImageHistory
+BindImageHistoryItem = camera.BindImageHistoryItem
 CameraProperties = camera.CameraProperties
 SceneProperties = scene.SceneProperties
 ImageProperties = image.ImageProperties
 
-_classes = (
-    BindImageHistory,
+_classes = [
+    BindImageHistoryItem,
     CameraProperties,
     SceneProperties,
     ImageProperties,
-)
+]
 
 _cls_register, _cls_unregister = bpy.utils.register_classes_factory(_classes)
 
@@ -39,12 +41,14 @@ _cls_register, _cls_unregister = bpy.utils.register_classes_factory(_classes)
 def register():
     _cls_register()
 
+    # To the window manager class are added properties that must be used to transfer data
+    # but there is no need to save along with the file
     bpy.types.WindowManager.cpp_running = window_manager.cpp_running
     bpy.types.WindowManager.cpp_suspended = window_manager.cpp_suspended
     bpy.types.WindowManager.cpp_mouse_pos = window_manager.cpp_mouse_pos
     bpy.types.WindowManager.cpp_current_selected_camera_ob = window_manager.cpp_current_selected_camera_ob
 
-    bpy.types.Camera.cpp_bind_history = CollectionProperty(type = BindImageHistory)
+    bpy.types.Camera.cpp_bind_history = CollectionProperty(type = BindImageHistoryItem)
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)

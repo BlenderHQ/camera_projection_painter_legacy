@@ -9,7 +9,7 @@ import os
 
 SEPARATOR = "_"
 
-SHADER_EXTENSION = "glsl"
+SHADER_EXTENSION = ".glsl"
 SHADER_VERTEX = "vert"
 SHADER_FRAGMENT = "frag"
 SHADER_GEOMETRY = "geom"
@@ -43,11 +43,13 @@ def _generate_shaders():
             continue
 
         name, extension = os.path.splitext(filename)
+
         if extension != SHADER_EXTENSION:
             continue
 
         # The name of the shader is determined by the names of the shader files that make it up.
         name_split = name.split(SEPARATOR)
+
         if len(name_split) == 1:
             raise NameError("Shader name must be name_type.glsl pattern")
         if len(name_split) == 2:
@@ -76,7 +78,6 @@ def _generate_shaders():
             with open(filepath, 'r') as code:
                 data = code.read()
                 _defines_library += "\n\n%s" % data
-
     _res = {}
     for shader_name in _shader_dict.keys():
         shader_code = _shader_dict[shader_name]
@@ -96,6 +97,8 @@ def _generate_shaders():
         data = gpu.types.GPUShader(**kwargs)
         _res[shader_name] = data
 
+    assert len(_res)
+
     return _res
 
 
@@ -103,8 +106,6 @@ class ShaderStorage(object):
     def __init__(self):
         for shader_name, data in _generate_shaders().items():
             object.__setattr__(self, shader_name, data)
-
-        self.builtin_3d_uniform_color = gpu.shader.from_builtin('3D_UNIFORM_COLOR')
 
 
 shader = ShaderStorage()  # The main instance container containing all the shaders

@@ -14,13 +14,14 @@ from bpy.types import Panel, UIList
 
 
 class DATA_UL_bind_history_item(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        image = item.image
-        icon = image.preview.icon_id
-
+    def draw_item(self, context, layout, data, item, icon_id, active_data, active_propname):
         row = layout.row(align = True)
-        row.template_icon(icon_value = icon)
-        row.prop(image, "name", text = "", emboss = False)
+
+        image = item.image
+        if image and not image.cpp.invalid:
+            icon_id = image.preview.icon_id
+            row.template_icon(icon_value = icon_id)
+            row.prop(image, "name", text = "", emboss = False)
 
 
 class CameraOptionsPanel:

@@ -21,7 +21,11 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
 
     col = layout.column(align = True)
 
+    if mode == 'TMP':
+        col.ui_units_x = 9
+
     image = camera.cpp.image
+
     if image:
         col.template_ID_preview(camera.cpp, "image", open = "image.open", rows = 3, cols = 8)
     else:

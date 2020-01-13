@@ -9,6 +9,7 @@ if "bpy" in locals():  # In case of module reloading
 
     import importlib
 
+    importlib.reload(base)
     importlib.reload(utils)
     importlib.reload(constants)
 
@@ -69,7 +70,8 @@ def invoke(self, context, event):
     base.setup_basis_uv_layer(context)
     self.bm = base.get_bmesh(context, ob)
     self.mesh_batch = utils.draw.get_bmesh_batch(self.bm)
-    self.camera_batches = utils.draw.get_camera_batches(context)
+    self.axes_batch = utils.draw.get_axes_batch()
+    self.camera_batch, self.image_rect_batch = utils.draw.get_camera_batches()
     utils.draw.add_draw_handlers(self, context)
     scene.cpp.cameras_hide_set(state = True)
 
@@ -150,10 +152,6 @@ def modal(self, context, event):
 
     camera_ob = scene.camera
     camera = camera_ob.data
-
-    if self.check_camera_frame_updated(camera.view_frame()):
-        self.camera_batches[camera_ob] = utils.draw.gen_camera_batch(camera)
-        self.full_draw = True
 
     if event.type not in ('TIMER', 'TIMER_REPORT'):
         if self.data_updated((

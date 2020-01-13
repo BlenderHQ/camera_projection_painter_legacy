@@ -109,6 +109,12 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
 
         col.operator("wm.previews_ensure", icon = 'FREEZE')
         col.prop(scene.cpp, "use_camera_image_previews")
+        col.prop(scene.cpp, "use_camera_axes")
+
+        scol = col.column()
+        scol.enabled = scene.cpp.use_camera_axes
+        scol.use_property_split = False
+        scol.prop(scene.cpp, "camera_axes_size")
 
 
 class CPP_PT_view_projection_options(Panel, ImagePaintOptions):

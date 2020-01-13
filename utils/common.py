@@ -195,8 +195,6 @@ def set_camera_by_view(context, mouse_position):
 
 # Image relative
 
-_image_size_cache = {}
-
 
 def generate_preview(image):
     if not image:
@@ -262,84 +260,6 @@ def generate_preview(image):
         image.preview.image_size = sx, sy
         pixels = [n / 255 for n in buffer]
         image.preview.image_pixels_float = pixels
-
-
-def _get_image_metadata_from_bytesio(input, st_size):
-    size_x, size_y = 0, 0
-
-    data = input.read(24)
-
-    if (st_size >= 24) and data.startswith(b'\x89PNG\r\n\x1a\n') and (data[12:16] == b'IHDR'):
-        # PNG
-        w, h = struct.unpack(">LL", data[16:24])
-        size_x = int(w)
-        size_y = int(h)
-
-        # print("PNG")
-
-    elif (st_size >= 2) and data.startswith(b'\377\330'):
-        # JPEG
-        input.seek(0)
-        input.read(2)
-        b = input.read(1)
-        try:
-            w, h = 0, 0
-            while b and ord(b) != 0xDA:
-                while ord(b) != 0xFF:
-                    b = input.read(1)
-                while ord(b) == 0xFF:
-                    b = input.read(1)
-                if 0xC0 <= ord(b) <= 0xC3:
-                    input.read(3)
-                    h, w = struct.unpack(">HH", input.read(4))
-                    break
-                else:
-                    input.read(
-                        int(struct.unpack(">H", input.read(2))[0]) - 2)
-                b = input.read(1)
-            if w and h:
-                size_x = int(w)
-                size_y = int(h)
-        except:
-            pass
-
-    else:
-        pass
-
-    return size_x, size_y
-
-
-def get_image_static_size(image):
-    if image in _image_size_cache:
-        return _image_size_cache[image]
-
-    size_x, size_y = 0, 0
-
-    if image.source == 'FILE':
-        if image.packed_file:
-            packed_data = image.packed_file.data
-            st_size = image.packed_file.size
-            with io.BytesIO(packed_data) as io_bytes:
-                size_x, size_y = _get_image_metadata_from_bytesio(io_bytes, st_size)
-        else:
-            file_path = bpy.path.abspath(image.filepath)
-            if os.path.isfile(file_path):
-                st_size = os.path.getsize(file_path)
-                with io.open(file_path, "rb") as io_bytes:
-                    size_x, size_y = _get_image_metadata_from_bytesio(io_bytes, st_size)
-
-    elif image.source == 'GENERATED':
-        size_x, size_y = image.generated_width, image.generated_height
-
-    if size_x and size_y:
-        _image_size_cache[image] = size_x, size_y
-        return size_x, size_y
-
-    size_x, size_y = image.size[:]
-    if size_x and size_y:
-        _image_size_cache[image] = size_x, size_y
-        return size_x, size_y
-    return 0, 0
 
 
 # Warnings

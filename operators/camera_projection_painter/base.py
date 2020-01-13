@@ -14,8 +14,6 @@ else:
 import bpy
 import bmesh
 
-import time
-
 
 def set_properties_defaults(self):
     """
@@ -31,7 +29,9 @@ def set_properties_defaults(self):
 
     self.bm = None
     self.mesh_batch = None
-    self.camera_batches = {}
+    self.axes_batch = None
+    self.camera_batch = None
+    self.image_rect_batch = None
 
     self.brush_texture_bindcode = 0
     self.data_updated = utils.common.PropertyTracker()
@@ -54,57 +54,62 @@ def remove_uv_layer(ob):
                 uv_layers.remove(uv_layers[constants.TEMP_DATA_NAME])
 
 
-def setup_basis_uv_layer(context):
-    scene = context.scene
-    image_paint = scene.tool_settings.image_paint
-    clone_image = image_paint.clone_image
-    ob = context.image_paint_object
+def _ensure_modifier(ob):
+    if constants.TEMP_DATA_NAME not in ob.modifiers:
+        bpy.ops.object.modifier_add(type = 'UV_PROJECT')
+        modifier = ob.modifiers[-1]
+        modifier.name = constants.TEMP_DATA_NAME
+    assert constants.TEMP_DATA_NAME in ob.modifiers
+    modifier = ob.modifiers[constants.TEMP_DATA_NAME]
+
+    modifier.projector_count = 1
+    modifier.aspect_x = 1.0
+    modifier.aspect_y = 1.0
+
+    while ob.modifiers[0] != modifier:  # Required when object already has some modifiers on it
+        bpy.ops.object.modifier_move_up(modifier = modifier.name)
+
+    return modifier
+
+
+def _ensure_uv_layer(ob):
     uv_layers = ob.data.uv_layers
-
-    size_x, size_y = clone_image.cpp.static_size
-
-    if not (size_x and size_y):
-        return
-
     if constants.TEMP_DATA_NAME not in uv_layers:
         uv_layers.new(name = constants.TEMP_DATA_NAME, do_init = False)
         uv_layer = uv_layers[constants.TEMP_DATA_NAME]
         uv_layer.active = False
         uv_layer.active_clone = True
-
-    if constants.TEMP_DATA_NAME not in ob.modifiers:
-        bpy.ops.object.modifier_add(type = 'UV_PROJECT')
-        modifier = ob.modifiers[-1]
-        modifier.name = constants.TEMP_DATA_NAME
-
-    modifier = ob.modifiers[constants.TEMP_DATA_NAME]
+    assert constants.TEMP_DATA_NAME in uv_layers
     uv_layer = uv_layers[constants.TEMP_DATA_NAME]
 
-    while ob.modifiers[0] != modifier:  # Required when object already has some modifiers on it
-        bpy.ops.object.modifier_move_up(modifier = modifier.name)
+    return uv_layer
+
+
+def setup_basis_uv_layer(context):
+    scene = context.scene
+    image_paint = scene.tool_settings.image_paint
+    clone_image = image_paint.clone_image
+
+    if clone_image.cpp.invalid:
+        return
+
+    ob = context.image_paint_object
+
+    modifier = _ensure_modifier(ob)
+    uv_layer = _ensure_uv_layer(ob)
 
     modifier.uv_layer = uv_layer.name
 
     modifier.scale_x = 1.0
-    modifier.scale_y = 1.0
+    modifier.scale_y = clone_image.cpp.aspect
 
-    if size_x > size_y:
-        modifier.aspect_x = size_x / size_y
-        modifier.aspect_y = 1.0
-    elif size_y > size_x:
-        modifier.aspect_x = 1.0
-        modifier.aspect_y = size_x / size_y
-    else:
-        modifier.aspect_x = 1.0
-        modifier.aspect_y = 1.0
-
-    modifier.projector_count = 1
     modifier.projectors[0].object = scene.camera
 
     bpy.ops.object.modifier_apply(modifier = constants.TEMP_DATA_NAME)
 
-    scene.render.resolution_x = size_x
-    scene.render.resolution_y = size_y
+    width, height = clone_image.cpp.static_size
+    scene.render.resolution_x = width
+    scene.render.resolution_y = height
 
 
 def deform_uv_layer(self, context):
@@ -112,15 +117,4 @@ def deform_uv_layer(self, context):
     ob = context.image_paint_object
     uv_layer = bm.loops.layers.uv.get(constants.TEMP_DATA_NAME)
 
-    dt = time.time()
-
-    for face in bm.faces:
-        for loop in face.loops:
-            loop_uv = loop[uv_layer]
-
-            # And some deformations here
-            #loop_uv.uv = loop_uv.uv[0] + 0.05, loop_uv.uv[1] + 0.1
-
-    bm.to_mesh(ob.data)
-
-    print("deform", time.time() - dt)
+    # TODO: Camera calibration

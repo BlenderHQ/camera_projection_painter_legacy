@@ -10,6 +10,7 @@ if "bpy" in locals():  # In case of module reloading
 else:
     from .. import utils
     from .. import shaders
+    from .. import __package__ as addon_pkg
 
 import bpy
 import gpu
@@ -19,6 +20,38 @@ from mathutils import Vector
 from mathutils.geometry import intersect_point_quad_2d
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
+
+
+def get_curr_img_pos_from_context(context):
+    area = context.area
+    scene = context.scene
+    image_paint = scene.tool_settings.image_paint
+    image = image_paint.clone_image
+
+    if not image:
+        return
+    size_x, size_y = image.cpp.static_size
+    if not (size_x and size_y):
+        return
+
+    preferences = context.preferences.addons[addon_pkg].preferences
+    empty_space = preferences.border_empty_space
+
+    tools_width = [n for n in area.regions if n.type == 'TOOLS'][-1].width  # N-panel width
+    ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
+    area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
+
+    image_size = Vector([1.0, size_y / size_x]) * scene.cpp.current_image_size
+    possible = True
+    if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
+        possible = False
+
+    image_rel_pos = scene.cpp.current_image_position
+    rpx, rpy = image_rel_pos
+    apx = utils.common.f_lerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
+    apy = utils.common.f_lerp(empty_space, area_size.y - image_size.y, rpy)
+
+    return Vector((apx, apy)), image_size, possible
 
 
 class CPP_GT_current_image_preview(bpy.types.Gizmo):
@@ -65,7 +98,7 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
         rv3d = context.region_data
 
-        curr_img_pos = utils.draw.get_curr_img_pos_from_context(context)
+        curr_img_pos = get_curr_img_pos_from_context(context)
         if not curr_img_pos:
             return
 
@@ -116,7 +149,7 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
         if rv3d.view_perspective == 'CAMERA':
             return -1
-        curr_img_pos = utils.draw.get_curr_img_pos_from_context(context)
+        curr_img_pos = get_curr_img_pos_from_context(context)
         if not curr_img_pos:
             return -1
         pos, size, possible = curr_img_pos
