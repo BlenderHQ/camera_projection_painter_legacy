@@ -19,6 +19,12 @@ class BindImageHistoryItem(PropertyGroup):
         type = bpy.types.Image, name = "Image",
         options = {'HIDDEN'})
 
+    favorite: BoolProperty(
+        name = "Favorite",
+        default = False,
+        description = "Mark image as favorite"
+    )
+
 
 class CameraProperties(PropertyGroup):
     """

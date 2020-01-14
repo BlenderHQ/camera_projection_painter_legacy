@@ -8,6 +8,7 @@ if "bpy" in locals():  # In case of module reloading
     importlib.reload(camera)
     importlib.reload(scene)
     importlib.reload(image)
+    importlib.reload(obj)
     importlib.reload(window_manager)
 
     del importlib
@@ -15,6 +16,7 @@ else:
     from . import camera
     from . import scene
     from . import image
+    from . import obj
     from . import window_manager
 
 import bpy
@@ -27,12 +29,14 @@ BindImageHistoryItem = camera.BindImageHistoryItem
 CameraProperties = camera.CameraProperties
 SceneProperties = scene.SceneProperties
 ImageProperties = image.ImageProperties
+ObjectProperties = obj.ObjectProperties
 
 _classes = [
     BindImageHistoryItem,
     CameraProperties,
     SceneProperties,
     ImageProperties,
+    ObjectProperties,
 ]
 
 _cls_register, _cls_unregister = bpy.utils.register_classes_factory(_classes)
@@ -52,11 +56,13 @@ def register():
     bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
     bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
     bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
+    bpy.types.Object.cpp = PointerProperty(type = ObjectProperties)
 
 
 def unregister():
     _cls_unregister()
 
+    del bpy.types.Object.cpp
     del bpy.types.Image.cpp
     del bpy.types.Scene.cpp
     del bpy.types.Camera.cpp

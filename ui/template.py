@@ -22,7 +22,7 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
     col = layout.column(align = True)
 
     if mode == 'TMP':
-        col.ui_units_x = 9
+        col.ui_units_x = 11
 
     image = camera.cpp.image
 

@@ -11,11 +11,20 @@ else:
 
 import bpy
 
+operator_description = """Automatically sets the camera with an active projector 
+if its orientation and position is close to the viewer"""
+
+def operator_execute(self, context):
+    """Operator Execution Method"""
+    wm = context.window_manager
+    utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)
+    return {'FINISHED'}
+
 
 class CPP_OT_set_camera_by_view(bpy.types.Operator):
     bl_idname = "cpp.set_camera_by_view"
     bl_label = "Set camera by view"
-    bl_description = "Automatically select camera as active projector using selected method"
+    bl_description = operator_description
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
@@ -23,7 +32,4 @@ class CPP_OT_set_camera_by_view(bpy.types.Operator):
         scene = context.scene
         return scene.cpp.has_available_camera_objects
 
-    def execute(self, context):
-        wm = context.window_manager
-        utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)
-        return {'FINISHED'}
+    execute = operator_execute

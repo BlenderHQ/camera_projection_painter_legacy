@@ -10,12 +10,14 @@ if "bpy" in locals():  # In case of module reloading
     import importlib
 
     importlib.reload(base)
+    importlib.reload(draw)
     importlib.reload(utils)
     importlib.reload(constants)
 
     del importlib
 else:
     from . import base
+    from . import draw
     from ... import utils
     from ... import constants
 
@@ -58,21 +60,30 @@ def listener_modal(self, context, event):
     return {'PASS_THROUGH'}
 
 
-def invoke(self, context, event):
-    if not self in modal_ops:
+def operator_invoke(self, context, event):
+    scene = context.scene
+
+    if not len([n for n in context.visible_objects if n.type == 'CAMERA']):
+        return {'CANCELLED'}
+    
+    for camera_object in scene.cpp.camera_objects:
+        camera_object.cpp.initial_hide_viewport = camera_object in context.visible_objects
+
+    if self not in modal_ops:
         modal_ops.append(self)
 
     base.set_properties_defaults(self)
 
-    scene = context.scene
     ob = context.image_paint_object
 
     base.setup_basis_uv_layer(context)
     self.bm = base.get_bmesh(context, ob)
-    self.mesh_batch = utils.draw.get_bmesh_batch(self.bm)
-    self.axes_batch = utils.draw.get_axes_batch()
-    self.camera_batch, self.image_rect_batch = utils.draw.get_camera_batches()
-    utils.draw.add_draw_handlers(self, context)
+    self.mesh_batch = draw.get_bmesh_batch(self.bm)
+    self.axes_batch = draw.get_axes_batch()
+    self.camera_batch, self.image_rect_batch = draw.get_camera_batches()
+    draw.add_draw_handlers(self, context)
+
+    scene.cpp.ensure_objects_initial_hide_viewport(context)
     scene.cpp.cameras_hide_set(state = True)
 
     wm = context.window_manager
@@ -81,7 +92,7 @@ def invoke(self, context, event):
     return {'RUNNING_MODAL'}
 
 
-def cancel(self, context):
+def operator_cancel(self, context):
     if self in modal_ops:
         modal_ops.remove(self)
 
@@ -90,8 +101,8 @@ def cancel(self, context):
     wm = context.window_manager
     wm.event_timer_remove(self.timer)
 
-    utils.draw.clear_image_previews()
-    utils.draw.remove_draw_handlers(self)
+    draw.clear_image_previews()
+    draw.remove_draw_handlers(self)
     base.remove_uv_layer(ob)
     scene.cpp.cameras_hide_set(state = False)
 
@@ -101,7 +112,7 @@ def cancel(self, context):
     base.set_properties_defaults(self)
 
 
-def modal(self, context, event):
+def operator_modal(self, context, event):
     wm = context.window_manager
 
     if not utils.poll.full_poll(context):
@@ -139,10 +150,10 @@ def modal(self, context, event):
 
     # Manully call image.buffers_free(). BF does't do this so Blender often crashes
     # Also, it checks if image preview generated
-    utils.draw.check_image_previews(context)
+    draw.check_image_previews(context)
 
     if scene.cpp.use_projection_preview:
-        utils.draw.update_brush_texture_bindcode(self, context)
+        draw.update_brush_texture_bindcode(self, context)
 
     if scene.cpp.use_auto_set_camera:
         utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)

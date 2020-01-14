@@ -98,7 +98,7 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
         col.prop(scene.cpp, "cameras_viewport_size")
         col.use_property_split = True
 
-        ready_count = utils.draw.get_ready_preview_count()
+        ready_count = operators.basis.draw.get_ready_preview_count()
         valid_count = len([n for n in bpy.data.images if not n.cpp.invalid])
 
         text = "Image previews:"

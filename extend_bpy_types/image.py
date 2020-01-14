@@ -129,7 +129,7 @@ class ImageProperties(PropertyGroup):
     @property
     def aspect_scale(self):
         """
-        Image aspect ratio as tuple
+        Image aspect ratio as normalized tuple
         @return: tuple (aspect_scale_x, aspect_scale_y)
         """
         image = self.id_data

@@ -118,3 +118,15 @@ def deform_uv_layer(self, context):
     uv_layer = bm.loops.layers.uv.get(constants.TEMP_DATA_NAME)
 
     # TODO: Camera calibration
+
+
+def ensure_camera_data_settings(self, camera_object: bpy.types.Object):
+    camera = camera_object.data
+
+    camera.type = 'PERSP'
+    camera.lens_unit = 'MILLIMETERS'
+
+    camera.shift_x = 0.0
+    camera.shift_y = 0.0
+
+    camera.sensor_fit = 'AUTO'

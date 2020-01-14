@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+if "bpy" in locals():  # In case of module reloading
     import importlib
 
     importlib.reload(utils)
@@ -10,6 +10,26 @@ else:
     from .. import utils
 
 import bpy
+
+
+def operator_execute(self, context):
+    """Operator Execution Method"""
+    scene = context.scene
+    wm = context.window_manager
+
+    mouse_position = wm.cpp_mouse_pos
+    warning_status = utils.common.get_warning_status(context, mouse_position)
+
+    if warning_status:
+        self.report(type = {'WARNING'}, message = "Danger zone!")
+        if scene.cpp.use_warning_action_popup:
+            wm.popup_menu(utils.common.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
+        if scene.cpp.use_warning_action_lock:
+            return {'FINISHED'}
+
+    bpy.ops.paint.image_paint('INVOKE_DEFAULT')
+
+    return {'FINISHED'}
 
 
 class CPP_OT_image_paint(bpy.types.Operator):
@@ -26,17 +46,4 @@ class CPP_OT_image_paint(bpy.types.Operator):
             return False
         return utils.poll.full_poll(context)
 
-    def execute(self, context):
-        scene = context.scene
-        wm = context.window_manager
-
-        mpos = wm.cpp_mouse_pos
-        warning_status = utils.common.get_warning_status(context, mpos)
-        if warning_status:
-            self.report(type = {'WARNING'}, message = "Danger zone!")
-            if scene.cpp.use_warning_action_popup:
-                wm.popup_menu(utils.common.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
-            if scene.cpp.use_warning_action_lock:
-                return {'FINISHED'}
-        bpy.ops.paint.image_paint('INVOKE_DEFAULT')
-        return {'FINISHED'}
+    execute = operator_execute

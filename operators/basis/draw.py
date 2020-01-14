@@ -3,14 +3,14 @@
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(common)
+    importlib.reload(utils)
     importlib.reload(shaders)
 
     del importlib
 else:
-    from . import common
-    from .. import shaders
-    from .. import __package__ as addon_pkg
+    from ... import __package__ as addon_pkg
+    from ... import shaders
+    from ... import utils
 
 import bpy
 import bgl
@@ -52,10 +52,10 @@ def update_brush_texture_bindcode(self, context):
     pixel_width = scene.tool_settings.unified_paint_settings.size
 
     check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
-    check_tuple = tuple((n for n in common.iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
+    check_tuple = tuple((n for n in utils.common.iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
 
     if self.check_brush_curve_updated(check_tuple):
-        pixels = [int(n * 255) for n in common.iter_curve_values(brush.curve, pixel_width)]
+        pixels = [int(n * 255) for n in utils.common.iter_curve_values(brush.curve, pixel_width)]
 
         id_buff = bgl.Buffer(bgl.GL_INT, 1)
         bgl.glGenTextures(1, id_buff)
@@ -70,6 +70,17 @@ def update_brush_texture_bindcode(self, context):
 
         self.brush_texture_bindcode = bindcode
 
+
+def get_camera_attributes(ob):
+    camera_size = ob.data.sensor_width
+    matrix_world = ob.matrix_world
+    camera_pos = ob.matrix_world.translation
+    camera_forward = (
+            camera_pos + (
+            Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted().normalized()))
+    camera_up = Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted()
+
+    return camera_pos, camera_forward, camera_up
 
 
 def get_batch_attributes(bm):
@@ -183,7 +194,7 @@ def draw_projection_preview(self, context):
 
     model_matrix = ob.matrix_world
     shader.uniform_float("model_matrix", model_matrix)
-    projector_position, projector_forward, projector_up_axis = common.get_camera_attributes(scene.camera)
+    projector_position, projector_forward, projector_up_axis = get_camera_attributes(scene.camera)
     shader.uniform_float("projector_position", projector_position)
     shader.uniform_float("projector_forward", projector_forward)
     shader.uniform_float("projector_up_axis", projector_up_axis)
@@ -211,13 +222,13 @@ def draw_projection_preview(self, context):
     # warnings
     warning_status = False
     if use_warnings and use_warning_action_draw:
-        warning_status = common.get_warning_status(context, wm.cpp_mouse_pos)
+        warning_status = utils.common.get_warning_status(context, wm.cpp_mouse_pos)
         shader.uniform_float("warning_color", preferences.warning_color)
     shader.uniform_bool("warning_status", (warning_status,))
 
     # multiple viewports support
     mouse_position = wm.cpp_mouse_pos
-    active_rv3d = common.get_hovered_region_3d(context, mouse_position)
+    active_rv3d = utils.common.get_hovered_region_3d(context, mouse_position)
     current_rv3d = context.area.spaces.active.region_3d
     active_view = False
     if active_rv3d == current_rv3d:
@@ -395,7 +406,7 @@ def draw_cameras(self, context):
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glEnable(bgl.GL_DEPTH_TEST)
 
-    for camera_ob in scene.cpp.camera_objects:
+    for camera_ob in scene.cpp.initial_visible_camera_objects:
         camera = camera_ob.data
 
         bgl.glLineWidth(preferences.camera_line_width)

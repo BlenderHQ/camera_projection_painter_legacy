@@ -28,31 +28,46 @@ class CPP_MT_camera_pie(Menu):
         scene = context.scene
         wm = context.window_manager
 
-        camera_ob = wm.cpp_current_selected_camera_ob
+        camera_object = wm.cpp_current_selected_camera_ob
 
-        if camera_ob:
-            col.label(text = "Camera:")
-            col.emboss = 'RADIAL_MENU'
-            col.label(text = camera_ob.name)
-            col.emboss = 'NORMAL'
-            col = col.column(align = True)
+        if not camera_object:
+            return
+        
+        col.label(text = "Camera:")
+        col.emboss = 'RADIAL_MENU'
+        col.label(text = camera_object.name)
+        col.emboss = 'NORMAL'
+        col = col.column(align = True)
 
-            scene = context.scene
+        scene = context.scene
+        
+        template.camera_image(col, camera_object, mode = 'TMP')
 
-            template.camera_image(col, camera_ob, mode = 'TMP')
+        col.emboss = 'RADIAL_MENU'
+        props = pie.operator(
+            operator = operators.CPP_OT_bind_camera_image.bl_idname,
+            icon_value = icons.get_icon_id("bind_image"))
+        props.mode = 'TMP'
 
-            operator = pie.operator(
-                operator = operators.CPP_OT_bind_camera_image.bl_idname,
-                icon_value = icons.get_icon_id("bind_image"))
-            operator.mode = 'TMP'
+        state = not camera_object.cpp.initial_hide_viewport
+        if state:
+            text = "Disable"
+            icon = 'HIDE_ON'
+        else:
+            text = "Enable"
+            icon = 'HIDE_OFF'
 
-            col = pie.column()
-            col.emboss = 'NONE'
-            col.separator()
+        pie.operator(
+            operator = operators.CPP_OT_toggle_camera_usage.bl_idname,
+            text = text, icon = icon
+        )
 
-            text = None
-            if scene.camera == camera_ob:
-                text = "Already active"
-            pie.operator(
-                operator = operators.CPP_OT_set_camera_active.bl_idname,
-                text = text, icon_value = icons.get_icon_id("set_active"))
+        text = None
+        if scene.camera == camera_object:
+            text = "Already active"
+        
+        pie.operator(
+            operator = operators.CPP_OT_set_tmp_camera_active.bl_idname,
+            text = text, icon_value = icons.get_icon_id("set_active"))
+            
+            

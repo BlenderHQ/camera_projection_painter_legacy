@@ -10,7 +10,6 @@ else:
     from .. import constants
 
 
-
 def check_uv_layers(ob):
     uv_layers = ob.data.uv_layers
     uv_layers_count = len(uv_layers)

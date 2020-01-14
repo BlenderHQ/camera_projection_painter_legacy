@@ -34,8 +34,8 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
     bl_label = "Camera Projection Painter"
     bl_options = {'INTERNAL'}
 
-    invoke = cpp.invoke
+    invoke = cpp.operator_invoke
 
-    cancel = cpp.cancel
+    cancel = cpp.operator_cancel
 
-    modal = cpp.modal
+    modal = cpp.operator_modal

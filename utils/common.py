@@ -93,19 +93,6 @@ def get_hovered_region_3d(context, mouse_position):
 
 
 # Camera relative
-
-def get_camera_attributes(ob):
-    camera_size = ob.data.sensor_width
-    matrix_world = ob.matrix_world
-    camera_pos = ob.matrix_world.translation
-    camera_forward = (
-            camera_pos + (
-            Vector([0.0, 0.0, -ob.data.lens / camera_size]) @ matrix_world.inverted().normalized()))
-    camera_up = Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted()
-
-    return camera_pos, camera_forward, camera_up
-
-
 def set_clone_image_from_camera_data(context):
     scene = context.scene
     if scene.camera:
@@ -116,35 +103,6 @@ def set_clone_image_from_camera_data(context):
             if image:
                 if image_paint.clone_image != image:
                     image_paint.clone_image = image
-
-
-def bind_camera_image_by_name(ob, file_list):
-    if ob.type == 'CAMERA':
-        res = None
-
-        for image in bpy.data.images:
-            name, ext = os.path.splitext(image.name)
-            if ob.name == image.name or ob.name == name:
-                res = image
-                break
-        if not res:
-            for file_path in file_list:
-                file_name = bpy.path.basename(file_path)
-                name, ext = os.path.splitext(file_name)
-
-                if ob.name == file_name or ob.name == name:
-
-                    if file_name in bpy.data.images:
-                        bpy.data.images[file_name].filepath = file_path
-                        res = bpy.data.images[file_path]
-                    else:
-                        res = bpy.data.images.load(filepath = file_path, check_existing = True)
-                    break
-        if res:
-            if not res.cpp.invalid:
-                ob.data.cpp.image = res
-            return res
-        ob.data.cpp.image = None
 
 
 def set_camera_by_view(context, mouse_position):
@@ -365,103 +323,3 @@ def danger_zone_popup_menu(self, context):
     col.label(text = "%d %s" % (
         scene.cpp.distance_warning,
         str(scene.unit_settings.length_unit).capitalize()))
-
-
-# Material
-
-def get_active_output_node(nodes):
-    for node in nodes:
-        if node.bl_idname == "ShaderNodeOutputMaterial":
-            if node.is_active_output:
-                return node
-
-
-def recursive_search_tex(nodes, active_output):
-    _node = active_output
-    _index = 0
-    _socket = None
-    _cou = len(nodes)
-    while _cou:
-        if _node.bl_idname == "ShaderNodeTexImage":
-            break
-        for i, socket in enumerate(_node.inputs):
-            if socket.bl_idname in ("NodeSocketColor", "NodeSocketShader"):
-                if socket.is_linked:
-                    _node = socket.links[0].from_node
-                else:
-                    _socket = socket
-                    _index = i
-                break
-        _cou += -1
-
-    return _node, _socket, _index, _cou
-
-
-def set_canvas_to_material_diffuse(material, image):
-    material.use_nodes = True
-    node_tree = material.node_tree
-    nodes = node_tree.nodes
-
-    # get active output
-    active_output = get_active_output_node(nodes)
-    if not active_output:
-        active_output = node_tree.nodes.new(type = "ShaderNodeOutputMaterial")
-
-    _node, _socket, _index, _cou = recursive_search_tex(nodes, active_output)
-
-    if _node.bl_idname != "ShaderNodeTexImage" and _socket:
-        node_frame = None
-        for n in nodes:
-            if n.label == constants.NODE_FRAME_TEXT:
-                node_frame = n
-        if not node_frame:
-            node_frame = node_tree.nodes.new(type = "NodeFrame")
-
-        node_frame.label = constants.NODE_FRAME_TEXT
-        node_frame.use_custom_color = True
-        node_frame.color = constants.NODE_FRAME_COLOR
-        node_frame.select = False
-
-        def _add_node(type, next_node, index):
-            new_node = node_tree.nodes.new(type = type)
-            loc = Vector(next_node.location) - Vector([new_node.width + constants.SPACE_BEETWEEN_NODES, 0])
-            new_node.location = loc
-            new_node.parent = node_frame
-            new_node.select = False
-            node_tree.links.new(new_node.outputs[0], next_node.inputs[index])
-            return new_node
-
-        if _socket.bl_idname == "NodeSocketShader":
-            bsdf_node = _add_node("ShaderNodeBsdfPrincipled", _node, _index)
-
-            _node = bsdf_node
-            _index = 0
-            _socket = [i for i in bsdf_node.inputs if i.bl_idname == "NodeSocketColor"][0]
-
-        if _socket.bl_idname == "NodeSocketColor":
-            tex_image_node = _add_node("ShaderNodeTexImage", _node, _index)
-
-            _node = tex_image_node
-
-    if _node.bl_idname == "ShaderNodeTexImage":
-        _node.image = image
-
-
-def set_material_diffuse_to_canvas(image_paint, material):
-    node_tree = material.node_tree
-    nodes = node_tree.nodes
-
-    active_output = get_active_output_node(nodes)
-    if not active_output:
-        return 1
-    _node, _socket, _index, _cou = recursive_search_tex(nodes, active_output)
-
-    if _node.bl_idname == "ShaderNodeTexImage":
-        image = _node.image
-        if image:
-            if not image.cpp.invalid:
-                image_paint.canvas = image
-                return -1
-            else:
-                return 2
-    return 3

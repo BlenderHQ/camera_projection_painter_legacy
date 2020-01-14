@@ -5,11 +5,13 @@ if "bpy" in locals():  # Case of module reloading
 
     importlib.reload(utils)
     importlib.reload(icons)
+    importlib.reload(operators)
 
     del importlib
 else:
     from .. import utils
     from .. import icons
+    from .. import operators
 
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -46,10 +48,30 @@ class SceneProperties(PropertyGroup):
     @property
     def camera_objects(self):
         """
-        Generates a list of camera objects
+        Generates a generator of camera objects
         @return: generator
         """
         return (ob for ob in self._scene.objects if ob.type == 'CAMERA')
+    
+    @property
+    def has_initial_visible_camera_objects(self):
+        """
+        True if there are initial visible camera objects in the scene
+        @return: bool
+        """
+        for n in self.initial_visible_camera_objects:
+            return True
+        return False
+
+
+    @property
+    def initial_visible_camera_objects(self):
+        """
+        Generates a generator of initial visible camera objects
+        @return: generator
+        """
+        return (ob for ob in self.camera_objects if (not ob.cpp.initial_hide_viewport))
+
 
     @property
     def has_available_camera_objects(self):
@@ -57,15 +79,19 @@ class SceneProperties(PropertyGroup):
         True if there are cameras available for automation in the scene
         @return: bool
         """
-        return len(list(self._scene.cpp.available_camera_objects)) != 0
+        for n in self.available_camera_objects:
+            return True
+        return False
 
     @property
     def available_camera_objects(self):
         """
-        Generates a list of available camera objects
+        Generates a generator of available camera objects
         @return: generator
         """
-        return (ob for ob in self._scene.cpp.camera_objects if ob.data.cpp.available)
+        return (ob for ob in self._scene.cpp.camera_objects if (
+            (not ob.cpp.initial_hide_viewport) and ob.data.cpp.available)
+        )
 
     @property
     def has_camera_objects_selected(self):
@@ -73,12 +99,14 @@ class SceneProperties(PropertyGroup):
         True if there are selected cameras in the scene
         @return: bool
         """
-        return len(list(self._scene.cpp.selected_camera_objects)) != 0
+        for n in self.selected_camera_objects:
+            return True
+        return False
 
     @property
     def selected_camera_objects(self):
         """
-        Generates a list of selected camera objects
+        Generates a generator of selected camera objects
         @return: generator
         """
         return (ob for ob in self._scene.cpp.camera_objects if ob.select_get())
@@ -88,8 +116,18 @@ class SceneProperties(PropertyGroup):
         Sets the visibility status of camera objects in the scene.
         @param state: bool
         """
-        for ob in self.camera_objects:
-            ob.hide_viewport = state
+        for camera_object in self.camera_objects:
+            if state:
+                camera_object.hide_set(True)
+            else:
+                camera_object.hide_set(camera_object.cpp.initial_hide_viewport)
+
+    def ensure_objects_initial_hide_viewport(self, context):
+        for ob in self._scene.objects:
+            state = True
+            if ob in context.visible_objects:
+                state = False
+            ob.cpp.initial_hide_viewport = state
 
     # Update methods
     def _use_auto_set_image_update(self, context):
@@ -98,7 +136,7 @@ class SceneProperties(PropertyGroup):
 
     def _use_camera_image_previews_update(self, context):
         if self.use_camera_image_previews:
-            utils.draw.clear_image_previews()
+            operators.basis.draw.clear_image_previews()
 
     # Properties
     source_images_path: StringProperty(

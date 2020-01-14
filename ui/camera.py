@@ -18,10 +18,19 @@ class DATA_UL_bind_history_item(UIList):
         row = layout.row(align = True)
 
         image = item.image
-        if image and not image.cpp.invalid:
-            icon_id = image.preview.icon_id
-            row.template_icon(icon_value = icon_id)
-            row.prop(image, "name", text = "", emboss = False)
+        if image:
+            if image.cpp.invalid:
+                row.label(icon = "ERROR")
+                row.prop(image, "name", text = "", emboss = False)
+            else:
+                icon_id = image.preview.icon_id
+                row.template_icon(icon_value = icon_id)
+                row.prop(image, "name", text = "", emboss = False)
+            
+            icon = 'SOLO_OFF'
+            if item.favorite:
+                icon = 'SOLO_ON'
+            row.prop(item, "favorite", text = "", emboss = False, icon = icon)
 
 
 class CameraOptionsPanel:

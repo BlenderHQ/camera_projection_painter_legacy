@@ -1,14 +1,5 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(utils)
-
-    del importlib
-else:
-    from .. import utils
-
 import bpy
 
 
