@@ -4,7 +4,6 @@ if "bpy" in locals():
     import importlib
 
     importlib.reload(operators)
-    importlib.reload(utils)
     importlib.reload(icons)
 
     del importlib

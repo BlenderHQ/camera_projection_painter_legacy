@@ -20,12 +20,11 @@ if "bpy" in locals():  # In case of module reloading
     import importlib
 
     _modules = (
-        "handlers",
         "icons",
+        "handlers",
         "overwrite_ui",
         "shaders",
         "ui",
-        "utils",
         "constants",
         "extend_bpy_types",
         "gizmos",
@@ -53,13 +52,11 @@ if "bpy" in locals():  # In case of module reloading
     del types
     del importlib
 else:
-    from . import handlers
     from . import icons
+    from . import handlers
     from . import overwrite_ui
     from . import shaders
     from . import ui
-    from . import utils
-    from . import constants
     from . import extend_bpy_types
     from . import gizmos
     from . import keymap
@@ -78,12 +75,11 @@ def load_post_register(dummy = None):
     if not _module_registered:
         _module_registered = True
         for module in (
-                icons,
                 extend_bpy_types,
-                keymap,
                 overwrite_ui,
                 ui,
                 operators,
+                keymap,
                 gizmos):
             reg_func = getattr(module, "register")
             reg_func()
@@ -111,7 +107,7 @@ def unregister():
     # stop running operators
     global _module_registered
 
-    for op in operators.basis.cpp.modal_ops:
+    for op in operators.basis.op_methods.modal_ops:
         if hasattr(op, "cancel"):
             op.cancel(bpy.context)
 

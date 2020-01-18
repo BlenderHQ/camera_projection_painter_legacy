@@ -34,9 +34,8 @@ _classes = [
 
     image_paint.CPP_PT_operator_options,
     image_paint.CPP_PT_material_options,
-    image_paint.CPP_PT_camera_autocam_options,
+    image_paint.CPP_PT_camera_selection_options,
     image_paint.CPP_PT_warnings_options,
-    image_paint.CPP_PT_memory_options,
     image_paint.CPP_PT_current_camera,
 
     context_menu.CPP_MT_camera_pie

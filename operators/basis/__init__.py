@@ -8,11 +8,11 @@
 if "bpy" in locals():  # In case of module reloading
     import importlib
 
-    importlib.reload(cpp)
+    importlib.reload(op_methods)
 
     del importlib
 else:
-    from . import cpp
+    from . import op_methods
 
 import bpy
 
@@ -22,11 +22,11 @@ class CPP_OT_listener(bpy.types.Operator):
     bl_label = "Listener"
     bl_options = {'INTERNAL'}
 
-    invoke = cpp.listener_invoke
+    invoke = op_methods.listener_invoke
 
-    cancel = cpp.listener_cancel
+    cancel = op_methods.listener_cancel
 
-    modal = cpp.listener_modal
+    modal = op_methods.listener_modal
 
 
 class CPP_OT_camera_projection_painter(bpy.types.Operator):
@@ -34,8 +34,8 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
     bl_label = "Camera Projection Painter"
     bl_options = {'INTERNAL'}
 
-    invoke = cpp.operator_invoke
+    invoke = op_methods.operator_invoke
 
-    cancel = cpp.operator_cancel
+    cancel = op_methods.operator_cancel
 
-    modal = cpp.operator_modal
+    modal = op_methods.operator_modal

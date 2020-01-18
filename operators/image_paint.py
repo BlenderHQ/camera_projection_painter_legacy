@@ -4,10 +4,14 @@ if "bpy" in locals():  # In case of module reloading
     import importlib
 
     importlib.reload(utils)
+    importlib.reload(constants)
+    importlib.reload(poll)
 
     del importlib
 else:
-    from .. import utils
+    from . import utils
+    from .. import constants
+    from .. import poll
 
 import bpy
 
@@ -18,12 +22,12 @@ def operator_execute(self, context):
     wm = context.window_manager
 
     mouse_position = wm.cpp_mouse_pos
-    warning_status = utils.common.get_warning_status(context, mouse_position)
+    warning_status = utils.warnings.get_warning_status(context, mouse_position)
 
     if warning_status:
         self.report(type = {'WARNING'}, message = "Danger zone!")
         if scene.cpp.use_warning_action_popup:
-            wm.popup_menu(utils.common.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
+            wm.popup_menu(utils.warnings.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
         if scene.cpp.use_warning_action_lock:
             return {'FINISHED'}
 
@@ -44,6 +48,6 @@ class CPP_OT_image_paint(bpy.types.Operator):
             return False
         if context.area.type != 'VIEW_3D':
             return False
-        return utils.poll.full_poll(context)
+        return poll.full_poll(context)
 
     execute = operator_execute

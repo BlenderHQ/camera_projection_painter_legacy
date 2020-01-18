@@ -1,3 +1,4 @@
 {
-    "editor.mouseWheelZoom": true
+    "editor.mouseWheelZoom": true,
+    "editor.minimap.showSlider": "always"
 }

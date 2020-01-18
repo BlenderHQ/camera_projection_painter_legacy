@@ -5,13 +5,13 @@ if "bpy" in locals():
 
     importlib.reload(template)
     importlib.reload(operators)
-    importlib.reload(utils)
+    importlib.reload(poll)
 
     del importlib
 else:
     from . import template
     from .. import operators
-    from .. import utils
+    from .. import poll
 
 import bpy
 from bpy.types import Panel
@@ -31,7 +31,7 @@ class CPP_PT_camera_painter(Panel, ImagePaintOptions):
 
     @classmethod
     def poll(cls, context):
-        return utils.poll.tool_setup_poll(context)
+        return poll.tool_setup_poll(context)
 
     def draw(self, context):
         layout = self.layout
@@ -74,7 +74,7 @@ class CPP_PT_view_options(Panel, ImagePaintOptions):
 
     @classmethod
     def poll(cls, context):
-        return utils.poll.full_poll(context)
+        return poll.full_poll(context)
 
     def draw(self, context):
         pass
@@ -98,7 +98,7 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
         col.prop(scene.cpp, "cameras_viewport_size")
         col.use_property_split = True
 
-        ready_count = operators.basis.draw.get_ready_preview_count()
+        ready_count = operators.basis.draw.cameras.get_ready_preview_count()
         valid_count = len([n for n in bpy.data.images if not n.cpp.invalid])
 
         text = "Image previews:"
@@ -107,7 +107,7 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
 
         col.label(text = text)
 
-        col.operator("wm.previews_ensure", icon = 'FREEZE')
+        col.operator("wm.previews_ensure", icon = 'TIME')
         col.prop(scene.cpp, "use_camera_image_previews")
         col.prop(scene.cpp, "use_camera_axes")
 
@@ -171,7 +171,7 @@ class CPP_PT_operator_options(Panel, ImagePaintOptions):
 
     @classmethod
     def poll(cls, context):
-        return utils.poll.full_poll(context)
+        return poll.full_poll(context)
 
     def draw(self, context):
         pass
@@ -184,7 +184,7 @@ class CPP_PT_material_options(Panel, ImagePaintOptions):
 
     @classmethod
     def poll(cls, context):
-        return utils.poll.full_poll(context)
+        return poll.full_poll(context)
 
     def draw(self, context):
         layout = self.layout
@@ -204,43 +204,60 @@ class CPP_PT_material_options(Panel, ImagePaintOptions):
         ).reverse = True
 
 
-class CPP_PT_camera_autocam_options(Panel, ImagePaintOptions):
-    bl_label = "Auto Camera Selection"
+class CPP_PT_camera_selection_options(Panel, ImagePaintOptions):
+    bl_label = "Camera Selection"
     bl_parent_id = "CPP_PT_operator_options"
     bl_order = 2
 
     @classmethod
     def poll(cls, context):
-        return utils.poll.full_poll(context)
-
-    def draw_header(self, context):
-        layout = self.layout
-        scene = context.scene
-        layout.prop(scene.cpp, "use_auto_set_camera", text = "")
+        return poll.full_poll(context)
 
     def draw(self, context):
         layout = self.layout
-        layout.use_property_split = False
         layout.use_property_decorate = False
-        col = layout.column(align = False)
 
         scene = context.scene
 
-        scol = col.column()
-        scol.enabled = not scene.cpp.use_auto_set_camera
-        scol.operator(operator = operators.CPP_OT_set_camera_by_view.bl_idname)
+        col = layout.column(align = False)
+        col.use_property_split = True
 
-        col.label(text = "Options:")
+        col.prop(scene.cpp, "use_auto_set_camera")
 
+        col.use_property_split = False
         row = col.row(align = True)
-        row.prop_enum(scene.cpp, "auto_set_camera_method", 'FULL')
-        row.prop_enum(scene.cpp, "auto_set_camera_method", 'DIRECTION')
+        row.prop(scene.cpp, "auto_set_camera_method", expand = True)
+
         method = scene.cpp.auto_set_camera_method
 
         if method == 'FULL':
             col.prop(scene.cpp, "tolerance_full")
         elif method == 'DIRECTION':
             col.prop(scene.cpp, "tolerance_direction")
+
+        row = col.column()
+        row.enabled = not scene.cpp.use_auto_set_camera
+
+        row.operator(operator = operators.CPP_OT_set_camera_by_view.bl_idname)
+
+        col = col.column()
+        col.enabled = not scene.cpp.use_auto_set_camera
+
+        col.label(text = "Ordered Selection:")
+        row = col.row(align = True)
+        props = row.operator(
+            operator = operators.CPP_OT_set_camera_radial.bl_idname,
+            text = "Previous",
+            icon = 'TRIA_LEFT'
+        )
+        props.order = 'PREV'
+
+        props = row.operator(
+            operator = operators.CPP_OT_set_camera_radial.bl_idname,
+            text = "Next",
+            icon = 'TRIA_RIGHT'
+        )
+        props.order = 'NEXT'
 
 
 class CPP_PT_warnings_options(Panel, ImagePaintOptions):
@@ -263,31 +280,15 @@ class CPP_PT_warnings_options(Panel, ImagePaintOptions):
 
         col.enabled = scene.cpp.use_warnings
 
+        col.prop(scene.cpp, "max_loaded_images")
+        col.separator()
         col.prop(scene.cpp, "distance_warning")
 
-        col.label(text = "Actions:")
         col.use_property_split = True
 
         col.prop(scene.cpp, "use_warning_action_draw")
         col.prop(scene.cpp, "use_warning_action_lock")
         col.prop(scene.cpp, "use_warning_action_popup")
-
-
-class CPP_PT_memory_options(Panel, ImagePaintOptions):
-    bl_label = "Memory Management"
-    bl_parent_id = "CPP_PT_warnings_options"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.use_property_split = False
-        layout.use_property_decorate = False
-        col = layout.column(align = False)
-
-        row = col.row()
-        row.label(text = "Images loaded:")
-        row.label(text = "%d" % utils.draw.get_loaded_images_count())
-
-        col.operator(operator = operators.CPP_OT_free_memory.bl_idname)
 
 
 class CPP_PT_current_camera(Panel, ImagePaintOptions):
@@ -304,7 +305,7 @@ class CPP_PT_current_camera(Panel, ImagePaintOptions):
             return False
         if camera_ob.type != 'CAMERA':
             return False
-        return utils.poll.tool_setup_poll(context) and scene.camera
+        return poll.tool_setup_poll(context) and scene.camera
 
     def draw(self, context):
         layout = self.layout

@@ -1,4 +1,7 @@
+# <pep8 compliant>
 import bpy
+
+# The module contains WindowManager properties
 
 cpp_running = bpy.props.BoolProperty(
     default = False,

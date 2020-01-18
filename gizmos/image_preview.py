@@ -3,12 +3,12 @@
 if "bpy" in locals():  # In case of module reloading
     import importlib
 
-    importlib.reload(utils)
+    importlib.reload(poll)
     importlib.reload(shaders)
 
     del importlib
 else:
-    from .. import utils
+    from .. import poll
     from .. import shaders
     from .. import __package__ as addon_pkg
 
@@ -22,36 +22,37 @@ from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
 
+def f_lerp(value0: float, value1: float, factor: float):
+    """Linear interpolate float value"""
+    return (value0 * (1.0 - factor)) + (value1 * factor)
+
+
 def get_curr_img_pos_from_context(context):
-    area = context.area
     scene = context.scene
     image_paint = scene.tool_settings.image_paint
     image = image_paint.clone_image
 
-    if not image:
-        return
-    size_x, size_y = image.cpp.static_size
-    if not (size_x and size_y):
-        return
+    if image and image.cpp.valid:
+        preferences = context.preferences.addons[addon_pkg].preferences
+        empty_space = preferences.border_empty_space
 
-    preferences = context.preferences.addons[addon_pkg].preferences
-    empty_space = preferences.border_empty_space
+        area = context.area
 
-    tools_width = [n for n in area.regions if n.type == 'TOOLS'][-1].width  # N-panel width
-    ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
-    area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
+        tools_width = [n for n in area.regions if n.type == 'TOOLS'][-1].width  # N-panel width
+        ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
+        area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
 
-    image_size = Vector([1.0, size_y / size_x]) * scene.cpp.current_image_size
-    possible = True
-    if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
-        possible = False
+        image_size = Vector(image.cpp.aspect_scale) * scene.cpp.current_image_size
+        possible = True
+        if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
+            possible = False
 
-    image_rel_pos = scene.cpp.current_image_position
-    rpx, rpy = image_rel_pos
-    apx = utils.common.f_lerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
-    apy = utils.common.f_lerp(empty_space, area_size.y - image_size.y, rpy)
+        image_rel_pos = scene.cpp.current_image_position
+        rpx, rpy = image_rel_pos
+        apx = f_lerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
+        apy = f_lerp(empty_space, area_size.y - image_size.y, rpy)
 
-    return Vector((apx, apy)), image_size, possible
+        return Vector((apx, apy)), image_size, possible
 
 
 class CPP_GT_current_image_preview(bpy.types.Gizmo):
@@ -210,7 +211,7 @@ class CPP_GGT_image_preview_gizmo_group(bpy.types.GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        if not utils.poll.full_poll(context):
+        if not poll.full_poll(context):
             return False
         scene = context.scene
         return scene.cpp.use_current_image_preview and scene.cpp.current_image_alpha

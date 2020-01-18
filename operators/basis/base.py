@@ -4,54 +4,57 @@ if "bpy" in locals():
     import importlib
 
     importlib.reload(constants)
-    importlib.reload(utils)
 
     del importlib
 else:
+    from .. import utils
     from ... import constants
-    from ... import utils
 
 import bpy
 import bmesh
 
 
 def set_properties_defaults(self):
-    """
-    Set default values at startup and after exit available context
-    """
+    """Set default values at startup and after exit available context"""
     self.suspended = False
     self.suspended_mouse = False
     self.suspended_brush = False
     self.setup_required = True
-    self.full_draw = False
 
+    self.full_draw = False
     self.draw_handler = None
 
-    self.bm = None
     self.mesh_batch = None
     self.axes_batch = None
     self.camera_batch = None
     self.image_rect_batch = None
-
+    
     self.brush_texture_bindcode = 0
     self.data_updated = utils.common.PropertyTracker()
     self.check_brush_curve_updated = utils.common.PropertyTracker()
     self.check_camera_frame_updated = utils.common.PropertyTracker()
 
 
-def get_bmesh(context, ob):
-    bm = bmesh.new()
-    depsgraph = context.evaluated_depsgraph_get()
-    bm.from_object(object = ob, depsgraph = depsgraph, deform = True, cage = False, face_normals = False)
-    return bm
+def validate_cameras_data_settings(context):
+    """Sets camera parameters to valid for operation"""
+    scene = context.scene
 
+    def validate_data_attributes(camera_object):
+        camera = camera_object.data
 
-def remove_uv_layer(ob):
-    if ob:
-        if ob.type == 'MESH':
-            uv_layers = ob.data.uv_layers
-            if constants.TEMP_DATA_NAME in uv_layers:
-                uv_layers.remove(uv_layers[constants.TEMP_DATA_NAME])
+        camera.type = 'PERSP'
+        camera.lens_unit = 'MILLIMETERS'
+        camera.shift_x = 0.0
+        camera.shift_y = 0.0
+        camera.sensor_fit = 'AUTO'
+
+    for camera_object in scene.cpp.camera_objects:
+        validate_data_attributes(camera_object)
+
+        camera_object.cpp.initial_hide_viewport = camera_object in context.visible_objects
+
+    scene.camera.hide_set(False)
+    scene.camera.cpp.initial_hide_viewport = False
 
 
 def _ensure_modifier(ob):
@@ -112,21 +115,16 @@ def setup_basis_uv_layer(context):
     scene.render.resolution_y = height
 
 
+def remove_uv_layer(ob):
+    if ob and ob.type == 'MESH':
+        uv_layers = ob.data.uv_layers
+        if constants.TEMP_DATA_NAME in uv_layers:
+            uv_layers.remove(uv_layers[constants.TEMP_DATA_NAME])
+
+
 def deform_uv_layer(self, context):
     bm = self.bm
     ob = context.image_paint_object
     uv_layer = bm.loops.layers.uv.get(constants.TEMP_DATA_NAME)
 
     # TODO: Camera calibration
-
-
-def ensure_camera_data_settings(self, camera_object: bpy.types.Object):
-    camera = camera_object.data
-
-    camera.type = 'PERSP'
-    camera.lens_unit = 'MILLIMETERS'
-
-    camera.shift_x = 0.0
-    camera.shift_y = 0.0
-
-    camera.sensor_fit = 'AUTO'

@@ -2,31 +2,22 @@
 
 
 if "bpy" in locals():  # In case of module reloading
-    import types
     import importlib
 
-    _modules = (
-        "basis",
-        "bind_camera_image",
-        "bind_history_remove",
-        "call_pie",
-        "canvas_to_diffuse",
-        "enter_context",
-        "free_memory",
-        "image_paint",
-        "info",
-        "set_tmp_camera_active",
-        "set_camera_by_view",
-        "toggle_camera_usage",
-    )
+    importlib.reload(basis)
+    importlib.reload(bind_camera_image)
+    importlib.reload(bind_history_remove)
+    importlib.reload(call_pie)
+    importlib.reload(canvas_to_diffuse)
+    importlib.reload(enter_context)
+    importlib.reload(image_paint)
+    importlib.reload(info)
+    importlib.reload(set_tmp_camera_active)
+    importlib.reload(set_camera_by_view)
+    importlib.reload(toggle_camera_usage)
+    importlib.reload(enable_all_cameras)
+    importlib.reload(set_camera_radial)
 
-    dict_locals = locals().copy()
-
-    for item_name, item in dict_locals.items():
-        if item_name in _modules and isinstance(item, types.ModuleType):
-            importlib.reload(item)
-
-    del types
     del importlib
 else:
     from . import basis
@@ -35,14 +26,16 @@ else:
     from . import call_pie
     from . import canvas_to_diffuse
     from . import enter_context
-    from . import free_memory
     from . import image_paint
     from . import info
     from . import set_tmp_camera_active
     from . import set_camera_by_view
     from . import toggle_camera_usage
+    from . import enable_all_cameras
+    from . import set_camera_radial
 
 import bpy
+
 
 CPP_OT_listener = basis.CPP_OT_listener
 CPP_OT_camera_projection_painter = basis.CPP_OT_camera_projection_painter
@@ -54,9 +47,10 @@ CPP_OT_enter_context = enter_context.CPP_OT_enter_context
 CPP_OT_canvas_to_diffuse = canvas_to_diffuse.CPP_OT_canvas_to_diffuse
 CPP_OT_call_pie = call_pie.CPP_OT_call_pie
 CPP_OT_info = info.CPP_OT_info
-CPP_OT_free_memory = free_memory.CPP_OT_free_memory
 CPP_OT_bind_history_remove = bind_history_remove.CPP_OT_bind_history_remove
 CPP_OT_toggle_camera_usage = toggle_camera_usage.CPP_OT_toggle_camera_usage
+CPP_OT_enable_all_cameras = enable_all_cameras.CPP_OT_enable_all_cameras
+CPP_OT_set_camera_radial = set_camera_radial.CPP_OT_set_camera_radial
 
 _classes = [
     CPP_OT_listener,
@@ -68,10 +62,10 @@ _classes = [
     CPP_OT_enter_context,
     CPP_OT_canvas_to_diffuse,
     CPP_OT_call_pie,
-    CPP_OT_free_memory,
     CPP_OT_bind_history_remove,
-    CPP_OT_toggle_camera_usage
+    CPP_OT_toggle_camera_usage,
+    CPP_OT_enable_all_cameras,
+    CPP_OT_set_camera_radial,
 ]
-CPP_OT_toggle_camera_usage
 
 register, unregister = bpy.utils.register_classes_factory(_classes)

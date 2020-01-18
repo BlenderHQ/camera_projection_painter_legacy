@@ -3,11 +3,11 @@
 if "bpy" in locals():
     import importlib
 
-    importlib.reload(utils)
+    importlib.reload(poll)
 
     del importlib
 else:
-    from .. import utils
+    from .. import poll
     from .. import __package__ as pkg
 
 import bpy
@@ -26,7 +26,7 @@ class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
 
     @classmethod
     def poll(cls, context):
-        return utils.poll.tool_setup_poll(context)
+        return poll.tool_setup_poll(context)
 
     def _create_gizmo(self, camera_ob):
         mpr = self.gizmos.new("GIZMO_GT_primitive_3d")

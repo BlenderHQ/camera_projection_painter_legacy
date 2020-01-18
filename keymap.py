@@ -28,6 +28,25 @@ ADDON_KEYMAP = {
         ),
     ),
 
+    operators.CPP_OT_enable_all_cameras.bl_idname: (
+        (
+            {"type": 'H', "value": 'PRESS', "alt": True},
+            None
+        ),
+    ),
+
+    operators.CPP_OT_set_camera_radial.bl_idname: (
+        (
+            {"type": 'LEFT_ARROW', "value": 'PRESS'},
+            {"order": 'PREV'}
+        ),
+
+        (
+            {"type": 'RIGHT_ARROW', "value": 'PRESS'},
+            {"order": 'NEXT'}
+        )
+    ),
+
     "view3d.view_center_pick": (
         (
             {"type": 'SPACE', "value": 'PRESS'},
@@ -72,6 +91,9 @@ def register():
                 for attr, value in properties.items():
                     if hasattr(kmi.properties, attr):
                         setattr(kmi.properties, attr, value)
+                    else:
+                        print(attr, value)
+                        print(kmi.properties.bl_rna)
 
             _keymaps.append((km, kmi))
 

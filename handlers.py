@@ -23,14 +23,14 @@ def save_pre_handler(dummy = None):
 
 @persistent
 def save_post_handler(dummy = None):
-    from .utils import poll
+    from . import poll
     if poll.full_poll(bpy.context):
         # Hide cameras back after saving the file
         bpy.context.scene.cpp.cameras_hide_set(state = True)
 
 @persistent
 def depsgraph_update_pre_handler(scene = None):
-    from .utils import poll
+    from . import poll
     if poll.full_poll(bpy.context):
         # Remove missing images from the list of the camera palette
         for camera_object in scene.cpp.camera_objects:

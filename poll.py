@@ -7,7 +7,7 @@ if "bpy" in locals():
 
     del importlib
 else:
-    from .. import constants
+    from . import constants
 
 
 def check_uv_layers(ob):

@@ -5,13 +5,11 @@ if "bpy" in locals():
 
     importlib.reload(operators)
     importlib.reload(icons)
-    importlib.reload(constants)
 
     del importlib
 else:
     from . import operators
     from . import icons
-    from . import constants
 
 import bpy
 import rna_keymap_ui
@@ -21,6 +19,11 @@ from bpy.props import (
     EnumProperty,
     FloatVectorProperty
 )
+
+WEB_LINKS = [
+    ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
+    ("GitHub", "https://github.com/ivan-perevala")
+]
 
 message_startup_help = """
 Main operator can be started only after
@@ -122,7 +125,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         description = "Gizmo color")
 
     gizmo_radius: FloatProperty(
-        name = "Circle Radius",
+        name = "Radius",
         default = 0.1, soft_min = 0.1, soft_max = 1.0,
         subtype = 'DISTANCE',
         description = "Gizmo radius")
@@ -159,7 +162,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     def draw_info_tab(self, layout):
         col = layout.column(align = True)
-        for name, url in constants.WEB_LINKS:
+        for name, url in WEB_LINKS:
             col.operator("wm.url_open", text = name, icon = 'URL').url = url
 
     def draw_draw_tab(self, layout):
@@ -220,6 +223,11 @@ class CppPreferences(bpy.types.AddonPreferences):
         if kmi:
             col.context_pointer_set("keymap", km)
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+        
+        kmi = get_hotkey_entry_item(km, operators.CPP_OT_enable_all_cameras.bl_idname, None, None)
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
 
         col.separator()
 
@@ -239,4 +247,18 @@ class CppPreferences(bpy.types.AddonPreferences):
         if kmi:
             col.context_pointer_set("keymap", km)
             col.label(text = "Current Image Preview:")
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+
+        col.separator()
+
+        kmi = get_hotkey_entry_item(km, operators.CPP_OT_set_camera_radial.bl_idname, 'PREV', "order")
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            col.label(text = "Previous:")
+            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
+
+        kmi = get_hotkey_entry_item(km, operators.CPP_OT_set_camera_radial.bl_idname, 'NEXT', "order")
+        if kmi:
+            col.context_pointer_set("keymap", km)
+            col.label(text = "Next:")
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)

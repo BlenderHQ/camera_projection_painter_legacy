@@ -4,19 +4,17 @@ if "bpy" in locals():
     import importlib
 
     importlib.reload(operators)
-    importlib.reload(utils)
+    importlib.reload(poll)
     importlib.reload(icons)
 
     del importlib
 else:
     from .. import operators
-    from .. import utils
+    from .. import poll
     from .. import icons
 
 from bpy.types import Panel
-
-from .. import operators
-from .. import icons
+import os
 
 
 class SceneOptions:
@@ -38,7 +36,18 @@ class CPP_PT_camera_painter_scene(Panel, SceneOptions):
 
         scene = context.scene
 
-        col.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
+        row = col.row(align = True)
+        row.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
+        srow = row.row()
+        srow.enabled = False
+        if os.path.isdir(scene.cpp.source_images_path):
+            srow.enabled = True
+        props = srow.operator(
+            operator = "wm.path_open",
+            text = "",
+            icon = 'EXTERNAL_DRIVE'
+        )
+        props.filepath = scene.cpp.source_images_path
         # col.prop(scene.cpp, "calibration_source_file", icon_id = 'FILE_CACHE')
 
         col.separator()
@@ -112,7 +121,7 @@ class CPP_PT_enter_context(Panel, SceneOptions):
         if not scene.cpp.has_available_camera_objects:
             col.label(text = "Scene have no cameras with binded images", icon = 'INFO')
 
-        if not utils.poll.check_uv_layers(ob):
+        if not poll.check_uv_layers(ob):
             col.label(text = "Active object missing UVs", icon = 'ERROR')
 
         canvas = image_paint.canvas

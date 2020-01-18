@@ -4,8 +4,7 @@
 # without extension inside the module directory. All previews are loaded into the collection
 # during the registration method call to avoid delayed loading of icons with a delay
 
-
-import bpy.utils.previews
+import bpy
 import os
 
 ICON_EXTENSIONS = (".png",)
@@ -20,30 +19,28 @@ def get_icon_id(key):
     @param key: str - File name without extension
     @return: int - icon_id
     """
-    if _preview_collection and key in _preview_collection:
-        return _preview_collection[key].icon_id
-    return 0
-
-
-def register():
     global _preview_collection
 
-    if _preview_collection is None:
-        _preview_collection = bpy.utils.previews.new()
+    if (_preview_collection is None):
+        from bpy.utils import previews
+        _preview_collection = previews.new()
 
-    directory_path = os.path.dirname(__file__)
-    for filename in os.listdir(directory_path):
-        filepath = os.path.join(directory_path, filename)
-        if os.path.isfile(filepath):
-            name, ext = os.path.splitext(filename)
-            if ext not in ICON_EXTENSIONS:
-                continue
-            _preview_collection.load(name, filepath, "IMAGE")
-
+        directory_path = os.path.dirname(__file__)
+        for filename in os.listdir(directory_path):
+            filepath = os.path.join(directory_path, filename)
+            if os.path.isfile(filepath):
+                name, ext = os.path.splitext(filename)
+                if ext not in ICON_EXTENSIONS:
+                    continue
+                _preview_collection.load(name, filepath, "IMAGE")
+    
+    if key in _preview_collection:
+        return _preview_collection[key].icon_id
+    
+    return 0
 
 def unregister():
     global _preview_collection
-
-    if _preview_collection is not None:
+    if not (_preview_collection is None):
         bpy.utils.previews.remove(_preview_collection)
         _preview_collection = None

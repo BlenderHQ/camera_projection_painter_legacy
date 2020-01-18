@@ -7,7 +7,7 @@ if "bpy" in locals():
 
     del importlib
 else:
-    from .. import utils
+    from . import utils
 
 import bpy
 
@@ -17,7 +17,7 @@ if its orientation and position is close to the viewer"""
 def operator_execute(self, context):
     """Operator Execution Method"""
     wm = context.window_manager
-    utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)
+    utils.cameras.set_camera_by_view(context, wm.cpp_mouse_pos)
     return {'FINISHED'}
 
 

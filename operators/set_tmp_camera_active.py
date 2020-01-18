@@ -7,7 +7,7 @@ if "bpy" in locals():  # In case of module reloading
 
     del importlib
 else:
-    from .. import utils
+    from . import utils
 
 import bpy
 
@@ -21,11 +21,12 @@ def operator_execute(self, context):
         scene.cpp.use_auto_set_camera = False
 
     scene.camera = wm.cpp_current_selected_camera_ob
+    scene.camera.cpp.initial_hide_viewport = False
     for camera_object in scene.cpp.camera_objects:
         if camera_object == scene.camera:
             continue
     if scene.cpp.use_auto_set_image:
-        utils.common.set_clone_image_from_camera_data(context)
+        utils.cameras.set_clone_image_from_camera_data(context)
 
     self.report(type = {'INFO'}, message = "%s is set as active for the scene" % scene.camera.name)
 

@@ -12,18 +12,25 @@ if "bpy" in locals():  # In case of module reloading
     importlib.reload(base)
     importlib.reload(draw)
     importlib.reload(utils)
+    importlib.reload(poll)
     importlib.reload(constants)
+    importlib.reload(extend_bpy_types)
 
     del importlib
 else:
     from . import base
     from . import draw
-    from ... import utils
+    from .. import utils
+    from ... import poll
     from ... import constants
+    from ... import extend_bpy_types
 
 import bpy
 
 modal_ops = []
+
+LISTEN_TIME_STEP = 1 / 4
+TIME_STEP = 1 / 60
 
 
 def listener_cancel(self, context):
@@ -39,7 +46,7 @@ def listener_invoke(self, context, event):
         modal_ops.append(self)
 
     wm = context.window_manager
-    self.timer = wm.event_timer_add(time_step = constants.LISTEN_TIME_STEP, window = context.window)
+    self.timer = wm.event_timer_add(time_step = LISTEN_TIME_STEP, window = context.window)
     wm.modal_handler_add(self)
     return {'RUNNING_MODAL'}
 
@@ -52,7 +59,7 @@ def listener_modal(self, context, event):
 
     if event.type == 'TIMER':
         if not wm.cpp_running:
-            if utils.poll.full_poll(context):
+            if poll.full_poll(context):
                 wm.cpp_running = True
                 wm.cpp_suspended = False
                 bpy.ops.cpp.camera_projection_painter('INVOKE_DEFAULT')
@@ -65,9 +72,8 @@ def operator_invoke(self, context, event):
 
     if not len([n for n in context.visible_objects if n.type == 'CAMERA']):
         return {'CANCELLED'}
-    
-    for camera_object in scene.cpp.camera_objects:
-        camera_object.cpp.initial_hide_viewport = camera_object in context.visible_objects
+
+    base.validate_cameras_data_settings(context)
 
     if self not in modal_ops:
         modal_ops.append(self)
@@ -77,17 +83,17 @@ def operator_invoke(self, context, event):
     ob = context.image_paint_object
 
     base.setup_basis_uv_layer(context)
-    self.bm = base.get_bmesh(context, ob)
-    self.mesh_batch = draw.get_bmesh_batch(self.bm)
-    self.axes_batch = draw.get_axes_batch()
-    self.camera_batch, self.image_rect_batch = draw.get_camera_batches()
+
+    self.mesh_batch = draw.mesh_preview.get_object_batch(context, ob)
+    self.axes_batch = draw.cameras.get_axes_batch()
+    self.camera_batch, self.image_rect_batch = draw.cameras.get_camera_batches()
     draw.add_draw_handlers(self, context)
 
     scene.cpp.ensure_objects_initial_hide_viewport(context)
     scene.cpp.cameras_hide_set(state = True)
 
     wm = context.window_manager
-    self.timer = wm.event_timer_add(time_step = constants.TIME_STEP, window = context.window)
+    self.timer = wm.event_timer_add(time_step = TIME_STEP, window = context.window)
     wm.modal_handler_add(self)
     return {'RUNNING_MODAL'}
 
@@ -101,7 +107,10 @@ def operator_cancel(self, context):
     wm = context.window_manager
     wm.event_timer_remove(self.timer)
 
-    draw.clear_image_previews()
+    draw.cameras.clear_image_previews()
+    utils.warnings.clear_image_loading_order()
+    extend_bpy_types.image.clear_static_size_cache()
+
     draw.remove_draw_handlers(self)
     base.remove_uv_layer(ob)
     scene.cpp.cameras_hide_set(state = False)
@@ -115,7 +124,7 @@ def operator_cancel(self, context):
 def operator_modal(self, context, event):
     wm = context.window_manager
 
-    if not utils.poll.full_poll(context):
+    if not poll.full_poll(context):
         self.cancel(context)
         bpy.ops.cpp.listener('INVOKE_DEFAULT')
         return {'FINISHED'}
@@ -150,16 +159,16 @@ def operator_modal(self, context, event):
 
     # Manully call image.buffers_free(). BF does't do this so Blender often crashes
     # Also, it checks if image preview generated
-    draw.check_image_previews(context)
+    draw.cameras.check_image_previews(self, context)
 
     if scene.cpp.use_projection_preview:
-        draw.update_brush_texture_bindcode(self, context)
+        draw.mesh_preview.update_brush_texture_bindcode(self, context)
 
     if scene.cpp.use_auto_set_camera:
-        utils.common.set_camera_by_view(context, wm.cpp_mouse_pos)
+        utils.cameras.set_camera_by_view(context, wm.cpp_mouse_pos)
 
     if scene.cpp.use_auto_set_image:
-        utils.common.set_clone_image_from_camera_data(context)
+        utils.cameras.set_clone_image_from_camera_data(context)
 
     camera_ob = scene.camera
     camera = camera_ob.data

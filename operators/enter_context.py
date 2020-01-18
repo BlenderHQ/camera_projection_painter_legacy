@@ -3,11 +3,11 @@
 if "bpy" in locals():  # In case of module reloading
     import importlib
 
-    importlib.reload(utils)
+    importlib.reload(poll)
 
     del importlib
 else:
-    from .. import utils
+    from .. import poll
 
 import bpy
 
@@ -119,7 +119,7 @@ class CPP_OT_enter_context(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if utils.poll.full_poll(context):
+        if poll.full_poll(context):
             return False
         active_object = context.active_object
         if not active_object:
