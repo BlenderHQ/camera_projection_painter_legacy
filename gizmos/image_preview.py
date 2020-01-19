@@ -27,7 +27,13 @@ def f_lerp(value0: float, value1: float, factor: float):
     return (value0 * (1.0 - factor)) + (value1 * factor)
 
 
-def get_curr_img_pos_from_context(context):
+def get_curr_img_pos_from_context(context: bpy.types.Context):
+    """
+    Returns the absolute position in pixels, the size of the square of the image,
+    and the ability to draw (only if the image frame does not go beyond the frame of the viewer)
+    relative to the square from the edge of the n-panel to the edge of the t-panel horizontally
+    and from the top to the bottom edge of the 3D view with the specified empty space tolerance
+    """
     scene = context.scene
     image_paint = scene.tool_settings.image_paint
     image = image_paint.clone_image
@@ -85,19 +91,16 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
     def draw(self, context):
         scene = context.scene
+        rv3d = context.region_data
         camera_ob = scene.camera
         image_paint = scene.tool_settings.image_paint
         image = image_paint.clone_image
 
-        if not image:
+        if not image or (not image.cpp.valid):
             return
-
-        # print(image.cpp.static_size)
 
         shader = shaders.shader.current_image
         batch = self.image_batch
-
-        rv3d = context.region_data
 
         curr_img_pos = get_curr_img_pos_from_context(context)
         if not curr_img_pos:
