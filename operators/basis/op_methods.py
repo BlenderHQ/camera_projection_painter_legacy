@@ -1,10 +1,14 @@
+# <pep8 compliant>
+
 if "bpy" in locals():  # In case of module reloading
     for operator in modal_ops:
         try:
+            # Cancellation of the previous running operators
             operator.cancel(bpy.context)
-        except:
+        except AttributeError:
+            print("AttributeError. Missing cancel method", operator)
+        except ReferenceError:
             import traceback
-
             print(traceback.format_exc())
 
     import importlib
@@ -27,11 +31,14 @@ else:
 
 import bpy
 
+# Contains currently running modal operators
 modal_ops = []
 
+# The update period of the main modal operators
 LISTEN_TIME_STEP = 1 / 4
 TIME_STEP = 1 / 60
 
+# CPP_OT_listener methods
 
 def listener_cancel(self, context):
     if self in modal_ops:
@@ -66,6 +73,8 @@ def listener_modal(self, context, event):
 
     return {'PASS_THROUGH'}
 
+
+# CPP_OT_camera_projection_painter methods
 
 def operator_invoke(self, context, event):
     scene = context.scene
