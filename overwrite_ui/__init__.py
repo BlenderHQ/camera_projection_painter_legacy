@@ -1,22 +1,33 @@
 # <pep8 compliant>
 
+# Some parts of the user interface are overwritten so as not to show the user
+# unnecessary information about objects, tools, etc
+
+if "bpy" in locals(): # In case of module reloading
+    import importlib
+    
+    importlib.reload(mesh_data)
+    importlib.reload(tool_brush_clone)
+    
+    del importlib
+else:
+    from . import mesh_data
+    from . import tool_brush_clone
+
 import bpy
 import bl_ui
 
 import inspect
-import importlib
-
-from .mesh_data import DATA_PT_uv_texture, MESH_UL_uvmaps
-from .tool_brush_clone import VIEW3D_PT_tools_brush_clone
 
 _classes = [
-    DATA_PT_uv_texture,
-    MESH_UL_uvmaps,
-    VIEW3D_PT_tools_brush_clone
+    mesh_data.DATA_PT_uv_texture,
+    mesh_data.MESH_UL_uvmaps,
+    tool_brush_clone.VIEW3D_PT_tools_brush_clone
 ]
 
 
 def register():
+    # Overwriting the corresponding methods of the Panel, UIList, Menu, Header standard subclasses
     _overwrite_types = (
         bpy.types.Panel,
         bpy.types.UIList,
@@ -35,5 +46,9 @@ def register():
 
 
 def unregister():
+    # Rebooting the bl_ui module and re-registering it to restore the standard user interface after
+    # unregistering the add-on (and also when rebooting the add-on as a module)
+    import importlib
     importlib.reload(bl_ui)
+    
     bl_ui.register()
