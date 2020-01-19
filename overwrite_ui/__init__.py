@@ -6,11 +6,13 @@
 if "bpy" in locals(): # In case of module reloading
     import importlib
     
+    importlib.reload(constants)
     importlib.reload(mesh_data)
     importlib.reload(tool_brush_clone)
     
     del importlib
 else:
+    from . import constants
     from . import mesh_data
     from . import tool_brush_clone
 
