@@ -5,12 +5,14 @@ if "bpy" in locals(): # In case of module reloading
 
     importlib.reload(template)
     importlib.reload(operators)
+    importlib.reload(icons)
     importlib.reload(poll)
 
     del importlib
 else:
     from . import template
     from .. import operators
+    from .. import icons
     from .. import poll
 
 import bpy
@@ -92,29 +94,27 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column(align = False)
+        col = layout.column(align = True)
         scene = context.scene
 
         col.use_property_split = False
         col.prop(scene.cpp, "cameras_viewport_size")
+
         col.use_property_split = True
 
         ready_count = operators.basis.draw.cameras.get_ready_preview_count()
-        valid_count = len([n for n in bpy.data.images if not n.cpp.invalid])
+        valid_count = len([im for im in bpy.data.images if im.cpp.valid])
 
-        text = "Image previews:"
+        text = "Image previews"
         if ready_count < valid_count:
-            text = "Image previews (%d/%d ready):" % (ready_count, valid_count)
+            text = "Image previews (%d/%d ready)" % (ready_count, valid_count)
 
-        col.label(text = text)
-
-        col.operator("wm.previews_ensure", icon = 'TIME')
-        col.prop(scene.cpp, "use_camera_image_previews")
+        col.prop(scene.cpp, "use_camera_image_previews", text = text)
         col.prop(scene.cpp, "use_camera_axes")
 
-        scol = col.column()
-        scol.enabled = scene.cpp.use_camera_axes
+        scol = col.column(align = True)
         scol.use_property_split = False
+        scol.enabled = scene.cpp.use_camera_axes
         scol.prop(scene.cpp, "camera_axes_size")
 
 
@@ -154,7 +154,8 @@ class CPP_PT_current_image_preview_options(Panel, ImagePaintOptions):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
-        col = layout.column(align = False)
+
+        col = layout.column(align = True)
 
         scene = context.scene
 
@@ -220,7 +221,7 @@ class CPP_PT_camera_selection_options(Panel, ImagePaintOptions):
 
         scene = context.scene
 
-        col = layout.column(align = False)
+        col = layout.column(align = True)
         col.use_property_split = True
 
         col.prop(scene.cpp, "use_auto_set_camera")
@@ -275,6 +276,7 @@ class CPP_PT_warnings_options(Panel, ImagePaintOptions):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
+
         col = layout.column(align = True)
 
         scene = context.scene
@@ -282,14 +284,29 @@ class CPP_PT_warnings_options(Panel, ImagePaintOptions):
         col.enabled = scene.cpp.use_warnings
 
         col.prop(scene.cpp, "max_loaded_images")
-        col.separator()
         col.prop(scene.cpp, "distance_warning")
 
-        col.use_property_split = True
+        row = col.row(align = True)
 
-        col.prop(scene.cpp, "use_warning_action_draw")
-        col.prop(scene.cpp, "use_warning_action_lock")
-        col.prop(scene.cpp, "use_warning_action_popup")
+        row.use_property_split = False
+        row.prop(
+            scene.cpp, "use_warning_action_draw",
+            toggle=True,
+            expand=True,
+            icon_value=icons.get_icon_id("warning_draw")
+        )
+        row.prop(
+            scene.cpp, "use_warning_action_lock",
+            toggle=True,
+            expand=True,
+            icon_value=icons.get_icon_id("warning_lock")
+        )
+        row.prop(
+            scene.cpp, "use_warning_action_popup",
+            toggle=True,
+            expand=True,
+            icon_value=icons.get_icon_id("warning_popup")
+        )
 
 
 class CPP_PT_current_camera(Panel, ImagePaintOptions):

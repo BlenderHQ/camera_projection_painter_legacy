@@ -40,6 +40,7 @@ TIME_STEP = 1 / 60
 
 # CPP_OT_listener methods
 
+
 def listener_cancel(self, context):
     if self in modal_ops:
         modal_ops.remove(self)
@@ -53,7 +54,8 @@ def listener_invoke(self, context, event):
         modal_ops.append(self)
 
     wm = context.window_manager
-    self.timer = wm.event_timer_add(time_step = LISTEN_TIME_STEP, window = context.window)
+    self.timer = wm.event_timer_add(
+        time_step=LISTEN_TIME_STEP, window=context.window)
     wm.modal_handler_add(self)
     return {'RUNNING_MODAL'}
 
@@ -78,13 +80,20 @@ def listener_modal(self, context, event):
 
 def operator_invoke(self, context, event):
     scene = context.scene
-    
+
+    is_cameras_visible = False
+    for ob in context.visible_objects:
+        if ob.type == 'CAMERA':
+            is_cameras_visible = True
+    if not is_cameras_visible:
+        return {'CANCELLED'}
+
     base.set_properties_defaults(self)
     base.validate_cameras_data_settings(context)
     base.setup_basis_uv_layer(context)
-    
+
     scene.cpp.ensure_objects_initial_hide_viewport(context)
-    scene.cpp.cameras_hide_set(state = True)
+    scene.cpp.cameras_hide_set(state=True)
 
     ob = context.image_paint_object
 
@@ -92,11 +101,11 @@ def operator_invoke(self, context, event):
     self.axes_batch = draw.cameras.get_axes_batch()
     self.camera_batch, self.image_rect_batch = draw.cameras.get_camera_batches()
     draw.add_draw_handlers(self, context)
-    
+
     wm = context.window_manager
-    self.timer = wm.event_timer_add(time_step = TIME_STEP, window = context.window)
+    self.timer = wm.event_timer_add(time_step=TIME_STEP, window=context.window)
     wm.modal_handler_add(self)
-    
+
     if self not in modal_ops:
         modal_ops.append(self)
 
@@ -110,7 +119,7 @@ def operator_cancel(self, context):
     scene = context.scene
     ob = context.active_object
     wm = context.window_manager
-    
+
     wm.event_timer_remove(self.timer)
 
     draw.cameras.clear_image_previews()
@@ -119,7 +128,7 @@ def operator_cancel(self, context):
 
     draw.remove_draw_handlers(self)
     base.remove_uv_layer(ob)
-    scene.cpp.cameras_hide_set(state = False)
+    scene.cpp.cameras_hide_set(state=False)
 
     wm.cpp_running = False
     wm.cpp_suspended = False

@@ -296,7 +296,7 @@ class SceneProperties(PropertyGroup):
 
     use_warning_action_popup: BoolProperty(
         name = "Info popup", default = False,
-        options = {'HIDDEN'},
+        options={'HIDDEN'},
         description="Open popup warning if current context is out of recommended"
     )
 
