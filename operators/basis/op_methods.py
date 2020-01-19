@@ -78,32 +78,28 @@ def listener_modal(self, context, event):
 
 def operator_invoke(self, context, event):
     scene = context.scene
-
-    if not len([n for n in context.visible_objects if n.type == 'CAMERA']):
-        return {'CANCELLED'}
-
-    base.validate_cameras_data_settings(context)
-
-    if self not in modal_ops:
-        modal_ops.append(self)
-
+    
     base.set_properties_defaults(self)
+    base.validate_cameras_data_settings(context)
+    base.setup_basis_uv_layer(context)
+    
+    scene.cpp.ensure_objects_initial_hide_viewport(context)
+    scene.cpp.cameras_hide_set(state = True)
 
     ob = context.image_paint_object
-
-    base.setup_basis_uv_layer(context)
 
     self.mesh_batch = draw.mesh_preview.get_object_batch(context, ob)
     self.axes_batch = draw.cameras.get_axes_batch()
     self.camera_batch, self.image_rect_batch = draw.cameras.get_camera_batches()
     draw.add_draw_handlers(self, context)
-
-    scene.cpp.ensure_objects_initial_hide_viewport(context)
-    scene.cpp.cameras_hide_set(state = True)
-
+    
     wm = context.window_manager
     self.timer = wm.event_timer_add(time_step = TIME_STEP, window = context.window)
     wm.modal_handler_add(self)
+    
+    if self not in modal_ops:
+        modal_ops.append(self)
+
     return {'RUNNING_MODAL'}
 
 
@@ -114,6 +110,7 @@ def operator_cancel(self, context):
     scene = context.scene
     ob = context.active_object
     wm = context.window_manager
+    
     wm.event_timer_remove(self.timer)
 
     draw.cameras.clear_image_previews()
