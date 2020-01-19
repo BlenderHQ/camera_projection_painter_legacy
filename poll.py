@@ -80,5 +80,12 @@ def full_poll(context: bpy.types.Context):
         return False
     if not image_paint.clone_image:
         return False
-
+    
+    is_cameras_visible = False
+    for ob in context.visible_objects:
+        if ob.type == 'CAMERA':
+            is_cameras_visible = True
+    if not is_cameras_visible:
+        return False
+    
     return True
