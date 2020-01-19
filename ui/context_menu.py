@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(template)
@@ -69,5 +69,3 @@ class CPP_MT_camera_pie(Menu):
         pie.operator(
             operator = operators.CPP_OT_set_tmp_camera_active.bl_idname,
             text = text, icon_value = icons.get_icon_id("set_active"))
-            
-            
