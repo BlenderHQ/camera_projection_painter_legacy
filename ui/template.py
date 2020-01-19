@@ -1,6 +1,8 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+# The module contains class methods that are used not only in one place
+
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(operators)
