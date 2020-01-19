@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-# The submodule contains the main addon framework.
+# The module contains the main addon framework.
 # The CPP_OT_listener operator monitors the context of the main operator - CPP_OT_camera_projection_painter
 # and starts it when all conditions are met. The main operator starts the tracking operator if the context
 # conditions do not match the necessary
