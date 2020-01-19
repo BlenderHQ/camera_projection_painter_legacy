@@ -1,8 +1,7 @@
 # <pep8 compliant>
 
-# Icon ids are available as icons.get_icon_id ("icon_key"), where "icon_key" is the name of the file name.
-# without extension inside the module directory. All previews are loaded into the collection
-# during the registration method call to avoid delayed loading of icons with a delay
+# The module does not have a registration method. It occurs during the very first call to
+# get_icon_id since for some custom properties it is necessary to access the icons at the module import stage
 
 import bpy
 import os
@@ -13,7 +12,7 @@ if "_preview_collection" not in locals():  # In case of module reloading
     _preview_collection = None
 
 
-def get_icon_id(key):
+def get_icon_id(key: str):
     """
     Returns the identifier of an icon_id from existing image files in the module directory
     @param key: str - File name without extension
