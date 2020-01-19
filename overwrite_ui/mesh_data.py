@@ -3,14 +3,14 @@
 if "bpy" in locals():  # In case of module reloading
     import importlib
 
-    importlib.reload(icons)
     importlib.reload(constants)
+    importlib.reload(icons)
     importlib.reload(operators)
 
     del importlib
 else:
+    from . import constants
     from .. import icons
-    from .. import constants
     from .. import operators
 
 import bpy
