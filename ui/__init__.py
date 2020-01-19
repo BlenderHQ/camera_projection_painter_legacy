@@ -1,4 +1,6 @@
-if "bpy" in locals():
+# <pep8 compliant>
+
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(camera)
@@ -18,7 +20,6 @@ else:
 import bpy
 
 _classes = [
-    # ui
     camera.DATA_UL_bind_history_item,
     camera.CPP_PT_active_camera_options,
 
@@ -40,4 +41,5 @@ _classes = [
 
     context_menu.CPP_MT_camera_pie
 ]
+
 register, unregister = bpy.utils.register_classes_factory(_classes)
