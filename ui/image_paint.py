@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(template)
@@ -18,6 +18,7 @@ from bpy.types import Panel
 
 
 class ImagePaintOptions:
+    """Base class of interface elements in the toolbar"""
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_label = "Camera Paint"
@@ -27,7 +28,7 @@ class ImagePaintOptions:
 
 class CPP_PT_camera_painter(Panel, ImagePaintOptions):
     bl_label = "Camera Paint"
-    bl_options = set()
+    bl_options = set()  # Open by default
 
     @classmethod
     def poll(cls, context):
