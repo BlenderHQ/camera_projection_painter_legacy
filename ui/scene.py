@@ -1,6 +1,6 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(operators)
@@ -13,11 +13,13 @@ else:
     from .. import poll
     from .. import icons
 
+import bpy
 from bpy.types import Panel
 import os
 
 
 class SceneOptions:
+    """Base class for interface elements in the scene tab"""
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
@@ -58,7 +60,8 @@ class CPP_PT_camera_painter_scene(Panel, SceneOptions):
             operator = operators.CPP_OT_bind_camera_image.bl_idname,
             text = "Bind Selected Camera Images",
             text_ctxt = "CPP",
-            icon_value = icons.get_icon_id("bind_image"))
+            icon_value = icons.get_icon_id("bind_image")
+        )
         operator.mode = 'SELECTED'
 
         scol = col.column()
@@ -67,7 +70,8 @@ class CPP_PT_camera_painter_scene(Panel, SceneOptions):
             operator = operators.CPP_OT_bind_camera_image.bl_idname,
             text = "Bind All Camera Images",
             text_ctxt = "CPP",
-            icon_value = icons.get_icon_id("bind_image"))
+            icon_value = icons.get_icon_id("bind_image")
+        )
         operator.mode = 'ALL'
 
         # scol = col.column()
@@ -142,12 +146,14 @@ class CPP_PT_enter_context(Panel, SceneOptions):
         else:
             col.label(text = "Object have no active material", icon = 'INFO')
 
-        col.operator(
+        props = col.operator(
             operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
             text = "Canvas Image To Diffuse"
-        ).reverse = False
+        )
+        props.reverse = False
 
-        col.operator(
+        props = col.operator(
             operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
             text = "Diffuse To Canvas Image"
-        ).reverse = True
+        )
+        props.reverse = True
