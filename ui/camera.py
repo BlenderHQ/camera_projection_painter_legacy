@@ -1,7 +1,6 @@
 # <pep8 compliant>
 
-
-if "bpy" in locals():
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(template)
