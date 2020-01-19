@@ -1,6 +1,8 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
+# The module contains basic methods for checking context for compatible conditions
+
+if "bpy" in locals(): # In case of module reloading
     import importlib
 
     importlib.reload(constants)
@@ -10,18 +12,26 @@ else:
     from . import constants
 
 
-def check_uv_layers(ob):
-    uv_layers = ob.data.uv_layers
-    uv_layers_count = len(uv_layers)
-    if constants.TEMP_DATA_NAME in uv_layers:
-        uv_layers_count -= 1
+def check_uv_layers(ob: bpy.types.Object):
+    """
+    Positive if there is at least one layer and TEMP_DATA_NAME layer is not active
+    """
+    if ob and ob.type == 'MESH':
+        uv_layers = ob.data.uv_layers
+        uv_layers_count = len(uv_layers)
+        
+        if constants.TEMP_DATA_NAME in uv_layers:
+            uv_layers_count -= 1
 
-    if uv_layers_count and uv_layers.active.name != constants.TEMP_DATA_NAME:
-        return True
+        if uv_layers_count and uv_layers.active.name != constants.TEMP_DATA_NAME:
+            return True
     return False
 
 
-def tool_setup_poll(context):
+def tool_setup_poll(context: bpy.types.Context):
+    """
+    The conditions under which the gizmo is available appears under the scene settings panel in the toolbar
+    """
     tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
 
     if not tool:
@@ -49,7 +59,10 @@ def tool_setup_poll(context):
     return True
 
 
-def full_poll(context):
+def full_poll(context: bpy.types.Context):
+    """
+    Conditions under which the start of the main operator
+    """
     if not tool_setup_poll(context):
         return False
 
