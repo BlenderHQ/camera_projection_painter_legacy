@@ -1,6 +1,17 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # In case of module reloading
+import importlib
+
+import bpy
+
+from . import base
+from . import draw
+from .. import utils
+from ... import poll
+from ... import constants
+from ... import extend_bpy_types
+
+if "_rc" in locals():  # In case of module reloading
     for operator in modal_ops:
         try:
             # Cancellation of the previous running operators
@@ -11,8 +22,6 @@ if "bpy" in locals():  # In case of module reloading
             import traceback
             print(traceback.format_exc())
 
-    import importlib
-
     importlib.reload(base)
     importlib.reload(draw)
     importlib.reload(utils)
@@ -20,16 +29,8 @@ if "bpy" in locals():  # In case of module reloading
     importlib.reload(constants)
     importlib.reload(extend_bpy_types)
 
-    del importlib
-else:
-    from . import base
-    from . import draw
-    from .. import utils
-    from ... import poll
-    from ... import constants
-    from ... import extend_bpy_types
+_rc = None
 
-import bpy
 
 # Contains currently running modal operators
 modal_ops = []
@@ -39,7 +40,6 @@ LISTEN_TIME_STEP = 1 / 4
 TIME_STEP = 1 / 60
 
 # CPP_OT_listener methods
-
 
 def listener_cancel(self, context):
     if self in modal_ops:
