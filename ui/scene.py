@@ -1,21 +1,20 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
-
-    importlib.reload(operators)
-    importlib.reload(poll)
-    importlib.reload(icons)
-
-    del importlib
-else:
-    from .. import operators
-    from .. import poll
-    from .. import icons
+import importlib
+import os
 
 import bpy
-from bpy.types import Panel
-import os
+
+from .. import poll
+from .. import icons
+from .. import operators
+
+if "_rc" in locals():  # In case of module reloading
+    importlib.reload(poll)
+    importlib.reload(icons)
+    importlib.reload(operators)
+
+_rc = None
 
 
 class SceneOptions:
@@ -26,7 +25,7 @@ class SceneOptions:
     bl_options = {'DEFAULT_CLOSED'}
 
 
-class CPP_PT_camera_painter_scene(Panel, SceneOptions):
+class CPP_PT_camera_painter_scene(bpy.types.Panel, SceneOptions):
     bl_label = "Camera Paint"
 
     def draw(self, context):
@@ -80,7 +79,7 @@ class CPP_PT_camera_painter_scene(Panel, SceneOptions):
         #              icon_value = get_icon_id("calibration"))
 
 
-class CPP_PT_enter_context(Panel, SceneOptions):
+class CPP_PT_enter_context(bpy.types.Panel, SceneOptions):
     bl_label = "Quick Start"
     bl_parent_id = "CPP_PT_camera_painter_scene"
 
