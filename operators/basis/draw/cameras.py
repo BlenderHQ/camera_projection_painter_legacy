@@ -1,20 +1,20 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(shaders)
-
-    del importlib
-else:
-    from .... import shaders
-    from .... import __package__ as addon_pkg
+import importlib
 
 import bpy
 import bgl
 import gpu
-
 from gpu_extras.batch import batch_for_shader
+
+from .... import shaders
+from .... import __package__ as addon_pkg
+
+if "_rc" in locals():
+    importlib.reload(shaders)
+
+_rc = None
+
 
 _image_previews = {}
 _image_icons = {}
