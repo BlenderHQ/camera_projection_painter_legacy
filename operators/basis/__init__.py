@@ -5,16 +5,16 @@
 # and starts it when all conditions are met. The main operator starts the tracking operator if the context
 # conditions do not match the necessary
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
-
-    importlib.reload(op_methods)
-
-    del importlib
-else:
-    from . import op_methods
+import importlib
 
 import bpy
+
+from . import op_methods
+
+if "_rc" in locals():  # In case of module reloading
+    importlib.reload(op_methods)
+
+_rc = None
 
 
 class CPP_OT_listener(bpy.types.Operator):
