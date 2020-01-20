@@ -4,17 +4,17 @@
 # splitting a window (see link), therefore, standard
 # https://developer.blender.org/T71941
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
-
-    importlib.reload(poll)
-
-    del importlib
-else:
-    from .. import poll
-    from .. import __package__ as pkg
+import importlib
 
 import bpy
+
+from .. import poll
+from .. import __package__ as pkg
+
+if "_rc" in locals(): # In case of module reloading
+    importlib.reload(poll)
+
+_rc = None
 
 
 class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
