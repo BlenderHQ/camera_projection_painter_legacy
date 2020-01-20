@@ -2,16 +2,16 @@
 
 # The module contains class methods that are used not only in one place
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
+import importlib
 
+from .. import operators
+from .. import icons
+
+if "_rc" in locals(): # In case of module reloading
     importlib.reload(operators)
     importlib.reload(icons)
 
-    del importlib
-else:
-    from .. import operators
-    from .. import icons
+_rc = None
 
 
 def camera_image(layout, camera_ob, mode = 'CONTEXT'):
