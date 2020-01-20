@@ -1,17 +1,18 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-    importlib.reload(operators)
-    del importlib
-else:
-    from . import operators
+import importlib
 
 import bpy
 
+from . import operators
+
+if "_rc" in locals():
+    importlib.reload(operators)
+
+_rc = None
+
 
 _keymaps = []
-
 
 ADDON_KEYMAP = {
     operators.CPP_OT_image_paint.bl_idname: (
