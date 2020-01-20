@@ -3,23 +3,23 @@
 # Some parts of the user interface are overwritten so as not to show the user
 # unnecessary information about objects, tools, etc
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
-    
-    importlib.reload(constants)
-    importlib.reload(mesh_data)
-    importlib.reload(tool_brush_clone)
-    
-    del importlib
-else:
-    from . import constants
-    from . import mesh_data
-    from . import tool_brush_clone
+import importlib
+import inspect
 
 import bpy
 import bl_ui
 
-import inspect
+from . import constants
+from . import mesh_data
+from . import tool_brush_clone
+
+if "_rc" in locals(): # In case of module reloading
+    importlib.reload(constants)
+    importlib.reload(mesh_data)
+    importlib.reload(tool_brush_clone)
+
+_rc = None
+
 
 _classes = [
     mesh_data.DATA_PT_uv_texture,
