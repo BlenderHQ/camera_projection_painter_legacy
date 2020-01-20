@@ -1,23 +1,22 @@
 # <pep8 compliant>
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import template
+from .. import operators
+from .. import icons
+
+if "_rc" in locals(): # In case of module reloading
     importlib.reload(template)
     importlib.reload(operators)
     importlib.reload(icons)
 
-    del importlib
-else:
-    from . import template
-    from .. import operators
-    from .. import icons
-
-import bpy
-from bpy.types import Menu
+_rc = None
 
 
-class CPP_MT_camera_pie(Menu):
+class CPP_MT_camera_pie(bpy.types.Menu):
     bl_label = "Camera Paint"
 
     def draw(self, context):
