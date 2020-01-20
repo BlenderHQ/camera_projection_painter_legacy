@@ -1,18 +1,18 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(poll)
-
-    del importlib
-else:
-    from .. import poll
+import importlib
+import math
 
 import bpy
 from mathutils import Vector
 
-import math
+from .. import poll
+
+
+if "_rc" in locals():
+    importlib.reload(poll)
+
+_rc = None
 
 
 def operator_execute(self, context):
