@@ -1,23 +1,25 @@
 # <pep8 compliant>
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import camera
+from . import context_menu
+from . import image_paint
+from . import scene
+from . import template
+
+
+if "_rc" in locals(): # In case of module reloading
     importlib.reload(camera)
     importlib.reload(context_menu)
     importlib.reload(image_paint)
     importlib.reload(scene)
     importlib.reload(template)
 
-    del importlib
-else:
-    from . import camera
-    from . import context_menu
-    from . import image_paint
-    from . import scene
-    from . import template
+_rc = None
 
-import bpy
 
 _classes = [
     camera.DATA_UL_bind_history_item,
