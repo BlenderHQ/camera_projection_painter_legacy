@@ -1,24 +1,24 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(utils)
-    importlib.reload(constants)
-    importlib.reload(shaders)
-
-    del importlib
-else:
-    from ... import utils
-    from .... import constants
-    from .... import shaders
-    from .... import __package__ as addon_pkg
+import importlib
+import numpy as np
 
 import bpy
 import bgl
 import gpu
 from mathutils import Vector
-import numpy as np
+
+from ... import utils
+from .... import constants
+from .... import shaders
+from .... import __package__ as addon_pkg
+
+if "_rc" in locals():
+    importlib.reload(utils)
+    importlib.reload(constants)
+    importlib.reload(shaders)
+
+_rc = None
 
 
 def iter_curve_values(curve_mapping, steps: int):
