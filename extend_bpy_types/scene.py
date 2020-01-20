@@ -1,17 +1,7 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # Case of module reloading
-    import importlib
 
-    importlib.reload(icons)
-    importlib.reload(constants)
-    importlib.reload(operators)
-
-    del importlib
-else:
-    from .. import icons
-    from .. import constants
-    from .. import operators
+import importlib
 
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -22,6 +12,17 @@ from bpy.props import (
     EnumProperty,
     StringProperty
 )
+
+from .. import icons
+from .. import constants
+from .. import operators
+
+if "_rc" in locals():  # Case of module reloading
+    importlib.reload(icons)
+    importlib.reload(constants)
+    importlib.reload(operators)
+
+_rc = None
 
 
 class SceneProperties(PropertyGroup):
