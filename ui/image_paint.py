@@ -1,22 +1,21 @@
 # <pep8 compliant>
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import template
+from .. import operators
+from .. import icons
+from .. import poll
+
+if "_rc" in locals(): # In case of module reloading
     importlib.reload(template)
     importlib.reload(operators)
     importlib.reload(icons)
     importlib.reload(poll)
 
-    del importlib
-else:
-    from . import template
-    from .. import operators
-    from .. import icons
-    from .. import poll
-
-import bpy
-from bpy.types import Panel
+_rc = None
 
 
 class ImagePaintOptions:
@@ -28,7 +27,7 @@ class ImagePaintOptions:
     bl_options = {'DEFAULT_CLOSED'}
 
 
-class CPP_PT_camera_painter(Panel, ImagePaintOptions):
+class CPP_PT_camera_painter(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Camera Paint"
     bl_options = set()  # Open by default
 
@@ -69,7 +68,7 @@ class CPP_PT_camera_painter(Panel, ImagePaintOptions):
 
 
 # View Options
-class CPP_PT_view_options(Panel, ImagePaintOptions):
+class CPP_PT_view_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "View"
     bl_parent_id = "CPP_PT_camera_painter"
     bl_options = set()
@@ -118,7 +117,7 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
         scol.prop(scene.cpp, "camera_axes_size")
 
 
-class CPP_PT_view_projection_options(Panel, ImagePaintOptions):
+class CPP_PT_view_projection_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Projection"
     bl_parent_id = "CPP_PT_view_options"
     bl_order = 1
@@ -165,7 +164,7 @@ class CPP_PT_current_image_preview_options(Panel, ImagePaintOptions):
 
 
 # Utils
-class CPP_PT_operator_options(Panel, ImagePaintOptions):
+class CPP_PT_operator_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Options"
     bl_parent_id = "CPP_PT_camera_painter"
     bl_options = set()
@@ -179,7 +178,7 @@ class CPP_PT_operator_options(Panel, ImagePaintOptions):
         pass
 
 
-class CPP_PT_material_options(Panel, ImagePaintOptions):
+class CPP_PT_material_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Material"
     bl_parent_id = "CPP_PT_operator_options"
     bl_order = 1
@@ -206,7 +205,7 @@ class CPP_PT_material_options(Panel, ImagePaintOptions):
         ).reverse = True
 
 
-class CPP_PT_camera_selection_options(Panel, ImagePaintOptions):
+class CPP_PT_camera_selection_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Camera Selection"
     bl_parent_id = "CPP_PT_operator_options"
     bl_order = 2
@@ -262,7 +261,7 @@ class CPP_PT_camera_selection_options(Panel, ImagePaintOptions):
         props.order = 'NEXT'
 
 
-class CPP_PT_warnings_options(Panel, ImagePaintOptions):
+class CPP_PT_warnings_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Warnings"
     bl_parent_id = "CPP_PT_operator_options"
     bl_order = 3
@@ -309,7 +308,7 @@ class CPP_PT_warnings_options(Panel, ImagePaintOptions):
         )
 
 
-class CPP_PT_current_camera(Panel, ImagePaintOptions):
+class CPP_PT_current_camera(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Current Camera"
     bl_parent_id = "CPP_PT_operator_options"
     bl_options = set()
@@ -339,7 +338,7 @@ class CPP_PT_current_camera(Panel, ImagePaintOptions):
         col.prop(scene.cpp, "use_auto_set_image")
 
 
-class CPP_PT_current_camera_calibration(Panel, ImagePaintOptions):
+class CPP_PT_current_camera_calibration(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Calibration"
     bl_parent_id = "CPP_PT_current_camera"
 
@@ -361,7 +360,7 @@ class CPP_PT_current_camera_calibration(Panel, ImagePaintOptions):
         template.camera_calibration(layout, context.scene.camera)
 
 
-class CPP_PT_current_camera_lens_distortion(Panel, ImagePaintOptions):
+class CPP_PT_current_camera_lens_distortion(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Lens Distortion"
     bl_parent_id = "CPP_PT_current_camera_calibration"
 
