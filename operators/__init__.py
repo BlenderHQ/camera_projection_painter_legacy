@@ -1,9 +1,25 @@
 # <pep8 compliant>
 
+import importlib
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
+import bpy
 
+from . import basis
+from . import bind_camera_image
+from . import bind_history_remove
+from . import call_pie
+from . import canvas_to_diffuse
+from . import enter_context
+from . import image_paint
+from . import info
+from . import set_tmp_camera_active
+from . import set_camera_by_view
+from . import toggle_camera_usage
+from . import enable_all_cameras
+from . import set_camera_radial
+
+
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(basis)
     importlib.reload(bind_camera_image)
     importlib.reload(bind_history_remove)
@@ -18,23 +34,7 @@ if "bpy" in locals():  # In case of module reloading
     importlib.reload(enable_all_cameras)
     importlib.reload(set_camera_radial)
 
-    del importlib
-else:
-    from . import basis
-    from . import bind_camera_image
-    from . import bind_history_remove
-    from . import call_pie
-    from . import canvas_to_diffuse
-    from . import enter_context
-    from . import image_paint
-    from . import info
-    from . import set_tmp_camera_active
-    from . import set_camera_by_view
-    from . import toggle_camera_usage
-    from . import enable_all_cameras
-    from . import set_camera_radial
-
-import bpy
+_rc = None
 
 
 CPP_OT_listener = basis.CPP_OT_listener
