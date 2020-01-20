@@ -1,18 +1,18 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(screen)
-    importlib.reload(common)
-
-    del importlib
-else:
-    from . import screen
-    from . import common
+import importlib
 
 import bpy
 from mathutils import Vector
+
+from . import screen
+from . import common
+
+if "_rc" in locals():
+    importlib.reload(screen)
+    importlib.reload(common)
+
+_rc = None
 
 
 AUTOCAM_MIN = 0.852
