@@ -1,7 +1,8 @@
 # <pep8 compliant>
 
-import bpy
 import os
+
+import bpy
 
 
 # https://docs.blender.org/manual/en/latest/files/media/image_formats.html#image-formats
