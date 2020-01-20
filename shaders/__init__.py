@@ -4,8 +4,9 @@
 # All files with the *.glsl extension in the module directory during import are placed in the "shader" container.
 # Vertex, fragment, and other shader files must have the endings "_vert", "_frag", ect.
 
-import gpu
 import os
+
+import gpu
 
 SEPARATOR = "_"
 
