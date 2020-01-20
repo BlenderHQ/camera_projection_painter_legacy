@@ -1,19 +1,20 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import constants
+from .. import icons
+from .. import operators
+
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(constants)
     importlib.reload(icons)
     importlib.reload(operators)
 
-    del importlib
-else:
-    from . import constants
-    from .. import icons
-    from .. import operators
+_rc = None
 
-import bpy
 
 class MESH_UL_uvmaps:
     def draw_item(self, _context, layout, _data, item, icon, _active_data, _active_propname, _index):
