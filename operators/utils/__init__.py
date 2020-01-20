@@ -1,18 +1,16 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
+import importlib
 
+from . import common
+from . import warnings
+from . import cameras
+from . import screen
+
+if "_rc" in locals():
     importlib.reload(common)
     importlib.reload(warnings)
     importlib.reload(cameras)
     importlib.reload(screen)
 
-    del importlib
-else:
-    from . import common
-    from . import warnings
-    from . import cameras
-    from . import screen
-
-import bpy
+_rc = None
