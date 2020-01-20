@@ -1,18 +1,18 @@
 # <pep8 compliant>
 
-if "bpy" in locals(): # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import template
+
+if "_rc" in locals(): # In case of module reloading
     importlib.reload(template)
 
-    del importlib
-else:
-    from . import template
-
-from bpy.types import Panel, UIList
+_rc = None
 
 
-class DATA_UL_bind_history_item(UIList):
+class DATA_UL_bind_history_item(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon_id, active_data, active_propname):
         row = layout.row(align = True)
 
@@ -39,7 +39,7 @@ class CameraOptionsPanel:
     bl_options = {'DEFAULT_CLOSED'}
 
 
-class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
+class CPP_PT_active_camera_options(bpy.types.Panel, CameraOptionsPanel):
     bl_label = "Camera Paint"
 
     @classmethod
@@ -52,7 +52,7 @@ class CPP_PT_active_camera_options(Panel, CameraOptionsPanel):
         template.camera_image(layout, context.active_object, mode = 'ACTIVE')
 
 
-class CPP_PT_active_camera_calibration(Panel, CameraOptionsPanel):
+class CPP_PT_active_camera_calibration(bpy.types.Panel, CameraOptionsPanel):
     bl_label = "Calibration"
     bl_parent_id = "CPP_PT_active_camera_options"
 
@@ -72,7 +72,7 @@ class CPP_PT_active_camera_calibration(Panel, CameraOptionsPanel):
         template.camera_calibration(layout, context.active_object)
 
 
-class CPP_PT_active_camera_lens_distortion(Panel, CameraOptionsPanel):
+class CPP_PT_active_camera_lens_distortion(bpy.types.Panel, CameraOptionsPanel):
     bl_label = "Lens Distortion"
     bl_parent_id = "CPP_PT_active_camera_calibration"
 
