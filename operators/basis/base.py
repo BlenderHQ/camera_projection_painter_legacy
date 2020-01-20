@@ -1,17 +1,18 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(constants)
-
-    del importlib
-else:
-    from .. import utils
-    from ... import constants
+import importlib
 
 import bpy
 import bmesh
+
+from .. import utils
+from ... import constants
+
+if "_rc" in locals():
+    importlib.reload(utils)
+    importlib.reload(constants)
+
+_rc = |None
 
 
 def set_properties_defaults(self):
