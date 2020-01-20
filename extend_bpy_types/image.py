@@ -3,12 +3,13 @@
 # Image properties are expanded by the method of obtaining image size from its metadata.
 # Such a method works much faster than bpy.types.Image.size
 
-import bpy
-from bpy.types import PropertyGroup
-
 import os
 import io
 import struct
+
+import bpy
+from bpy.types import PropertyGroup
+
 
 _image_size_cache = {}
 
