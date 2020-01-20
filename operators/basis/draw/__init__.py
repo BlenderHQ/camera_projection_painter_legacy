@@ -1,24 +1,24 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(cameras)
-    importlib.reload(mesh_preview)
-
-    del importlib
-else:
-    from . import cameras
-    from . import mesh_preview
+import importlib
+import numpy as np
 
 import bpy
 import bgl
 import gpu
-from gpu_extras.batch import batch_for_shader
 from mathutils import Vector
 from bpy.types import SpaceView3D
+from gpu_extras.batch import batch_for_shader
 
-import numpy as np
+from . import cameras
+from . import mesh_preview
+
+if "_rc" in locals():
+    importlib.reload(cameras)
+    importlib.reload(mesh_preview)
+
+_rc = None
+
 
 _image_previews = {}
 _image_icons = {}
