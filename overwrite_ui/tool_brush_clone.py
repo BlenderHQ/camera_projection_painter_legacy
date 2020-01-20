@@ -1,19 +1,19 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import constants
+from .. import icons
+from .. import operators
+
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(constants)
     importlib.reload(icons)
     importlib.reload(operators)
 
-    del importlib
-else:
-    from . import constants
-    from .. import icons
-    from .. import operators
-
-import bpy
+_rc = None
 
 
 class VIEW3D_PT_tools_brush_clone:
