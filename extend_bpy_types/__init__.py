@@ -1,29 +1,29 @@
 # <pep8 compliant>
 
 # Extending the properties of the standard classes of the Scene, Object, Image and WindowManager
-
-if "bpy" in locals():  # In case of module reloading
-    import importlib
-
-    importlib.reload(camera)
-    importlib.reload(scene)
-    importlib.reload(image)
-    importlib.reload(obj)
-    importlib.reload(window_manager)
-
-    del importlib
-else:
-    from . import camera
-    from . import scene
-    from . import image
-    from . import obj
-    from . import window_manager
+import importlib 
 
 import bpy
 from bpy.props import (
     PointerProperty,
     CollectionProperty
 )
+
+from . import camera
+from . import scene
+from . import image
+from . import obj
+from . import window_manager
+
+if "_rc" in locals():  # In case of module reloading
+    importlib.reload(camera)
+    importlib.reload(scene)
+    importlib.reload(image)
+    importlib.reload(obj)
+    importlib.reload(window_manager)
+
+_rc = None
+
 
 BindImageHistoryItem = camera.BindImageHistoryItem
 CameraProperties = camera.CameraProperties
