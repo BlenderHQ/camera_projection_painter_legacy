@@ -1,17 +1,17 @@
 # <pep8 compliant>
 
-if "bpy" in locals(): # In case of module reloading 
-    import importlib
+import importlib
 
+import bpy
+
+from . import camera
+from . import image_preview
+
+if "_rc" in locals(): # In case of module reloading 
     importlib.reload(camera)
     importlib.reload(image_preview)
 
-    del importlib
-else:
-    from . import camera
-    from . import image_preview
-
-import bpy
+_rc = None
 
 CPP_GGT_camera_gizmo_group = camera.CPP_GGT_camera_gizmo_group
 CPP_GT_current_image_preview = image_preview.CPP_GT_current_image_preview
