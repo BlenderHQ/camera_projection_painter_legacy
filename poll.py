@@ -2,16 +2,16 @@
 
 # The module contains basic methods for checking context for compatible conditions
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
-
-    importlib.reload(constants)
-
-    del importlib
-else:
-    from . import constants
+import importlib
 
 import bpy
+
+from . import constants
+
+if "_rc" in locals():  # In case of module reloading
+    importlib.reload(constants)
+
+_rc = None
 
 
 def check_uv_layers(ob: bpy.types.Object):
