@@ -1,15 +1,16 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(utils)
-
-    del importlib
-else:
-    from . import utils
+import importlib
 
 import bpy
+
+from . import utils
+
+if "_rc" in locals():
+    importlib.reload(utils)
+
+_rc = None
+
 
 operator_description = """Automatically sets the camera with an active projector 
 if its orientation and position is close to the viewer"""
