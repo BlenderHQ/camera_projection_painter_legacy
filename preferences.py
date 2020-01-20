@@ -1,15 +1,6 @@
 # <pep8 compliant>
 
-if "bpy" in locals():
-    import importlib
-
-    importlib.reload(operators)
-    importlib.reload(icons)
-
-    del importlib
-else:
-    from . import operators
-    from . import icons
+import importlib
 
 import bpy
 import rna_keymap_ui
@@ -19,6 +10,16 @@ from bpy.props import (
     EnumProperty,
     FloatVectorProperty
 )
+
+from . import operators
+from . import icons
+
+if "_rc" in locals():
+    importlib.reload(operators)
+    importlib.reload(icons)
+
+_rc = None
+
 
 WEB_LINKS = [
     ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
