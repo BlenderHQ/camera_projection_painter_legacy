@@ -1,26 +1,24 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
-
-    importlib.reload(poll)
-    importlib.reload(shaders)
-
-    del importlib
-else:
-    from .. import poll
-    from .. import shaders
-    from .. import __package__ as addon_pkg
+import importlib
 
 import bpy
 import gpu
 import bgl
-
 from mathutils import Vector
 from mathutils.geometry import intersect_point_quad_2d
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
+from .. import __package__ as addon_pkg
+from .. import poll
+from .. import shaders
+
+if "_rc" in locals():  # In case of module reloading
+    importlib.reload(poll)
+    importlib.reload(shaders)
+
+_rc = None
 
 def f_lerp(value0: float, value1: float, factor: float):
     """Linear interpolate float value"""
