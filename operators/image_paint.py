@@ -1,19 +1,19 @@
 # <pep8 compliant>
 
-if "bpy" in locals():  # In case of module reloading
-    import importlib
+import importlib
 
+import bpy
+
+from . import utils
+from .. import constants
+from .. import poll
+
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(utils)
     importlib.reload(constants)
     importlib.reload(poll)
 
-    del importlib
-else:
-    from . import utils
-    from .. import constants
-    from .. import poll
-
-import bpy
+_rc = None
 
 
 def operator_execute(self, context):
