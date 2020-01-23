@@ -116,7 +116,7 @@ class CPP_PT_enter_context(bpy.types.Panel, SceneOptions):
         else:
             image = scene.camera.data.cpp.image
             if image:
-                if image.cpp.invalid:
+                if not image.cpp.valid:
                     col.label(text = "Invalid image binded to scene camera", icon = 'ERROR')
             else:
                 col.label(text = "Scene camera missing binded image", icon = 'INFO')
@@ -132,7 +132,7 @@ class CPP_PT_enter_context(bpy.types.Panel, SceneOptions):
         if not canvas:
             col.label(text = "Image Paint missing canvas", icon = 'ERROR')
             canvas_required = True
-        elif canvas.cpp.invalid:
+        elif not canvas.cpp.valid:
             col.label(text = "Invalid Image Paint canvas", icon = 'ERROR')
             canvas_required = True
         if canvas_required:

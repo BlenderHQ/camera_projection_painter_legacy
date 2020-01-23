@@ -8,7 +8,7 @@ from . import template
 from .. import operators
 from .. import icons
 
-if "_rc" in locals(): # In case of module reloading
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(template)
     importlib.reload(operators)
     importlib.reload(icons)
@@ -23,7 +23,7 @@ class CPP_MT_camera_pie(bpy.types.Menu):
         layout = self.layout
 
         pie = layout.menu_pie()
-        col = pie.column(align = True)
+        col = pie.column(align=True)
         scene = context.scene
         wm = context.window_manager
 
@@ -31,21 +31,21 @@ class CPP_MT_camera_pie(bpy.types.Menu):
 
         if not camera_object:
             return
-        
-        col.label(text = "Camera:")
+
+        col.label(text="Camera:")
         col.emboss = 'RADIAL_MENU'
-        col.label(text = camera_object.name)
+        col.label(text=camera_object.name)
         col.emboss = 'NORMAL'
-        col = col.column(align = True)
+        col = col.column(align=True)
 
         scene = context.scene
-        
-        template.camera_image(col, camera_object, mode = 'TMP')
+
+        template.camera_image(col, camera_object, mode='TMP')
 
         col.emboss = 'RADIAL_MENU'
         props = pie.operator(
-            operator = operators.CPP_OT_bind_camera_image.bl_idname,
-            icon_value = icons.get_icon_id("bind_image"))
+            operator=operators.CPP_OT_bind_camera_image.bl_idname,
+            icon_value=icons.get_icon_id("bind_image"))
         props.mode = 'TMP'
 
         state = not camera_object.cpp.initial_hide_viewport
@@ -57,14 +57,14 @@ class CPP_MT_camera_pie(bpy.types.Menu):
             icon = 'HIDE_OFF'
 
         pie.operator(
-            operator = operators.CPP_OT_toggle_camera_usage.bl_idname,
-            text = text, icon = icon
+            operator=operators.CPP_OT_toggle_camera_usage.bl_idname,
+            text=text, icon=icon
         )
 
         text = None
         if scene.camera == camera_object:
             text = "Already active"
-        
+
         pie.operator(
-            operator = operators.CPP_OT_set_tmp_camera_active.bl_idname,
-            text = text, icon_value = icons.get_icon_id("set_active"))
+            operator=operators.CPP_OT_set_tmp_camera_active.bl_idname,
+            text=text, icon_value=icons.get_icon_id("set_active"))

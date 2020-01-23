@@ -29,7 +29,7 @@ def operator_execute(self, context):
         angle = math.atan2(x, y)
         camera_angles[camera_ob] = angle
 
-    camera_angles = sorted(camera_angles.items(), key = lambda item: item[1], reverse = True)
+    camera_angles = sorted(camera_angles.items(), key=lambda item: item[1], reverse=True)
 
     prev_camera = None
     next_camera = None
@@ -55,9 +55,10 @@ def operator_execute(self, context):
     if new_camera:
         scene.camera = new_camera
         if new_camera != initial_camera:
-            self.report(type = {'INFO'}, message = "Set camera %s active" % new_camera.name)
+            self.report(type={'INFO'}, message="Set camera %s active" % new_camera.name)
 
     return {'FINISHED'}
+
 
 class CPP_OT_set_camera_radial(bpy.types.Operator):
     bl_idname = "cpp.set_camera_radial"
@@ -66,12 +67,12 @@ class CPP_OT_set_camera_radial(bpy.types.Operator):
     bl_description = "Selecting the next camera according to its orientation"
 
     order: bpy.props.EnumProperty(
-        items = [
+        items=[
             ('PREV', "PREV", ""),
             ('NEXT', "NEXT", "")
         ],
-        name = "mode",
-        default = 'NEXT'
+        name="mode",
+        default='NEXT'
     )
 
     @classmethod
@@ -84,4 +85,3 @@ class CPP_OT_set_camera_radial(bpy.types.Operator):
         return poll.tool_setup_poll(context)
 
     execute = operator_execute
-    

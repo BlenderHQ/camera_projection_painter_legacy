@@ -114,7 +114,7 @@ def set_material_diffuse_to_canvas(image_paint, material):
     if _node.bl_idname == "ShaderNodeTexImage":
         image = _node.image
         if image:
-            if not image.cpp.invalid:
+            if image.cpp.valid:
                 image_paint.canvas = image
                 return -1
             else:

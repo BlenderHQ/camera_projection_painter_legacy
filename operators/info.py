@@ -8,7 +8,7 @@ class CPP_OT_info(bpy.types.Operator):
     bl_label = "Info"
     bl_options = {'INTERNAL'}
 
-    text: bpy.props.StringProperty(default = "Info")
+    text: bpy.props.StringProperty(default="Info")
 
     @classmethod
     def description(self, context, properties):

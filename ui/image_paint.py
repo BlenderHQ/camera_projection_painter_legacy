@@ -57,13 +57,11 @@ class CPP_PT_camera_painter(bpy.types.Panel, ImagePaintOptions):
 
         if not canvas:
             col.label(text = "Image Paint has no canvas", icon = 'ERROR')
-        else:
-            if canvas.cpp.invalid:
-                col.label(text = "Image Paint canvas invalid", icon = 'ERROR')
+        elif not canvas.cpp.valid:
+            col.label(text = "Image Paint canvas invalid", icon = 'ERROR')
         if not clone_image:
             col.label(text = "Image Paint has no clone image", icon = 'ERROR')
-        else:
-            if clone_image.cpp.invalid:
+        elif not clone_image.cpp.valid:
                 col.label(text = "Image Paint Clone Image invalid", icon = 'ERROR')
 
 
@@ -139,7 +137,7 @@ class CPP_PT_view_projection_options(bpy.types.Panel, ImagePaintOptions):
         col.prop(scene.cpp, "use_projection_outline")
 
 
-class CPP_PT_current_image_preview_options(Panel, ImagePaintOptions):
+class CPP_PT_current_image_preview_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "Current Image"
     bl_parent_id = "CPP_PT_view_options"
     bl_order = 2

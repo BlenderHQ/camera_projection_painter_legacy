@@ -11,7 +11,7 @@ from . import scene
 from . import template
 
 
-if "_rc" in locals(): # In case of module reloading
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(camera)
     importlib.reload(context_menu)
     importlib.reload(image_paint)

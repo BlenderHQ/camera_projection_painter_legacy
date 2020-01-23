@@ -31,9 +31,8 @@ def set_clone_image_from_camera_data(context):
                     image_paint.clone_image = image
 
 
-def set_camera_by_view(context, mouse_position):
-    rw3d = screen.get_hovered_region_3d(context, mouse_position)
-    if not rw3d:
+def set_camera_by_view(context, rv3d, mouse_position):
+    if not rv3d:
         return
 
     scene = context.scene
@@ -44,7 +43,7 @@ def set_camera_by_view(context, mouse_position):
     for camera in scene.cpp.available_camera_objects:
         camera.select_set(False)
         if method == 'FULL':
-            view_rotation = rw3d.view_rotation
+            view_rotation = rv3d.view_rotation
             if camera.rotation_mode != 'QUATERNION':
                 camera.rotation_mode = 'QUATERNION'
             cam_rot_quat = camera.rotation_quaternion.normalized()
@@ -54,7 +53,7 @@ def set_camera_by_view(context, mouse_position):
                 cam_angles[camera] = value
 
         elif method == 'DIRECTION':
-            view_rotation = rw3d.view_rotation @ Vector((0.0, 0.0, -1.0))
+            view_rotation = rv3d.view_rotation @ Vector((0.0, 0.0, -1.0))
             mat = camera.matrix_world
             camera_vec = -Vector((mat[0][2], mat[1][2], mat[2][2]))
             fac = camera_vec.dot(view_rotation)
@@ -65,7 +64,7 @@ def set_camera_by_view(context, mouse_position):
     if not cam_angles:
         return
 
-    view_loc = rw3d.view_matrix.inverted().translation
+    view_loc = rv3d.view_matrix.inverted().translation
     index = 0
     if len(cam_angles) > 1:
         distances = [(view_loc - n.location).length for n in cam_angles.keys()]

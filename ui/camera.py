@@ -6,7 +6,7 @@ import bpy
 
 from . import template
 
-if "_rc" in locals(): # In case of module reloading
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(template)
 
 _rc = None
@@ -14,22 +14,22 @@ _rc = None
 
 class DATA_UL_bind_history_item(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon_id, active_data, active_propname):
-        row = layout.row(align = True)
+        row = layout.row(align=True)
 
         image = item.image
         if image:
-            if image.cpp.invalid:
-                row.label(icon = "ERROR")
-                row.prop(image, "name", text = "", emboss = False)
-            else:
+            if image.cpp.valid:
                 icon_id = image.preview.icon_id
-                row.template_icon(icon_value = icon_id)
-                row.prop(image, "name", text = "", emboss = False)
-            
+                row.template_icon(icon_value=icon_id)
+                row.prop(image, "name", text="", emboss=False)
+            else:
+                row.label(icon="ERROR")
+                row.prop(image, "name", text="", emboss=False)
+
             icon = 'SOLO_OFF'
             if item.favorite:
                 icon = 'SOLO_ON'
-            row.prop(item, "favorite", text = "", emboss = False, icon = icon)
+            row.prop(item, "favorite", text="", emboss=False, icon=icon)
 
 
 class CameraOptionsPanel:
@@ -49,7 +49,7 @@ class CPP_PT_active_camera_options(bpy.types.Panel, CameraOptionsPanel):
     def draw(self, context):
         layout = self.layout
 
-        template.camera_image(layout, context.active_object, mode = 'ACTIVE')
+        template.camera_image(layout, context.active_object, mode='ACTIVE')
 
 
 class CPP_PT_active_camera_calibration(bpy.types.Panel, CameraOptionsPanel):
@@ -65,7 +65,7 @@ class CPP_PT_active_camera_calibration(bpy.types.Panel, CameraOptionsPanel):
     def draw_header(self, context):
         layout = self.layout
         data = context.active_object.data
-        layout.prop(data.cpp, "use_calibration", text = "")
+        layout.prop(data.cpp, "use_calibration", text="")
 
     def draw(self, context):
         layout = self.layout

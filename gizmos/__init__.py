@@ -7,7 +7,7 @@ import bpy
 from . import camera
 from . import image_preview
 
-if "_rc" in locals(): # In case of module reloading 
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(camera)
     importlib.reload(image_preview)
 

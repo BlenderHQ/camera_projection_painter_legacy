@@ -11,6 +11,9 @@ from ... import poll
 from ... import constants
 from ... import extend_bpy_types
 
+# Contains currently running modal operators
+modal_ops = []
+
 if "_rc" in locals():  # In case of module reloading
     for operator in modal_ops:
         try:
@@ -32,14 +35,12 @@ if "_rc" in locals():  # In case of module reloading
 _rc = None
 
 
-# Contains currently running modal operators
-modal_ops = []
-
 # The update period of the main modal operators
 LISTEN_TIME_STEP = 1 / 4
 TIME_STEP = 1 / 60
 
 # CPP_OT_listener methods
+
 
 def listener_cancel(self, context):
     if self in modal_ops:
@@ -94,6 +95,7 @@ def operator_invoke(self, context, event):
 
     scene.cpp.ensure_objects_initial_hide_viewport(context)
     scene.cpp.cameras_hide_set(state=True)
+    bpy.ops.ed.flush_edits()
 
     ob = context.image_paint_object
 
@@ -180,7 +182,8 @@ def operator_modal(self, context, event):
         draw.mesh_preview.update_brush_texture_bindcode(self, context)
 
     if scene.cpp.use_auto_set_camera:
-        utils.cameras.set_camera_by_view(context, wm.cpp_mouse_pos)
+        rv3d = utils.screen.get_hovered_region_3d(context, wm.cpp_mouse_pos)
+        utils.cameras.set_camera_by_view(context, rv3d, wm.cpp_mouse_pos)
 
     if scene.cpp.use_auto_set_image:
         utils.cameras.set_clone_image_from_camera_data(context)

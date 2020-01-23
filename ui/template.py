@@ -42,7 +42,7 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
         camera_ob.data.cpp, "active_bind_index",
         rows = 1)
 
-    if mode in ('CONTEXT', 'TMP'):
+    if mode in ('CONTEXT', 'TMP', 'ACTIVE'):
         row.operator(
             operator = operators.CPP_OT_bind_history_remove.bl_idname,
             text = "", icon = "REMOVE"
@@ -56,28 +56,27 @@ def camera_image(layout, camera_ob, mode = 'CONTEXT'):
             icon_value = icons.get_icon_id("bind_image"))
         operator.mode = mode
 
-    if image:
-        if not image.cpp.invalid:
-            width, height = image.cpp.static_size
-            depth = image.depth
-            colorspace = image.colorspace_settings.name
+    if image and image.cpp.valid:
+        width, height = image.cpp.static_size
+        depth = image.depth
+        colorspace = image.colorspace_settings.name
+        row = col.row()
+        if mode == 'CONTEXT':
+            row.label(text = "Width:")
+            row.label(text = "%d px" % width)
+
             row = col.row()
-            if mode == 'CONTEXT':
-                row.label(text = "Width:")
-                row.label(text = "%d px" % width)
+            row.label(text = "Height:")
+            row.label(text = "%d px" % height)
 
-                row = col.row()
-                row.label(text = "Height:")
-                row.label(text = "%d px" % height)
+            row = col.row()
+            row.label(text = "Pixel Format:")
+            row.label(text = "%d-bit %s" % (depth, colorspace))
+        # else:
+        # row.label(text = "%dx%d %d-bit %s" % (width, height, depth, colorspace))
 
-                row = col.row()
-                row.label(text = "Pixel Format:")
-                row.label(text = "%d-bit %s" % (depth, colorspace))
-            # else:
-            # row.label(text = "%dx%d %d-bit %s" % (width, height, depth, colorspace))
-
-        else:
-            col.label(text = "Invalid image", icon = 'ERROR')
+    else:
+        col.label(text = "Invalid image", icon = 'ERROR')
 
 
 def path_with_ops(layout, scene):

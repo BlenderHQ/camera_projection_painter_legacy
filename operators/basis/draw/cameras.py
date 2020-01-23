@@ -192,7 +192,7 @@ def draw_cameras(self, context):
         image_has_data = False
         image_aspect_scale = 1.0, 1.0
 
-        if image and (not image.cpp.invalid):
+        if image and image.cpp.valid:
             image_aspect_scale = image.cpp.aspect_scale
             image_has_data = image.has_data
 

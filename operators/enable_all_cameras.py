@@ -12,7 +12,6 @@ if "_rc" in locals():
 _rc = None
 
 
-
 def operator_execute(self, context):
     """Operator Execution Method"""
     scene = context.scene
@@ -22,12 +21,14 @@ def operator_execute(self, context):
         enabled_count += 1
 
     if enabled_count:
-        self.report(type = {'INFO'}, message = "Enabled %d cameras" % enabled_count)
+        self.report(type={'INFO'}, message="Enabled %d cameras" %
+                    enabled_count)
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
 
     return {'FINISHED'}
+
 
 class CPP_OT_enable_all_cameras(bpy.types.Operator):
     bl_idname = "cpp.enable_all_cameras"

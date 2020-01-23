@@ -12,7 +12,7 @@ if "_rc" in locals():
     importlib.reload(utils)
     importlib.reload(constants)
 
-_rc = |None
+_rc = None
 
 
 def set_properties_defaults(self):
@@ -94,7 +94,7 @@ def setup_basis_uv_layer(context):
     image_paint = scene.tool_settings.image_paint
     clone_image = image_paint.clone_image
 
-    if clone_image.cpp.invalid:
+    if not clone_image.cpp.valid:
         return
 
     ob = context.image_paint_object

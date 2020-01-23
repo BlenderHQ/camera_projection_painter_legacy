@@ -13,7 +13,7 @@ from . import constants
 from . import mesh_data
 from . import tool_brush_clone
 
-if "_rc" in locals(): # In case of module reloading
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(constants)
     importlib.reload(mesh_data)
     importlib.reload(tool_brush_clone)
@@ -40,7 +40,7 @@ def register():
         for sub_class in _.__subclasses__():
             for overwrite_cls in _classes:
                 if sub_class.__name__ == overwrite_cls.__name__:
-                    overwriten_functions = inspect.getmembers(sub_class, predicate = inspect.isfunction)
+                    overwriten_functions = inspect.getmembers(sub_class, predicate=inspect.isfunction)
                     for func_name, func in overwriten_functions:
                         if func_name in dir(overwrite_cls):
                             new_func = getattr(overwrite_cls, func_name)
@@ -52,5 +52,5 @@ def unregister():
     # unregistering the add-on (and also when rebooting the add-on as a module)
     import importlib
     importlib.reload(bl_ui)
-    
+
     bl_ui.register()

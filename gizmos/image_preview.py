@@ -20,6 +20,7 @@ if "_rc" in locals():  # In case of module reloading
 
 _rc = None
 
+
 def f_lerp(value0: float, value1: float, factor: float):
     """Linear interpolate float value"""
     return (value0 * (1.0 - factor)) + (value1 * factor)
@@ -42,18 +43,23 @@ def get_curr_img_pos_from_context(context: bpy.types.Context):
 
         area = context.area
 
-        tools_width = [n for n in area.regions if n.type == 'TOOLS'][-1].width  # N-panel width
-        ui_width = [n for n in area.regions if n.type == 'UI'][-1].width  # T-panel width
-        area_size = Vector([area.width - ui_width - tools_width - empty_space, area.height - empty_space])
+        tools_width = [n for n in area.regions if n.type ==
+                       'TOOLS'][-1].width  # N-panel width
+        ui_width = [n for n in area.regions if n.type ==
+                    'UI'][-1].width  # T-panel width
+        area_size = Vector(
+            [area.width - ui_width - tools_width - empty_space, area.height - empty_space])
 
-        image_size = Vector(image.cpp.aspect_scale) * scene.cpp.current_image_size
+        image_size = Vector(image.cpp.aspect_scale) * \
+            scene.cpp.current_image_size
         possible = True
         if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
             possible = False
 
         image_rel_pos = scene.cpp.current_image_position
         rpx, rpy = image_rel_pos
-        apx = f_lerp(empty_space, area_size.x - image_size.x, rpx) + tools_width
+        apx = f_lerp(empty_space, area_size.x -
+                     image_size.x, rpx) + tools_width
         apy = f_lerp(empty_space, area_size.y - image_size.y, rpy)
 
         return Vector((apx, apy)), image_size, possible
@@ -107,9 +113,12 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
         self.pixel_pos, self.pixel_size, possible = curr_img_pos
 
         if rv3d.view_perspective == 'CAMERA':
-            view_frame = [camera_ob.matrix_world @ v for v in camera_ob.data.view_frame(scene = scene)]
-            p0 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord = view_frame[2])
-            p1 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord = view_frame[0])
+            view_frame = [camera_ob.matrix_world @
+                          v for v in camera_ob.data.view_frame(scene=scene)]
+            p0 = view3d_utils.location_3d_to_region_2d(
+                context.region, rv3d, coord=view_frame[2])
+            p1 = view3d_utils.location_3d_to_region_2d(
+                context.region, rv3d, coord=view_frame[0])
             pos = p0
             size = p1.x - p0.x, p1.y - p0.y
         else:
@@ -139,7 +148,8 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
             alpha = self.alpha_highlight if self.is_highlight else scene.cpp.current_image_alpha
             shader.uniform_float("alpha", alpha)
-            shader.uniform_bool("colorspace_srgb", (image.colorspace_settings.name == 'sRGB',))
+            shader.uniform_bool("colorspace_srgb",
+                                (image.colorspace_settings.name == 'sRGB',))
 
             batch.draw(shader)
 
@@ -164,7 +174,8 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
         quad_p2 = mpr_pos + Vector((0.0, self.pixel_size.y))
         quad_p3 = mpr_pos + self.pixel_size
         quad_p4 = mpr_pos + Vector((self.pixel_size.x, 0.0))
-        res = intersect_point_quad_2d(mouse_pos, quad_p1, quad_p2, quad_p3, quad_p4)
+        res = intersect_point_quad_2d(
+            mouse_pos, quad_p1, quad_p2, quad_p3, quad_p4)
         if res == -1:
             return 0
         return -1
@@ -175,18 +186,21 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
         image_paint = scene.tool_settings.image_paint
         self.restore_show_brush = bool(image_paint.show_brush)
         image_paint.show_brush = False
-        self.rel_offset = Vector(scene.cpp.current_image_position) - self._get_image_rel_pos(context, event)
+        self.rel_offset = Vector(
+            scene.cpp.current_image_position) - self._get_image_rel_pos(context, event)
         wm.cpp_suspended = True
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event, tweak):
         scene = context.scene
         rel_pos = self._get_image_rel_pos(context, event) + self.rel_offset
-        snap_points = [(0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 1.0), (0.5, 1.0), (1.0, 1.0), (0.0, 0.5), (1.0, 0.5)]
+        snap_points = [(0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 1.0),
+                       (0.5, 1.0), (1.0, 1.0), (0.0, 0.5), (1.0, 0.5)]
         if 'PRECISE' in tweak:
             pass  # Maybe, some another action for precise?
         elif 'SNAP' in tweak:
-            rel_pos = Vector((sorted(snap_points, key = lambda dist: (Vector(dist) - rel_pos).length)[0]))
+            rel_pos = Vector(
+                (sorted(snap_points, key=lambda dist: (Vector(dist) - rel_pos).length)[0]))
         scene.cpp.current_image_position = rel_pos
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':

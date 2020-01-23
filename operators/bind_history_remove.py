@@ -6,7 +6,8 @@ import bpy
 operator_mode = bpy.props.EnumProperty(
     items = [
         ('CONTEXT', "Context", ""),
-        ('TMP', "Tmp", "")
+        ('TMP', "Tmp", ""),
+        ('ACTIVE', "Active", "")
     ],
     name = "Mode",
     default = 'CONTEXT'
@@ -17,6 +18,8 @@ def operator_execute(self, context):
     scene = context.scene
     if self.mode == 'CONTEXT':
         camera_object = scene.camera
+    elif self.mode == 'ACTIVE':
+        camera_object = context.active_object
     else:  # 'TMP'
         wm = context.window_manager
         camera_object = wm.cpp_current_selected_camera_ob

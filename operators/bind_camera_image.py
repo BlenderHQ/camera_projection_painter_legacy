@@ -20,16 +20,17 @@ SUPPORTED_IMAGE_EXTENSIONS = (
 )
 
 operator_mode = bpy.props.EnumProperty(
-    items = [
+    items=[
         ('ACTIVE', "Active", ""),
         ('CONTEXT', "Context", ""),
         ('SELECTED', "Selected", ""),
         ('ALL', "All", ""),
         ('TMP', "Tmp", "")
     ],
-    name = "Mode",
-    default = 'ACTIVE'
+    name="Mode",
+    default='ACTIVE'
 )
+
 
 def get_source_directory_image_file_list(source_directory_path: str):
     """The method returns a list of image files with the extension from the list"""
@@ -87,7 +88,7 @@ def bind_camera_image_by_name(camera_object: bpy.types.Object, source_directory_
     for image in bpy.data.images:
         name, ext = os.path.splitext(image.name)
         if camera_object.name == image.name or camera_object.name == name:
-            if not image.cpp.invalid:  # Check if image has no data
+            if image.cpp.valid:  # Check if image has no data
                 found_image = image
             break
 
@@ -102,10 +103,10 @@ def bind_camera_image_by_name(camera_object: bpy.types.Object, source_directory_
                     bpy.data.images[file_name].filepath = file_path
                     found_image = bpy.data.images[file_path]
                 else:
-                    found_image = bpy.data.images.load(filepath = file_path, check_existing = True)
+                    found_image = bpy.data.images.load(filepath=file_path, check_existing=True)
                 break
 
-    if found_image and (not found_image.cpp.invalid):
+    if found_image and found_image.cpp.valid:
         camera_object.data.cpp.image = found_image
         return found_image
     camera_object.data.cpp.image = None
@@ -114,7 +115,7 @@ def bind_camera_image_by_name(camera_object: bpy.types.Object, source_directory_
 def operator_execute(self, context):
     """Operator Execution Method"""
     scene = context.scene
-    source_directory_path = bpy.path.native_pathsep(path = bpy.path.abspath(path = scene.cpp.source_images_path))
+    source_directory_path = bpy.path.native_pathsep(path=bpy.path.abspath(path=scene.cpp.source_images_path))
 
     successful_count = 0
 
@@ -134,9 +135,9 @@ def operator_execute(self, context):
         message = "Binded %d camera images" % successful_count
         if successful_count == 1:
             message = "Binded %s camera image" % found_image.name
-        self.report(type = {'INFO'}, message = message)
+        self.report(type={'INFO'}, message=message)
     else:
-        self.report(type = {'WARNING'}, message = "Images not found!")
+        self.report(type={'WARNING'}, message="Images not found!")
 
     return {'FINISHED'}
 
@@ -144,7 +145,7 @@ def operator_execute(self, context):
 def operator_draw(self, context):
     """Method for drawing operator options"""
     layout = self.layout
-    layout.label(text = "No available redo options!", icon = 'INFO')
+    layout.label(text="No available redo options!", icon='INFO')
 
 
 class CPP_OT_bind_camera_image(bpy.types.Operator):

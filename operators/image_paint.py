@@ -25,9 +25,9 @@ def operator_execute(self, context):
     warning_status = utils.warnings.get_warning_status(context, mouse_position)
 
     if warning_status:
-        self.report(type = {'WARNING'}, message = "Danger zone!")
+        self.report(type={'WARNING'}, message="Danger zone!")
         if scene.cpp.use_warning_action_popup:
-            wm.popup_menu(utils.warnings.danger_zone_popup_menu, title = "Danger zone", icon = 'INFO')
+            wm.popup_menu(utils.warnings.danger_zone_popup_menu, title="Danger zone", icon='INFO')
         if scene.cpp.use_warning_action_lock:
             return {'FINISHED'}
 

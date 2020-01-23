@@ -1,7 +1,7 @@
 # <pep8 compliant>
 
 # Extending the properties of the standard classes of the Scene, Object, Image and WindowManager
-import importlib 
+import importlib
 
 import bpy
 from bpy.props import (
@@ -52,11 +52,12 @@ def register():
     bpy.types.WindowManager.cpp_mouse_pos = window_manager.cpp_mouse_pos
     bpy.types.WindowManager.cpp_current_selected_camera_ob = window_manager.cpp_current_selected_camera_ob
 
-    bpy.types.Camera.cpp_bind_history = CollectionProperty(type = BindImageHistoryItem)
-    bpy.types.Camera.cpp = PointerProperty(type = CameraProperties)
-    bpy.types.Scene.cpp = PointerProperty(type = SceneProperties)
-    bpy.types.Image.cpp = PointerProperty(type = ImageProperties)
-    bpy.types.Object.cpp = PointerProperty(type = ObjectProperties)
+    bpy.types.Camera.cpp_bind_history = CollectionProperty(
+        type=BindImageHistoryItem)
+    bpy.types.Camera.cpp = PointerProperty(type=CameraProperties)
+    bpy.types.Scene.cpp = PointerProperty(type=SceneProperties)
+    bpy.types.Image.cpp = PointerProperty(type=ImageProperties)
+    bpy.types.Object.cpp = PointerProperty(type=ObjectProperties)
 
 
 def unregister():

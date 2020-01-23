@@ -91,14 +91,16 @@ def get_image_static_size(image):
             packed_data = image.packed_file.data
             st_size = image.packed_file.size
             with io.BytesIO(packed_data) as io_bytes:
-                width, height = _get_image_metadata_size_from_bytesio(io_bytes, st_size)
+                width, height = _get_image_metadata_size_from_bytesio(
+                    io_bytes, st_size)
         else:
             # External image file
             file_path = bpy.path.abspath(image.filepath)
             if os.path.isfile(file_path):
                 st_size = os.path.getsize(file_path)
                 with io.open(file_path, "rb") as io_bytes:
-                    width, height = _get_image_metadata_size_from_bytesio(io_bytes, st_size)
+                    width, height = _get_image_metadata_size_from_bytesio(
+                        io_bytes, st_size)
 
     elif image.source == 'GENERATED':
         # Generated image file
@@ -176,18 +178,6 @@ class ImageProperties(PropertyGroup):
             aspect_scale = 1.0, 1.0
 
         return aspect_scale
-
-    @property
-    def invalid(self):
-        """
-        Image data availability status # TODO: DEPRECATED
-        @return: bool
-        """
-        image = self.id_data
-        width, height = image.cpp.static_size
-        if width and height:
-            return False
-        return True
 
     @property
     def valid(self):

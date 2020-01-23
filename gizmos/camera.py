@@ -11,7 +11,7 @@ import bpy
 from .. import poll
 from .. import __package__ as pkg
 
-if "_rc" in locals(): # In case of module reloading
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(poll)
 
 _rc = None
@@ -51,7 +51,7 @@ class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
         scene = context.scene
 
         self._camera_gizmos = {}
-        
+
         # Gizmo created for every camera in the scene.
         for camera_ob in context.scene.cpp.camera_objects:
             self._create_gizmo(camera_ob)
@@ -64,12 +64,12 @@ class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
                 _name = camera_ob.name
             except ReferenceError:
                 _invalid_camera_gizmos[camera_ob] = mpr
-        
+
         # Remove the gizmo of these cameras and from the dictionary
         for camera_ob, mpr in _invalid_camera_gizmos.items():
             self._camera_gizmos.pop(camera_ob)
             self.gizmos.remove(mpr)
-        
+
         # Update the parameters of the gizmo of the existing cameras
         # and also add new ones if necessary
         for camera_ob in context.scene.cpp.camera_objects:

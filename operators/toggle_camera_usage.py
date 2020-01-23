@@ -2,6 +2,7 @@
 
 import bpy
 
+
 def operator_execute(self, context):
     """Operator Execution Method"""
     scene = context.scene
@@ -14,7 +15,7 @@ def operator_execute(self, context):
 
     if state and (scene.camera == camera_object):
         scene.camera = None
-        self.report(type = {'WARNING'}, message = "Active camera hidden!")
+        self.report(type={'WARNING'}, message="Active camera hidden!")
 
     return {'FINISHED'}
 

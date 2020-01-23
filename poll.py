@@ -47,11 +47,10 @@ def tool_setup_poll(context: bpy.types.Context):
 
     if image_paint.mode != 'IMAGE':
         return False
+
     if not image_paint.use_clone_layer:
         return False
-    cpp = getattr(scene, "cpp", None)
-    if not cpp:
-        return False
+
     if scene.cpp.mapping != 'CAMERA':
         return False
 
@@ -75,7 +74,7 @@ def full_poll(context: bpy.types.Context):
     canvas = image_paint.canvas
     if not canvas:
         return False
-    elif canvas.cpp.invalid:
+    elif not canvas.cpp.valid:
         return False
     if not scene.camera:
         return False
@@ -84,13 +83,4 @@ def full_poll(context: bpy.types.Context):
     if not image_paint.clone_image:
         return False
 
-    is_cameras_visible = False
-    for ob in scene.cpp.camera_objects:
-        if not ob.cpp.initial_hide_viewport:
-            is_cameras_visible = True
-            break
-
-    if not is_cameras_visible:
-        return False
-    
     return True

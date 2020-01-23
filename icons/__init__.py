@@ -32,11 +32,12 @@ def get_icon_id(key: str):
                 if ext not in ICON_EXTENSIONS:
                     continue
                 _preview_collection.load(name, filepath, "IMAGE")
-    
+
     if key in _preview_collection:
         return _preview_collection[key].icon_id
-    
+
     return 0
+
 
 def unregister():
     global _preview_collection

@@ -159,7 +159,7 @@ def draw_projection_preview(self, context):
     if utils.warnings.gl_load(context, clone_image):
         return
 
-    if clone_image.cpp.invalid:
+    if not clone_image.cpp.valid:
         return
 
     batch = self.mesh_batch

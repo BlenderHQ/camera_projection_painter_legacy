@@ -28,9 +28,10 @@ def operator_execute(self, context):
     if scene.cpp.use_auto_set_image:
         utils.cameras.set_clone_image_from_camera_data(context)
 
-    self.report(type = {'INFO'}, message = "%s is set as active for the scene" % scene.camera.name)
+    self.report(type={'INFO'}, message="%s is set as active for the scene" % scene.camera.name)
 
     return {'FINISHED'}
+
 
 class CPP_OT_set_tmp_camera_active(bpy.types.Operator):
     bl_idname = "cpp.set_tmp_camera_active"

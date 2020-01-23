@@ -5,7 +5,7 @@ from bpy.app.handlers import persistent
 
 
 @persistent
-def load_post_handler(dummy = None):
+def load_post_handler(dummy=None):
     # start listener
     wm = bpy.context.window_manager
     wm.cpp_running = False
@@ -14,7 +14,7 @@ def load_post_handler(dummy = None):
 
 
 @persistent
-def save_pre_handler(dummy = None):
+def save_pre_handler(dummy=None):
     wm = bpy.context.window_manager
     if wm.cpp_running:
         # Save file with visible cameras
@@ -22,14 +22,15 @@ def save_pre_handler(dummy = None):
 
 
 @persistent
-def save_post_handler(dummy = None):
+def save_post_handler(dummy=None):
     from . import poll
     if poll.full_poll(bpy.context):
         # Hide cameras back after saving the file
-        bpy.context.scene.cpp.cameras_hide_set(state = True)
+        bpy.context.scene.cpp.cameras_hide_set(state=True)
+
 
 @persistent
-def depsgraph_update_pre_handler(scene = None):
+def depsgraph_update_pre_handler(scene=None):
     from . import poll
     if poll.full_poll(bpy.context):
         # Remove missing images from the list of the camera palette

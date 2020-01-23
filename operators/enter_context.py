@@ -26,7 +26,7 @@ def operator_description(cls, context, properties):
         result += "\n"
         queue_number += 1
 
-    workspace_tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
+    workspace_tool = context.workspace.tools.from_space_view3d_mode(context.mode, create=False)
     if workspace_tool.idname != "builtin_brush.Clone":
         result += "%s. Tool will be set to Clone" % queue_number
         result += "\n"
@@ -53,24 +53,26 @@ def operator_description(cls, context, properties):
         queue_number += 1
 
     camera_object = scene.camera
-    if not camera_object:
-        if scene.cpp.has_available_camera_objects:
-            camera_object = list(scene.cpp.available_camera_objects)[0]
-            result += "%s. Scene camera will be set to %s" % (queue_number, camera_object.name)
-            result += "\n"
-            queue_number += 1
+    if (not camera_object) and scene.cpp.has_available_camera_objects:
+        camera_object = list(scene.cpp.available_camera_objects)[0]
+        result += "%s. Scene camera will be set to %s" % (queue_number, camera_object.name)
+        result += "\n"
+        queue_number += 1
 
     if camera_object:
         image = camera_object.data.cpp.image
-        if image:
-            if not image.cpp.invalid:
-                if image != image_paint.clone_image:
-                    result += "%s. Image Paint Clone Image will be set to %s" % (queue_number, image.name)
-                    result += "\n"
-                    queue_number += 1
+
+        if image and image.cpp.valid and (image != image_paint.clone_image):
+            result += "%s. Image Paint Clone Image will be set to %s" % (queue_number, image.name)
+            result += "\n"
+            queue_number += 1
 
     if not result:
         result = "Context is ready"
+    else:
+        result += "%s. Lightning method for solid/textured viewport shading will be set to Flat" % queue_number
+        result += "\n"
+        queue_number += 1
 
     return result
 
@@ -82,11 +84,11 @@ def operator_execute(self, context):
     image_paint = scene.tool_settings.image_paint
 
     if active_object.mode != 'TEXTURE_PAINT':
-        bpy.ops.object.mode_set(mode = 'TEXTURE_PAINT')
+        bpy.ops.object.mode_set(mode='TEXTURE_PAINT')
 
-    tool = context.workspace.tools.from_space_view3d_mode(context.mode, create = False)
+    tool = context.workspace.tools.from_space_view3d_mode(context.mode, create=False)
     if tool.idname != "builtin_brush.Clone":
-        bpy.ops.wm.tool_set_by_id(name = "builtin_brush.Clone", cycle = False, space_type = 'VIEW_3D')
+        bpy.ops.wm.tool_set_by_id(name="builtin_brush.Clone", cycle=False, space_type='VIEW_3D')
 
     if image_paint.mode != 'IMAGE':
         image_paint.mode = 'IMAGE'
@@ -107,8 +109,12 @@ def operator_execute(self, context):
     if scene.camera:
         image = scene.camera.data.cpp.image
         if image:
-            if not image.cpp.invalid:
+            if image.cpp.valid:
                 image_paint.clone_image = image
+
+    for area in context.screen.areas:
+        if area.type == 'VIEW_3D':
+            area.spaces.active.shading.light = 'FLAT'
 
     return {'FINISHED'}
 

@@ -7,10 +7,14 @@ from mathutils import Vector, Matrix
 
 _image_loading_order = []
 
+
 def gl_load(context, image: bpy.types.Image):
     scene = context.scene
     for index, item in enumerate(_image_loading_order):
-        if (not item) or (not item.cpp.valid) or (not item.has_data):
+        try:
+            if (not item) or (not item.cpp.valid) or (not item.has_data):
+                _image_loading_order.pop(index)
+        except ReferenceError:
             _image_loading_order.pop(index)
 
     if not image.gl_load():
@@ -51,7 +55,8 @@ def ray_cast(context, mpos):
     ray_direction_obj = ray_target_obj - ray_origin_obj
 
     # cast the ray
-    success, location, normal, face_index = ob.ray_cast(ray_origin_obj, ray_direction_obj)
+    success, location, normal, face_index = ob.ray_cast(
+        ray_origin_obj, ray_direction_obj)
 
     if success:
         location = ob.matrix_world @ location
@@ -73,7 +78,6 @@ def _get_check_pattern():
     pattern.append(Vector((0.0, 0.0)))
     return pattern
 
-
 CHECK_PATTERN = _get_check_pattern()  # do it at stage of import, it's constant
 
 
@@ -87,7 +91,8 @@ def get_warning_status(context, mpos):
     brush_radius = scene.tool_settings.unified_paint_settings.size
 
     p0 = view3d_utils.region_2d_to_vector_3d(region, rv3d, mpos)
-    p1 = view3d_utils.region_2d_to_vector_3d(region, rv3d, (mpos[0] + brush_radius, mpos[1]))
+    p1 = view3d_utils.region_2d_to_vector_3d(
+        region, rv3d, (mpos[0] + brush_radius, mpos[1]))
     scr_radius = (p0 - p1).length
 
     lens = context.space_data.lens * 0.01  # convert to meters
@@ -121,15 +126,15 @@ def danger_zone_popup_menu(self, context):
 
     scene = context.scene
 
-    layout.label(text = "Safe Options:")
+    layout.label(text="Safe Options:")
     layout.separator()
     row = layout.row()
 
     col = row.column()
-    col.label(text = "Unprojected Radius:")
+    col.label(text="Unprojected Radius:")
 
     col = row.column()
     col.emboss = 'NORMAL'
-    col.label(text = "%d %s" % (
+    col.label(text="%d %s" % (
         scene.cpp.distance_warning,
         str(scene.unit_settings.length_unit).capitalize()))
