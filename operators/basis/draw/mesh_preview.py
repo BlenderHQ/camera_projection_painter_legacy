@@ -24,6 +24,7 @@ _rc = None
 def iter_curve_values(curve_mapping, steps: int):
     curve_mapping.initialize()
     curve = list(curve_mapping.curves)[0]
+
     clip_min_x = curve_mapping.clip_min_x
     clip_min_y = curve_mapping.clip_min_y
     clip_max_x = curve_mapping.clip_max_x
@@ -33,9 +34,13 @@ def iter_curve_values(curve_mapping, steps: int):
         fac = i / steps
         pos = utils.common.f_lerp(clip_min_x, clip_max_x, fac)
 
-        value = 1.0
-        #value = curve.evaluate(pos)
+        if hasattr(curve, "evaluate"):  # Blender version 2.81a
+            value = curve.evaluate(pos)
+        else:  # Blender version 2.82a
+            value = curve_mapping.evaluate(curve, pos)
+
         yield utils.common.f_clamp(value, clip_min_y, clip_max_y)
+
 
 def update_brush_texture_bindcode(self, context):
     scene = context.scene
@@ -43,11 +48,14 @@ def update_brush_texture_bindcode(self, context):
     brush = image_paint.brush
     pixel_width = scene.tool_settings.unified_paint_settings.size
 
-    check_steps = 10  # Check curve values for every 10% to check any updates. Its biased, but fast.
-    check_tuple = tuple((n for n in iter_curve_values(brush.curve, check_steps))) + (pixel_width,)
+    # Check curve values for every 10% to check any updates. Its biased, but fast.
+    check_steps = 10
+    check_tuple = tuple((n for n in iter_curve_values(
+        brush.curve, check_steps))) + (pixel_width,)
 
     if self.check_brush_curve_updated(check_tuple):
-        pixels = [int(n * 255) for n in iter_curve_values(brush.curve, pixel_width)]
+        pixels = [int(n * 255)
+                  for n in iter_curve_values(brush.curve, pixel_width)]
 
         id_buff = bgl.Buffer(bgl.GL_INT, 1)
         bgl.glGenTextures(1, id_buff)
@@ -56,7 +64,8 @@ def update_brush_texture_bindcode(self, context):
 
         bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
         image_buffer = bgl.Buffer(bgl.GL_INT, len(pixels), pixels)
-        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER | bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
+        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_MAG_FILTER |
+                            bgl.GL_TEXTURE_MIN_FILTER, bgl.GL_LINEAR)
         bgl.glTexImage2D(bgl.GL_TEXTURE_2D, 0, bgl.GL_RED,
                          pixel_width, 1, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
 
@@ -93,9 +102,9 @@ def get_object_batch(context, ob):
     loop_tris_shape = (loop_tris_count, 3)
 
     # Required attributes
-    vertices_positions = np.empty(vertices_shape, dtype = np.float32)
-    vertices_normals = np.empty(vertices_shape, dtype = np.float32)
-    indices = np.empty(loop_tris_shape, dtype = np.int32)
+    vertices_positions = np.empty(vertices_shape, dtype=np.float32)
+    vertices_normals = np.empty(vertices_shape, dtype=np.float32)
+    indices = np.empty(loop_tris_shape, dtype=np.int32)
 
     vertices_newshape = vertices_count * 3
     loop_tris_newshape = loop_tris_count * 3
@@ -118,20 +127,22 @@ def get_object_batch(context, ob):
     # Structure of a vertex buffer
     vert_format = gpu.types.GPUVertFormat()
     for format_attr in format_attributes:
-        vert_format.attr_add(id = format_attr[0], comp_type = 'F32', len = 3, fetch_mode = 'FLOAT')
+        vert_format.attr_add(
+            id=format_attr[0], comp_type='F32', len=3, fetch_mode='FLOAT')
 
     # Index buffer
-    ibo = gpu.types.GPUIndexBuf(type = buffer_type, seq = indices)
+    ibo = gpu.types.GPUIndexBuf(type=buffer_type, seq=indices)
 
     # Vertex buffer
-    vbo = gpu.types.GPUVertBuf(len = vertices_count, format = vert_format)
+    vbo = gpu.types.GPUVertBuf(len=vertices_count, format=vert_format)
     for attr_id, attr in format_attributes:
-        vbo.attr_fill(id = attr_id, data = attr)
+        vbo.attr_fill(id=attr_id, data=attr)
 
     # Batch
-    batch = gpu.types.GPUBatch(type = buffer_type, buf = vbo, elem = ibo)
+    batch = gpu.types.GPUBatch(type=buffer_type, buf=vbo, elem=ibo)
 
     return batch
+
 
 def draw_projection_preview(self, context):
     wm = context.window_manager
@@ -150,7 +161,7 @@ def draw_projection_preview(self, context):
     ob = context.image_paint_object
     if not ob:
         return
-    
+
     if not (use_projection_preview or (use_warnings and use_warning_action_draw)):
         return
 
@@ -176,7 +187,8 @@ def draw_projection_preview(self, context):
     bgl.glHint(bgl.GL_LINE_SMOOTH_HINT, bgl.GL_NICEST)
     bgl.glEnable(bgl.GL_DEPTH_TEST)
     # bind textures
-    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
+    bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S |
+                        bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
     # bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT)
 
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
@@ -202,7 +214,8 @@ def draw_projection_preview(self, context):
 
     model_matrix = ob.matrix_world
     shader.uniform_float("model_matrix", model_matrix)
-    projector_position, projector_forward, projector_up_axis = get_camera_attributes(scene.camera)
+    projector_position, projector_forward, projector_up_axis = get_camera_attributes(
+        scene.camera)
     shader.uniform_float("projector_position", projector_position)
     shader.uniform_float("projector_forward", projector_forward)
     shader.uniform_float("projector_up_axis", projector_up_axis)
@@ -220,7 +233,8 @@ def draw_projection_preview(self, context):
     # outline
     outline_type = 0
     if use_projection_outline:
-        outline_type = {'NO_OUTLINE': 0, 'FILL': 1, 'CHECKER': 2, 'LINES': 3}[preferences.outline_type]
+        outline_type = {'NO_OUTLINE': 0, 'FILL': 1,
+                        'CHECKER': 2, 'LINES': 3}[preferences.outline_type]
 
         outline_color = preferences.outline_color
         shader.uniform_float("outline_color", outline_color)
@@ -233,7 +247,8 @@ def draw_projection_preview(self, context):
     # warnings
     warning_status = False
     if use_warnings and use_warning_action_draw:
-        warning_status = utils.warnings.get_warning_status(context, wm.cpp_mouse_pos)
+        warning_status = utils.warnings.get_warning_status(
+            context, wm.cpp_mouse_pos)
         shader.uniform_float("warning_color", preferences.warning_color)
     shader.uniform_bool("warning_status", (warning_status,))
 
