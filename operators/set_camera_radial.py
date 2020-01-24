@@ -21,22 +21,24 @@ def operator_execute(self, context):
 
     initial_camera = scene.camera
     camera_angles = {}
-    cameras_count = len(list(scene.cpp.available_camera_objects)) - 1
 
-    for camera_ob in scene.cpp.available_camera_objects:
-        mat = camera_ob.matrix_world
+    for camera_object in scene.cpp.available_camera_objects:
+        if camera_object.cpp.initial_hide_viewport:
+            continue
+        mat = camera_object.matrix_world
         x, y, z = -Vector((mat[0][2], mat[1][2], 0.0)).normalized()
         angle = math.atan2(x, y)
-        camera_angles[camera_ob] = angle
+        camera_angles[camera_object] = angle
 
     camera_angles = sorted(camera_angles.items(), key=lambda item: item[1], reverse=True)
+    cameras_count = len(camera_angles) - 1
 
     prev_camera = None
     next_camera = None
     for i, item in enumerate(camera_angles):
-        camera_ob, angle = item
+        camera_object, angle = item
 
-        if scene.camera == camera_ob:
+        if scene.camera == camera_object:
             if i == 0:
                 prev_camera = camera_angles[-1][0]
                 next_camera = camera_angles[1][0]
@@ -48,14 +50,14 @@ def operator_execute(self, context):
                 next_camera = camera_angles[i + 1][0]
 
     if self.order == 'PREV':
-        new_camera = prev_camera
+        new_camera_object = prev_camera
     elif self.order == 'NEXT':
-        new_camera = next_camera
+        new_camera_object = next_camera
 
-    if new_camera:
-        scene.camera = new_camera
-        if new_camera != initial_camera:
-            self.report(type={'INFO'}, message="Set camera %s active" % new_camera.name)
+    if new_camera_object:
+        scene.camera = new_camera_object
+        if new_camera_object != initial_camera:
+            self.report(type={'INFO'}, message="Set camera %s active" % new_camera_object.name)
 
     return {'FINISHED'}
 
