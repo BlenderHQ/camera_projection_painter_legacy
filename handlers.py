@@ -31,15 +31,13 @@ def save_post_handler(dummy=None):
 
 @persistent
 def depsgraph_update_pre_handler(scene=None):
-    from . import poll
-    if poll.full_poll(bpy.context):
-        # Remove missing images from the list of the camera palette
-        for camera_object in scene.cpp.camera_objects:
-            camera = camera_object.data
+    # Remove missing images from the list of the camera palette
+    for camera_object in scene.cpp.camera_objects:
+        camera = camera_object.data
 
-            for item_index, item in enumerate(camera.cpp_bind_history):
-                if not item.image:
-                    camera.cpp_bind_history.remove(item_index)
+        for item_index, item in enumerate(camera.cpp_bind_history):
+            if not item.image:
+                camera.cpp_bind_history.remove(item_index)
 
 
 _handlers = (

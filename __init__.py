@@ -73,7 +73,8 @@ def load_post_register(dummy=None):
                 ui,
                 operators,
                 keymap,
-                gizmos):
+                gizmos,
+                handlers):
             reg_func = getattr(module, "register")
             reg_func()
 
@@ -84,7 +85,6 @@ def register():
     bpy.utils.register_class(preferences.CppPreferences)
 
     bpy.app.handlers.load_post.append(load_post_register)
-    handlers.register()
 
 
 def unregister():
