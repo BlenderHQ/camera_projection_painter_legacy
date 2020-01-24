@@ -32,7 +32,9 @@ def iter_curve_values(curve_mapping, steps: int):
     for i in range(steps):
         fac = i / steps
         pos = utils.common.f_lerp(clip_min_x, clip_max_x, fac)
-        value = curve.evaluate(pos)
+
+        value = 1.0
+        #value = curve.evaluate(pos)
         yield utils.common.f_clamp(value, clip_min_y, clip_max_y)
 
 def update_brush_texture_bindcode(self, context):
