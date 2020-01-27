@@ -3,6 +3,7 @@
 # The module contains basic methods for checking context for compatible conditions
 
 import importlib
+import os
 
 import bpy
 
@@ -74,8 +75,16 @@ def full_poll(context: bpy.types.Context):
     canvas = image_paint.canvas
     if not canvas:
         return False
-    elif not canvas.cpp.valid:
+    if canvas.source == 'TILED':  # Blender version 2.82a
+        file_path = canvas.filepath
+        if not file_path:
+            return False
+        elif not os.path.isfile(bpy.path.abspath(file_path)):
+            return False
+    if not canvas.cpp.valid:
         return False
+
+
     if not scene.camera:
         return False
     if not image_paint.detect_data():

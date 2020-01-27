@@ -33,20 +33,20 @@ class CPP_PT_camera_painter_scene(bpy.types.Panel, SceneOptions):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
 
         scene = context.scene
 
-        row = col.row(align = True)
-        row.prop(scene.cpp, "source_images_path", icon = 'IMAGE')
+        row = col.row(align=True)
+        row.prop(scene.cpp, "source_images_path", icon='IMAGE')
         srow = row.row()
         srow.enabled = False
         if os.path.isdir(scene.cpp.source_images_path):
             srow.enabled = True
         props = srow.operator(
-            operator = "wm.path_open",
-            text = "",
-            icon = 'EXTERNAL_DRIVE'
+            operator="wm.path_open",
+            text="",
+            icon='EXTERNAL_DRIVE'
         )
         props.filepath = scene.cpp.source_images_path
         # col.prop(scene.cpp, "calibration_source_file", icon_id = 'FILE_CACHE')
@@ -55,23 +55,23 @@ class CPP_PT_camera_painter_scene(bpy.types.Panel, SceneOptions):
 
         scol = col.column()
         scol.enabled = scene.cpp.has_camera_objects_selected
-        operator = scol.operator(
-            operator = operators.CPP_OT_bind_camera_image.bl_idname,
-            text = "Bind Selected Camera Images",
-            text_ctxt = "CPP",
-            icon_value = icons.get_icon_id("bind_image")
+        props = scol.operator(
+            operator=operators.CPP_OT_bind_camera_image.bl_idname,
+            text="Bind Selected Camera Images",
+            text_ctxt="CPP",
+            icon_value=icons.get_icon_id("bind_image")
         )
-        operator.mode = 'SELECTED'
+        props.mode = 'SELECTED'
 
         scol = col.column()
         scol.enabled = scene.cpp.has_camera_objects
-        operator = scol.operator(
-            operator = operators.CPP_OT_bind_camera_image.bl_idname,
-            text = "Bind All Camera Images",
-            text_ctxt = "CPP",
-            icon_value = icons.get_icon_id("bind_image")
+        props = scol.operator(
+            operator=operators.CPP_OT_bind_camera_image.bl_idname,
+            text="Bind All Camera Images",
+            text_ctxt="CPP",
+            icon_value=icons.get_icon_id("bind_image")
         )
-        operator.mode = 'ALL'
+        props.mode = 'ALL'
 
         # scol = col.column()
         # scol.operator(
@@ -94,65 +94,79 @@ class CPP_PT_enter_context(bpy.types.Panel, SceneOptions):
 
     def draw_header(self, context):
         layout = self.layout
-        layout.template_icon(icon_value = icons.get_icon_id("run"))
+        layout.template_icon(icon_value=icons.get_icon_id("run"))
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
 
         ob = context.active_object
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
 
         col.separator()
-        row = col.row(align = True)
-        row.operator(operator = operators.CPP_OT_enter_context.bl_idname, icon_value = icons.get_icon_id("run"))
+        row = col.row(align=True)
+        row.operator(operator=operators.CPP_OT_enter_context.bl_idname,
+                     icon_value=icons.get_icon_id("run"))
 
         if not scene.camera:
-            col.label(text = "Scene missing camera", icon = 'INFO')
+            col.label(text="Scene missing camera", icon='INFO')
         else:
             image = scene.camera.data.cpp.image
             if image:
                 if not image.cpp.valid:
-                    col.label(text = "Invalid image binded to scene camera", icon = 'ERROR')
+                    col.label(
+                        text="Invalid image binded to scene camera", icon='ERROR')
             else:
-                col.label(text = "Scene camera missing binded image", icon = 'INFO')
+                col.label(text="Scene camera missing binded image", icon='INFO')
 
         if not scene.cpp.has_available_camera_objects:
-            col.label(text = "Scene have no cameras with binded images", icon = 'INFO')
+            col.label(
+                text="Scene have no cameras with binded images", icon='INFO')
 
         if not poll.check_uv_layers(ob):
-            col.label(text = "Active object missing UVs", icon = 'ERROR')
+            col.label(text="Active object missing UVs", icon='ERROR')
 
         canvas = image_paint.canvas
         canvas_required = False
         if not canvas:
-            col.label(text = "Image Paint missing canvas", icon = 'ERROR')
+            col.label(text="Image Paint missing canvas", icon='ERROR')
             canvas_required = True
+
+        elif canvas.source == 'TILED':  # Blender version 2.82a
+            file_path = canvas.filepath
+            if not file_path:
+                col.label(text="UDIM canvas must be saved on disk", icon='ERROR')
+                canvas_required = True
+            elif not os.path.isfile(bpy.path.abspath(file_path)):
+                col.label(text="UDIM canvas missing on disk", icon='ERROR')
+                canvas_required = True
+        
         elif not canvas.cpp.valid:
-            col.label(text = "Invalid Image Paint canvas", icon = 'ERROR')
+            col.label(text="Invalid Image Paint canvas", icon='ERROR')
             canvas_required = True
         if canvas_required:
-            col.template_ID(image_paint, "canvas", new = "image.new", open = "image.open")
+            col.template_ID(image_paint, "canvas",
+                            new="image.new", open="image.open")
 
         col.separator()
 
         if ob.active_material:
-            col.label(text = "Material:")
+            col.label(text="Material:")
         else:
-            col.label(text = "Object have no active material", icon = 'INFO')
+            col.label(text="Object have no active material", icon='INFO')
 
         props = col.operator(
-            operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text = "Canvas Image To Diffuse"
+            operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
+            text="Canvas Image To Diffuse"
         )
         props.reverse = False
 
         props = col.operator(
-            operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text = "Diffuse To Canvas Image"
+            operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
+            text="Diffuse To Canvas Image"
         )
         props.reverse = True

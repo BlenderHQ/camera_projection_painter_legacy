@@ -4,12 +4,7 @@ import importlib
 
 import bpy
 import rna_keymap_ui
-from bpy.props import (
-    FloatProperty,
-    IntProperty,
-    EnumProperty,
-    FloatVectorProperty
-)
+from bpy.props import (FloatProperty, IntProperty, EnumProperty, FloatVectorProperty)
 
 from . import operators
 from . import icons
@@ -20,12 +15,8 @@ if "_rc" in locals():
 
 _rc = None
 
-
 # TODO: Make online docs
-WEB_LINKS = [
-    ("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"),
-    ("GitHub", "https://github.com/ivan-perevala")
-]
+WEB_LINKS = [("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"), ("GitHub", "https://github.com/ivan-perevala")]
 
 message_startup_help = """
 Main operator can be started only after
@@ -42,6 +33,12 @@ def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
                     return km_item
             else:
                 return km_item
+
+
+def check_blender_version():
+    version = bpy.app.version
+
+    print(version)
 
 
 def draw_keymap_tab(self, layout):
@@ -110,7 +107,9 @@ def draw_keymap_tab(self, layout):
 def draw_info_tab(self, layout):
     col = layout.column(align=True)
 
-    col.label(text = "There is no ready documentation for the alpha version yet!")
+    check_blender_version()
+
+    col.label(text="There is no ready documentation for the alpha version yet!")
 
     #for name, url in WEB_LINKS:
     #    col.operator("wm.url_open", text=name, icon='URL').url = url
@@ -156,96 +155,114 @@ def draw_draw_tab(self, layout):
 class CppPreferences(bpy.types.AddonPreferences):
     bl_idname = __package__
 
-    tab: EnumProperty(
-        items=[
-            ('DRAW', "Draw", 'Viewport draw preferences'),
-            ('KEYMAP', "Keymap", 'Operators key bindings'),
-            ('INFO', "Info", 'Links to documentation and tutorials')],
-        name="Tab", default="DRAW")
+    tab: EnumProperty(items=[('DRAW', "Draw", 'Viewport draw preferences'),
+                             ('KEYMAP', "Keymap", 'Operators key bindings'),
+                             ('INFO', "Info", 'Links to documentation and tutorials')],
+                      name="Tab",
+                      default="DRAW")
 
     # Preview draw
-    outline_type: EnumProperty(
-        items=[
-            ('NO_OUTLINE', "No outline", 'Outline not used', "", 0),
-            ('FILL', "Fill color", 'Single color outline', icons.get_icon_id("pattern_fill"), 1),
-            ('CHECKER', "Checker", 'Checker pattern outline', icons.get_icon_id("pattern_checker"), 2),
-            ('LINES', "Lines", 'Lines pattern outline', icons.get_icon_id("pattern_lines"), 3)],
-        name="Type",
-        default='LINES',
-        description="Outline to be drawn outside camera rectangle for preview")
+    outline_type: EnumProperty(items=[
+        ('NO_OUTLINE', "No outline", 'Outline not used', "", 0),
+        ('FILL', "Fill color", 'Single color outline', icons.get_icon_id("pattern_fill"), 1),
+        ('CHECKER', "Checker", 'Checker pattern outline', icons.get_icon_id("pattern_checker"), 2),
+        ('LINES', "Lines", 'Lines pattern outline', icons.get_icon_id("pattern_lines"), 3)
+    ],
+                               name="Type",
+                               default='LINES',
+                               description="Outline to be drawn outside camera rectangle for preview")
 
-    outline_width: FloatProperty(
-        name="Width",
-        default=0.25, soft_min=0.0, soft_max=5.0,
-        subtype='FACTOR',
-        description="Outline width")
+    outline_width: FloatProperty(name="Width",
+                                 default=0.25,
+                                 soft_min=0.0,
+                                 soft_max=5.0,
+                                 subtype='FACTOR',
+                                 description="Outline width")
 
-    outline_scale: FloatProperty(
-        name="Scale",
-        default=50.0, soft_min=1.0, soft_max=100.0,
-        subtype='FACTOR',
-        description="Outline scale")
+    outline_scale: FloatProperty(name="Scale",
+                                 default=50.0,
+                                 soft_min=1.0,
+                                 soft_max=100.0,
+                                 subtype='FACTOR',
+                                 description="Outline scale")
 
-    outline_color: FloatVectorProperty(
-        name="Color",
-        default=[0.784363, 0.735347, 0.787399, 0.792857],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Outline color")
+    outline_color: FloatVectorProperty(name="Color",
+                                       default=[0.784363, 0.735347, 0.787399, 0.792857],
+                                       subtype="COLOR",
+                                       size=4,
+                                       min=0.0,
+                                       max=1.0,
+                                       description="Outline color")
 
-    normal_highlight_color: FloatVectorProperty(
-        name="Normal Highlight",
-        default=[0.076387, 0.135512, 0.626662, 0.742857],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Highlight stretched projection color")
+    normal_highlight_color: FloatVectorProperty(name="Normal Highlight",
+                                                default=[0.076387, 0.135512, 0.626662, 0.742857],
+                                                subtype="COLOR",
+                                                size=4,
+                                                min=0.0,
+                                                max=1.0,
+                                                description="Highlight stretched projection color")
 
-    warning_color: FloatVectorProperty(
-        name="Warning Color",
-        default=[1.000000, 0.102228, 0.030697, 1.000000],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Highlight brush warning color")
+    warning_color: FloatVectorProperty(name="Warning Color",
+                                       default=[1.000000, 0.102228, 0.030697, 1.000000],
+                                       subtype="COLOR",
+                                       size=4,
+                                       min=0.0,
+                                       max=1.0,
+                                       description="Highlight brush warning color")
 
-    camera_line_width: FloatProperty(
-        name="Line Width",
-        default=0.5, soft_min=0.5, soft_max=5.0,
-        subtype='PIXEL',
-        description="Width of camera primitive")
+    camera_line_width: FloatProperty(name="Line Width",
+                                     default=0.5,
+                                     soft_min=0.5,
+                                     soft_max=5.0,
+                                     subtype='PIXEL',
+                                     description="Width of camera primitive")
 
-    camera_color: FloatVectorProperty(
-        name="Color",
-        default=[0.000963, 0.001284, 0.002579, 0.564286],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Camera color")
+    camera_color: FloatVectorProperty(name="Color",
+                                      default=[0.000963, 0.001284, 0.002579, 0.564286],
+                                      subtype="COLOR",
+                                      size=4,
+                                      min=0.0,
+                                      max=1.0,
+                                      description="Camera color")
 
-    camera_color_highlight: FloatVectorProperty(
-        name="Color Highlight",
-        default=[0.019613, 0.356583, 0.827556, 0.957143],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Camera color")
+    camera_color_highlight: FloatVectorProperty(name="Color Highlight",
+                                                default=[0.019613, 0.356583, 0.827556, 0.957143],
+                                                subtype="COLOR",
+                                                size=4,
+                                                min=0.0,
+                                                max=1.0,
+                                                description="Camera color")
 
-    camera_color_loaded_data: FloatVectorProperty(
-        name="Color Loaded",
-        default=[0.062277, 0.092429, 0.246195, 0.714286],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Camera image has data loaded into memory")
+    camera_color_loaded_data: FloatVectorProperty(name="Color Loaded",
+                                                  default=[0.062277, 0.092429, 0.246195, 0.714286],
+                                                  subtype="COLOR",
+                                                  size=4,
+                                                  min=0.0,
+                                                  max=1.0,
+                                                  description="Camera image has data loaded into memory")
 
     # Gizmos
-    gizmo_color: FloatVectorProperty(
-        name="Color",
-        default=[0.019613, 0.356583, 0.827556, 0.742857],
-        subtype="COLOR", size=4, min=0.0, max=1.0,
-        description="Gizmo color")
+    gizmo_color: FloatVectorProperty(name="Color",
+                                     default=[0.019613, 0.356583, 0.827556, 0.742857],
+                                     subtype="COLOR",
+                                     size=4,
+                                     min=0.0,
+                                     max=1.0,
+                                     description="Gizmo color")
 
-    gizmo_radius: FloatProperty(
-        name="Radius",
-        default=0.1, soft_min=0.1, soft_max=1.0,
-        subtype='DISTANCE',
-        description="Gizmo radius")
+    gizmo_radius: FloatProperty(name="Radius",
+                                default=0.1,
+                                soft_min=0.1,
+                                soft_max=1.0,
+                                subtype='DISTANCE',
+                                description="Gizmo radius")
 
-    border_empty_space: IntProperty(
-        name="Border Empty Space",
-        default=25, soft_min=5, soft_max=100,
-        subtype='PIXEL',
-        description="Border Empty Space")
+    border_empty_space: IntProperty(name="Border Empty Space",
+                                    default=25,
+                                    soft_min=5,
+                                    soft_max=100,
+                                    subtype='PIXEL',
+                                    description="Border Empty Space")
 
     def draw(self, context):
         layout = self.layout
@@ -265,8 +282,4 @@ class CppPreferences(bpy.types.AddonPreferences):
             col = layout.column()
             col.label(text="Please, reload Blender or current file to begin.")
 
-            col.operator(
-                operator=operators.CPP_OT_info.bl_idname,
-                text="Info",
-                icon='INFO'
-            ).text = message_startup_help
+            col.operator(operator=operators.CPP_OT_info.bl_idname, text="Info", icon='INFO').text = message_startup_help
