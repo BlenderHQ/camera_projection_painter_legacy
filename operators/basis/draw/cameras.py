@@ -20,6 +20,7 @@ _image_previews = {}
 _image_icons = {}
 _image_skip_free = set({})
 
+
 def get_camera_batches():
     # Camera and binded image batches
     vertices = (
@@ -41,7 +42,7 @@ def get_camera_batches():
     camera_wire_batch = batch_for_shader(
         shader_camera, 'LINES',
         {"pos": vertices},
-        indices = wire_indices,
+        indices=wire_indices,
     )
 
     vertices = (
@@ -85,7 +86,7 @@ def get_axes_batch():
     batch_axes = batch_for_shader(
         shader_axes, 'LINES',
         {"pos": vertices, "color": vertex_colors},
-        indices = indices,
+        indices=indices,
     )
 
     return batch_axes
@@ -106,6 +107,7 @@ def gen_buffer_preview(preview):
                      width, height, 0, bgl.GL_RGBA, bgl.GL_UNSIGNED_BYTE, image_buffer)
 
     return bindcode
+
 
 def check_image_previews(self, context):
     scene = context.scene
@@ -175,17 +177,34 @@ def draw_cameras(self, context):
     bgl.glEnable(bgl.GL_DEPTH_TEST)
     bgl.glEnable(bgl.GL_BLEND)
     bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
-    
+
     bgl.glEnable(bgl.GL_LINE_SMOOTH)
     bgl.glDisable(bgl.GL_MULTISAMPLE)
 
-    for camera_ob in scene.cpp.initial_visible_camera_objects:
-        camera = camera_ob.data
+    for camera_object in scene.cpp.initial_visible_camera_objects:
+        camera = camera_object.data
 
-        bgl.glLineWidth(preferences.camera_line_width)
+        line_width = preferences.camera_line_width
 
-        model_matrix = camera_ob.matrix_world
-        camera_lens_size = camera.lens / camera.sensor_width
+        if camera_object == scene.camera:
+            if context.region_data.view_perspective == 'CAMERA':
+                continue
+            line_width = preferences.active_camera_line_width
+
+        bgl.glLineWidth(line_width)
+
+        focal_length = camera.lens
+        shift = camera.shift_x, camera.shift_y
+        if camera.sensor_fit == 'HORIZONTAL':
+            sensor_fit = 1
+        elif camera.sensor_fit == 'VERTICAL':
+            sensor_fit = 2
+        else:
+            sensor_fit = 0
+        sensor_width = camera.sensor_width
+        sensor_height = camera.sensor_height
+
+        model_matrix = camera_object.matrix_world
 
         image = camera.cpp.image
 
@@ -196,20 +215,26 @@ def draw_cameras(self, context):
             image_aspect_scale = image.cpp.aspect_scale
             image_has_data = image.has_data
 
-            if (scene.cpp.use_camera_image_previews and
-                    context.region_data.view_perspective != 'CAMERA' and
-                    image in _image_previews):
+            if (scene.cpp.use_camera_image_previews and image in _image_previews):
                 bindcode = _image_previews[image]
                 bgl.glActiveTexture(bgl.GL_TEXTURE0)
                 bgl.glBindTexture(bgl.GL_TEXTURE_2D, bindcode)
 
                 shader_camera_image_preview.bind()
 
-                shader_camera_image_preview.uniform_int("image", 0)
-                shader_camera_image_preview.uniform_float("cameras_viewport_size", cameras_viewport_size)
-                shader_camera_image_preview.uniform_float("image_aspect_scale", image_aspect_scale)
-                shader_camera_image_preview.uniform_float("camera_lens_size", camera_lens_size)
                 shader_camera_image_preview.uniform_float("model_matrix", model_matrix)
+
+                shader_camera_image_preview.uniform_float("image_aspect_scale", image_aspect_scale)
+
+                shader_camera_image_preview.uniform_float("focal_length", focal_length)
+                shader_camera_image_preview.uniform_float("shift", shift)
+                shader_camera_image_preview.uniform_int("sensor_fit", sensor_fit)
+                shader_camera_image_preview.uniform_float("sensor_width", sensor_width)
+                shader_camera_image_preview.uniform_float("sensor_height", sensor_height)
+
+                shader_camera_image_preview.uniform_float("cameras_viewport_size", cameras_viewport_size)
+
+                shader_camera_image_preview.uniform_int("image", 0)
 
                 image_rect_batch.draw(shader_camera_image_preview)
 
@@ -218,14 +243,22 @@ def draw_cameras(self, context):
             wire_color = preferences.camera_color_loaded_data
         else:
             wire_color = preferences.camera_color
-        if camera_ob == scene.camera:
+        if camera_object == scene.camera:
             wire_color = preferences.camera_color_highlight
-        
-        shader_camera.uniform_float("wire_color", wire_color)
-        shader_camera.uniform_float("image_aspect_scale", image_aspect_scale)
-        shader_camera.uniform_float("cameras_viewport_size", cameras_viewport_size)
-        shader_camera.uniform_float("camera_lens_size", camera_lens_size)
+
         shader_camera.uniform_float("model_matrix", model_matrix)
+
+        shader_camera.uniform_float("image_aspect_scale", image_aspect_scale)
+
+        shader_camera.uniform_float("focal_length", focal_length)
+        shader_camera.uniform_float("shift", shift)
+        shader_camera.uniform_int("sensor_fit", sensor_fit)
+        shader_camera.uniform_float("sensor_width", sensor_width)
+        shader_camera.uniform_float("sensor_height", sensor_height)
+
+        shader_camera.uniform_float("cameras_viewport_size", cameras_viewport_size)
+
+        shader_camera.uniform_float("wire_color", wire_color)
 
         camera_wire_batch.draw(shader_camera)
 

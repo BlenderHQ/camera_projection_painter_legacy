@@ -87,6 +87,8 @@ def full_poll(context: bpy.types.Context):
 
     if not scene.camera:
         return False
+    elif scene.camera.data.type != 'PERSP':
+        return False
     if not image_paint.detect_data():
         return False
     if not image_paint.clone_image:

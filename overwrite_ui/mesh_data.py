@@ -5,11 +5,13 @@ import importlib
 import bpy
 
 from . import constants
+from .. import constants as addon_constants
 from .. import icons
 from .. import operators
 
 if "_rc" in locals():  # In case of module reloading
     importlib.reload(constants)
+    importlib.reload(addon_constants)
     importlib.reload(icons)
     importlib.reload(operators)
 
@@ -18,12 +20,10 @@ _rc = None
 
 class MESH_UL_uvmaps:
     def draw_item(self, _context, layout, _data, item, icon, _active_data, _active_propname, _index):
-        assert(isinstance(
-            item, (bpy.types.MeshTexturePolyLayer, bpy.types.MeshLoopColorLayer)))
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             # ----------------------------\
-            if item.name == constants.TEMP_DATA_NAME:
+            if item.name == addon_constants.TEMP_DATA_NAME:
                 row = layout.row(align=True)
                 row.emboss = 'NONE'
                 row.operator(
@@ -62,7 +62,7 @@ class DATA_PT_uv_texture:
         enable = True
         uv_layers = me.uv_layers
         if uv_layers.active:
-            if uv_layers.active.name == constants.TEMP_DATA_NAME:
+            if uv_layers.active.name == addon_constants.TEMP_DATA_NAME:
                 enable = False
         scol.enabled = enable
         scol.operator("mesh.uv_texture_remove", icon='REMOVE', text="")

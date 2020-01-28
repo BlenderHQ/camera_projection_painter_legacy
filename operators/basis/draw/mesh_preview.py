@@ -72,16 +72,25 @@ def update_brush_texture_bindcode(self, context):
         self.brush_texture_bindcode = bindcode
 
 
-def get_camera_attributes(ob):
-    camera_size = ob.data.sensor_width
-    matrix_world = ob.matrix_world
-    camera_pos = ob.matrix_world.translation
-    camera_forward = (
-        camera_pos + (Vector(
-            [0.0, 0.0, -ob.data.lens / camera_size]
-        ) @ matrix_world.inverted().normalized())
-    )
-    camera_up = Vector([0.0, 1.0, 0.0]) @ matrix_world.inverted()
+def get_camera_attributes(camera_object: bpy.types.Object, aspect: tuple):
+    matrix_world = camera_object.matrix_world
+    matrix_world_inverted = matrix_world.inverted()
+
+    camera = camera_object.data
+
+    focal_length = camera.lens
+    sensor_width = camera.sensor_width
+    sensor_height = camera.sensor_height
+
+    if camera.sensor_fit in ('AUTO', 'HORIZONTAL'):
+        sensor_size = sensor_width
+    else:  # VERTICAL
+        sensor_size = sensor_height
+
+    camera_pos = matrix_world.translation
+    camera_forward = Vector((0.0, 0.0, -focal_length / sensor_size)) @ matrix_world_inverted.normalized()
+
+    camera_up = Vector([0.0, 1.0, 0.0]) @ matrix_world_inverted
 
     return camera_pos, camera_forward, camera_up
 
@@ -151,6 +160,9 @@ def draw_projection_preview(self, context):
 
     scene = context.scene
 
+    camera_object = scene.camera
+    camera = camera_object.data
+
     use_projection_preview = scene.cpp.use_projection_preview
     use_projection_outline = scene.cpp.use_projection_outline
     use_normal_highlight = scene.cpp.use_normal_highlight
@@ -167,12 +179,26 @@ def draw_projection_preview(self, context):
 
     preferences = context.preferences.addons[addon_pkg].preferences
     image_paint = scene.tool_settings.image_paint
-    clone_image = image_paint.clone_image
+    image = image_paint.clone_image
 
-    if utils.warnings.gl_load(context, clone_image):
+    width, height = image.cpp.static_size
+
+    if camera.sensor_fit == 'HORIZONTAL':
+        image_aspect_scale = 1.0, width / height
+    elif camera.sensor_fit == 'VERTICAL':
+        image_aspect_scale = height / width, 1.0
+    else:
+        if width > height:
+            image_aspect_scale = 1.0, width / height
+        elif height > width:
+            image_aspect_scale = height / width, 1.0
+        else:
+            image_aspect_scale = 1.0, 1.0
+
+    if utils.warnings.gl_load(context, image):
         return
 
-    if not clone_image.cpp.valid:
+    if not image.cpp.valid:
         return
 
     batch = self.mesh_batch
@@ -192,7 +218,7 @@ def draw_projection_preview(self, context):
     # bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S | bgl.GL_TEXTURE_WRAP_T, bgl.GL_REPEAT)
 
     bgl.glActiveTexture(bgl.GL_TEXTURE0)
-    bgl.glBindTexture(bgl.GL_TEXTURE_2D, clone_image.bindcode)
+    bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
     bgl.glActiveTexture(bgl.GL_TEXTURE0 + 1)
     bgl.glBindTexture(bgl.GL_TEXTURE_2D, self.brush_texture_bindcode)
 
@@ -203,7 +229,7 @@ def draw_projection_preview(self, context):
     shader.uniform_int("clone_image", 0)
     shader.uniform_int("brush_img", 1)
 
-    colorspace_srgb = clone_image.colorspace_settings.name == 'sRGB'
+    colorspace_srgb = image.colorspace_settings.name == 'sRGB'
     shader.uniform_bool("colorspace_srgb", (colorspace_srgb,))
 
     shader.uniform_bool("use_projection_preview", (use_projection_preview,))
@@ -214,16 +240,16 @@ def draw_projection_preview(self, context):
 
     model_matrix = ob.matrix_world
     shader.uniform_float("model_matrix", model_matrix)
-    projector_position, projector_forward, projector_up_axis = get_camera_attributes(
-        scene.camera)
-    shader.uniform_float("projector_position", projector_position)
-    shader.uniform_float("projector_forward", projector_forward)
-    shader.uniform_float("projector_up_axis", projector_up_axis)
 
-    width, height = clone_image.cpp.static_size
-    wh_div = width / height
+    shader.uniform_float("image_aspect_scale", image_aspect_scale)
 
-    shader.uniform_float("wh_div", wh_div)
+    camera_position, camera_forward, camera_up = get_camera_attributes(camera_object, image_aspect_scale)
+
+    shader.uniform_float("camera_position", camera_position)
+    shader.uniform_float("camera_forward", camera_forward)
+    shader.uniform_float("camera_up", camera_up)
+
+    shader.uniform_float("shift", (camera.shift_x, camera.shift_y))
 
     # normal highlight
     if use_normal_highlight:

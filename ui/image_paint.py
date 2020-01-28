@@ -9,7 +9,7 @@ from .. import operators
 from .. import icons
 from .. import poll
 
-if "_rc" in locals(): # In case of module reloading
+if "_rc" in locals():  # In case of module reloading
     importlib.reload(template)
     importlib.reload(operators)
     importlib.reload(icons)
@@ -40,32 +40,19 @@ class CPP_PT_camera_painter(bpy.types.Panel, ImagePaintOptions):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column(align = False)
+        col = layout.column(align=False)
 
-        scene = context.scene
-        image_paint = scene.tool_settings.image_paint
-        canvas = image_paint.canvas
-        clone_image = image_paint.clone_image
         v3d = context.space_data
 
         if v3d.use_local_camera:
-            col.label(text = "Current viewport use Local Camera.")
-            col.label(text = "Some display options may work incorrect")
+            col.label(text="Current viewport use Local Camera.")
+            col.label(text="Some display options may work incorrect")
 
-        if not scene.camera:
-            col.label(text = "Scene has no camera", icon = 'ERROR')
-
-        if not canvas:
-            col.label(text = "Image Paint has no canvas", icon = 'ERROR')
-        elif not canvas.cpp.valid:
-            col.label(text = "Image Paint canvas invalid", icon = 'ERROR')
-        if not clone_image:
-            col.label(text = "Image Paint has no clone image", icon = 'ERROR')
-        elif not clone_image.cpp.valid:
-                col.label(text = "Image Paint Clone Image invalid", icon = 'ERROR')
-
+        template.missing_context(col, context)
 
 # View Options
+
+
 class CPP_PT_view_options(bpy.types.Panel, ImagePaintOptions):
     bl_label = "View"
     bl_parent_id = "CPP_PT_camera_painter"
@@ -91,7 +78,7 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
         scene = context.scene
 
         col.use_property_split = False
@@ -106,10 +93,10 @@ class CPP_PT_camera_options(bpy.types.Panel, ImagePaintOptions):
         if ready_count < valid_count:
             text = "Image previews (%d/%d ready)" % (ready_count, valid_count)
 
-        col.prop(scene.cpp, "use_camera_image_previews", text = text)
+        col.prop(scene.cpp, "use_camera_image_previews", text=text)
         col.prop(scene.cpp, "use_camera_axes")
 
-        scol = col.column(align = True)
+        scol = col.column(align=True)
         scol.use_property_split = False
         scol.enabled = scene.cpp.use_camera_axes
         scol.prop(scene.cpp, "camera_axes_size")
@@ -123,13 +110,13 @@ class CPP_PT_view_projection_options(bpy.types.Panel, ImagePaintOptions):
     def draw_header(self, context):
         layout = self.layout
         scene = context.scene
-        layout.prop(scene.cpp, "use_projection_preview", text = "")
+        layout.prop(scene.cpp, "use_projection_preview", text="")
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
         layout.use_property_decorate = False
-        col = layout.column(align = False)
+        col = layout.column(align=False)
 
         scene = context.scene
         col.enabled = scene.cpp.use_projection_preview
@@ -145,14 +132,14 @@ class CPP_PT_current_image_preview_options(bpy.types.Panel, ImagePaintOptions):
     def draw_header(self, context):
         layout = self.layout
         scene = context.scene
-        layout.prop(scene.cpp, "use_current_image_preview", text = "")
+        layout.prop(scene.cpp, "use_current_image_preview", text="")
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
 
         scene = context.scene
 
@@ -190,17 +177,21 @@ class CPP_PT_material_options(bpy.types.Panel, ImagePaintOptions):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
+
+        scene = context.scene
 
         col.operator(
-            operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text = "Canvas Image To Diffuse"
+            operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
+            text="Canvas Image To Diffuse"
         ).reverse = False
 
         col.operator(
-            operator = operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text = "Diffuse To Canvas Image"
+            operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
+            text="Diffuse To Canvas Image"
         ).reverse = True
+
+        col.prop(scene.cpp, "use_bind_canvas_diffuse")
 
 
 class CPP_PT_camera_selection_options(bpy.types.Panel, ImagePaintOptions):
@@ -218,14 +209,14 @@ class CPP_PT_camera_selection_options(bpy.types.Panel, ImagePaintOptions):
 
         scene = context.scene
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
         col.use_property_split = True
 
         col.prop(scene.cpp, "use_auto_set_camera")
 
         col.use_property_split = False
-        row = col.row(align = True)
-        row.prop(scene.cpp, "auto_set_camera_method", expand = True)
+        row = col.row(align=True)
+        row.prop(scene.cpp, "auto_set_camera_method", expand=True)
 
         method = scene.cpp.auto_set_camera_method
 
@@ -237,24 +228,24 @@ class CPP_PT_camera_selection_options(bpy.types.Panel, ImagePaintOptions):
         row = col.column()
         row.enabled = not scene.cpp.use_auto_set_camera
 
-        row.operator(operator = operators.CPP_OT_set_camera_by_view.bl_idname)
+        row.operator(operator=operators.CPP_OT_set_camera_by_view.bl_idname)
 
         col = col.column()
         col.enabled = not scene.cpp.use_auto_set_camera
 
-        col.label(text = "Ordered Selection:")
-        row = col.row(align = True)
+        col.label(text="Ordered Selection:")
+        row = col.row(align=True)
         props = row.operator(
-            operator = operators.CPP_OT_set_camera_radial.bl_idname,
-            text = "Previous",
-            icon = 'TRIA_LEFT'
+            operator=operators.CPP_OT_set_camera_radial.bl_idname,
+            text="Previous",
+            icon='TRIA_LEFT'
         )
         props.order = 'PREV'
 
         props = row.operator(
-            operator = operators.CPP_OT_set_camera_radial.bl_idname,
-            text = "Next",
-            icon = 'TRIA_RIGHT'
+            operator=operators.CPP_OT_set_camera_radial.bl_idname,
+            text="Next",
+            icon='TRIA_RIGHT'
         )
         props.order = 'NEXT'
 
@@ -267,14 +258,14 @@ class CPP_PT_warnings_options(bpy.types.Panel, ImagePaintOptions):
     def draw_header(self, context):
         layout = self.layout
         scene = context.scene
-        layout.prop(scene.cpp, "use_warnings", text = "")
+        layout.prop(scene.cpp, "use_warnings", text="")
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
 
-        col = layout.column(align = True)
+        col = layout.column(align=True)
 
         scene = context.scene
 
@@ -283,7 +274,7 @@ class CPP_PT_warnings_options(bpy.types.Panel, ImagePaintOptions):
         col.prop(scene.cpp, "max_loaded_images")
         col.prop(scene.cpp, "distance_warning")
 
-        row = col.row(align = True)
+        row = col.row(align=True)
 
         row.use_property_split = False
         row.prop(
@@ -326,14 +317,40 @@ class CPP_PT_current_camera(bpy.types.Panel, ImagePaintOptions):
         layout = self.layout
         layout.use_property_split = False
         layout.use_property_decorate = False
-        col = layout.column(align = False)
+        col = layout.column(align=False)
 
         scene = context.scene
-        camera_ob = scene.camera
+        camera_object = scene.camera
+        camera = camera_object.data
 
-        template.camera_image(col, camera_ob, mode = 'CONTEXT')
+        template.camera_image(col, camera_object, mode='CONTEXT')
 
         col.prop(scene.cpp, "use_auto_set_image")
+
+        col = col.column(align=True)
+        col.use_property_split = False
+
+        col.prop(camera, 'lens')
+
+        col.separator()
+
+        col.prop(camera, 'shift_x')
+        col.prop(camera, 'shift_y')
+
+        col.label(text="Sensor:")
+
+        col.prop(camera, 'sensor_fit', text="")
+
+        if camera.sensor_fit == 'AUTO':
+            col.prop(camera, "sensor_width", text="Size")
+        else:
+            sub = col.column(align=True)
+            sub.active = camera.sensor_fit == 'HORIZONTAL'
+            sub.prop(camera, "sensor_width", text="Width")
+
+            sub = col.column(align=True)
+            sub.active = camera.sensor_fit == 'VERTICAL'
+            sub.prop(camera, "sensor_height", text="Height")
 
 
 class CPP_PT_current_camera_calibration(bpy.types.Panel, ImagePaintOptions):
@@ -351,7 +368,7 @@ class CPP_PT_current_camera_calibration(bpy.types.Panel, ImagePaintOptions):
         layout = self.layout
         scene = context.scene
         data = scene.camera.data.cpp
-        layout.prop(data, "use_calibration", text = "")
+        layout.prop(data, "use_calibration", text="")
 
     def draw(self, context):
         layout = self.layout

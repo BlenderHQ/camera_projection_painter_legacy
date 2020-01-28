@@ -3,6 +3,7 @@
 
 import importlib
 
+import bpy
 from bpy.types import PropertyGroup
 from bpy.props import (
     BoolProperty,
@@ -52,7 +53,13 @@ class SceneProperties(PropertyGroup):
         Generates a generator of camera objects
         @return: generator
         """
-        return (ob for ob in self._scene.objects if ob.type == 'CAMERA')
+        def check(ob: bpy.types.Object):
+            if ob.type == 'CAMERA':
+                camera = ob.data
+                if camera.type == 'PERSP':
+                    return True
+            return False
+        return (ob for ob in self._scene.objects if check(ob))
 
     @property
     def has_initial_visible_camera_objects(self):
@@ -322,4 +329,11 @@ class SceneProperties(PropertyGroup):
         soft_max=10,
         description="The number of images simultaneously loaded into memory.\n"
                     "If this limit is exceeded, the first of the loaded images is freed from memory"
+    )
+
+    # Canvas - Diffuse
+    use_bind_canvas_diffuse: BoolProperty(
+        name="Bind Canvas Diffuse", default=False,
+        options={'HIDDEN'},
+        description="Automatically set the diffuse texture to canvas when changing and in reverse"
     )

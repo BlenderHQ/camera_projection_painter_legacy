@@ -15,6 +15,9 @@ if "_rc" in locals():
 
 _rc = None
 
+SUPPORTED_BLENDER_VERSION_MIN = 81
+SUPPORTED_BLENDER_VERSION = 81
+
 # TODO: Make online docs
 WEB_LINKS = [("Youtube tutorial", "https://youtu.be/6ffpaG8KPJk"), ("GitHub", "https://github.com/ivan-perevala")]
 
@@ -33,12 +36,6 @@ def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
                     return km_item
             else:
                 return km_item
-
-
-def check_blender_version():
-    version = bpy.app.version
-
-    print(version)
 
 
 def draw_keymap_tab(self, layout):
@@ -107,11 +104,14 @@ def draw_keymap_tab(self, layout):
 def draw_info_tab(self, layout):
     col = layout.column(align=True)
 
-    check_blender_version()
+    version = bpy.app.version
+    if (version[0] != 2) or (version[1] > SUPPORTED_BLENDER_VERSION) or (SUPPORTED_BLENDER_VERSION_MIN > version[1]):
+        str_version = "v%d.%d%s %s" % (version[0], version[1], bpy.app.version_char, bpy.app.version_cycle)
+        col.label(text="Blender %s may be unsupported" % str_version, icon='ERROR')
 
     col.label(text="There is no ready documentation for the alpha version yet!")
 
-    #for name, url in WEB_LINKS:
+    # for name, url in WEB_LINKS:
     #    col.operator("wm.url_open", text=name, icon='URL').url = url
 
 
@@ -139,6 +139,8 @@ def draw_draw_tab(self, layout):
     col.label(text="Cameras:")
     col.separator()
     col.prop(self, "camera_line_width")
+    col.prop(self, "active_camera_line_width")
+    
     col.prop(self, "camera_color")
     col.prop(self, "camera_color_highlight")
     col.prop(self, "camera_color_loaded_data")
@@ -168,9 +170,9 @@ class CppPreferences(bpy.types.AddonPreferences):
         ('CHECKER', "Checker", 'Checker pattern outline', icons.get_icon_id("pattern_checker"), 2),
         ('LINES', "Lines", 'Lines pattern outline', icons.get_icon_id("pattern_lines"), 3)
     ],
-                               name="Type",
-                               default='LINES',
-                               description="Outline to be drawn outside camera rectangle for preview")
+        name="Type",
+        default='LINES',
+        description="Outline to be drawn outside camera rectangle for preview")
 
     outline_width: FloatProperty(name="Width",
                                  default=0.25,
@@ -215,7 +217,14 @@ class CppPreferences(bpy.types.AddonPreferences):
                                      soft_min=0.5,
                                      soft_max=5.0,
                                      subtype='PIXEL',
-                                     description="Width of camera primitive")
+                                     description="Width of camera primitive wireframe")
+
+    active_camera_line_width: FloatProperty(name="Active Line Width",
+                                     default=1.5,
+                                     soft_min=0.5,
+                                     soft_max=5.0,
+                                     subtype='PIXEL',
+                                     description="Width of active camera primitive wireframe")
 
     camera_color: FloatVectorProperty(name="Color",
                                       default=[0.000963, 0.001284, 0.002579, 0.564286],

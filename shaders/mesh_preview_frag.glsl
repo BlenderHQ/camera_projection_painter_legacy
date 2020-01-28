@@ -1,5 +1,4 @@
 uniform vec3 projector_forward;
-uniform float wh_div;
 
 uniform bool use_projection_preview;
 uniform bool use_normal_highlight;
@@ -33,6 +32,8 @@ uniform bool colorspace_srgb;
 
 in vec2 _pos_interp;
 in vec3 _nrm_interp;
+
+in vec2 wh_div;
 
 out vec4 frag;
 
@@ -103,14 +104,14 @@ void main() {
             outline_pattern = 1.0;
             }
             else if (outline_type == 2) {
-                outline_pattern = checker_pattern(_pos_interp, vec2(1.0, wh_div), outline_scale);
+                outline_pattern = checker_pattern(_pos_interp, wh_div, outline_scale);
             }
             else if (outline_type == 3) {
-                outline_pattern = lines_pattern(_pos_interp, vec2(1.0, wh_div), outline_scale);
+                outline_pattern = lines_pattern(_pos_interp, wh_div, outline_scale);
             }
             if (outline_type != 0) {
-                bool outlineMask = inside_outline(_pos_interp, outline_width, vec2(1.0, wh_div));
-                bool outlineMaskFrame = inside_outline(_pos_interp, outline_width * 0.1, vec2(1.0, wh_div));
+                bool outlineMask = inside_outline(_pos_interp, outline_width, wh_div);
+                bool outlineMaskFrame = inside_outline(_pos_interp, outline_width * 0.1, wh_div);
                 if (outlineMaskFrame == true) {
                     outline_pattern = 1.0;
                 }

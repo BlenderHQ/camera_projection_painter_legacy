@@ -171,8 +171,11 @@ def operator_modal(self, context, event):
     if not self.suspended_mouse:
         wm.cpp_mouse_pos = event.mouse_x, event.mouse_y
 
+    ob = context.image_paint_object
     image_paint = scene.tool_settings.image_paint
     clone_image = image_paint.clone_image
+    canvas = image_paint.canvas
+    material = ob.active_material
 
     # Manully call image.buffers_free(). BF does't do this so Blender often crashes
     # Also, it checks if image preview generated
@@ -188,24 +191,54 @@ def operator_modal(self, context, event):
     if scene.cpp.use_auto_set_image:
         utils.cameras.set_clone_image_from_camera_data(context)
 
+    if scene.cpp.use_bind_canvas_diffuse and material:
+        diffuse_node = utils.material.search_diffuse_node(material)
+        if diffuse_node:
+            if self.canvas_updated(canvas):
+                if hasattr(canvas, "cpp") and (not canvas.cpp.valid):
+                    canvas = None
+                result = utils.material.set_canvas_to_material_diffuse(material, canvas)
+                if result == -1:
+                    self.report(type={'INFO'}, message="Diffuse texture set from canvas")
+                else:
+                    self.report(type={'WARNING'}, message="Failed to set diffuse texture from canvas!")
+                self.report
+            elif self.diffuse_updated(diffuse_node.image):
+                result = utils.material.set_material_diffuse_to_canvas(image_paint, material)
+                if result == -1:
+                    self.report(type={'INFO'}, message="Canvas set of diffuse texture")
+                elif result == 1:
+                    self.report(type={'WARNING'}, message="The material has no active output!")
+                elif result == 2:
+                    self.report(type={'WARNING'}, message="Invalid image found in nodes!")
+                elif result == 3:
+                    self.report(type={'WARNING'}, message="Image not found!")
+
     camera_ob = scene.camera
     camera = camera_ob.data
 
-    if event.type not in ('TIMER', 'TIMER_REPORT'):
-        if self.data_updated((
-                camera_ob, clone_image,  # Base properties
+    check_tuple = (
+        camera_ob, camera, clone_image,  # Base properties
+        camera.lens,
+        camera.shift_x,
+        camera.shift_y,
+        camera.sensor_fit,
+        camera.cpp.use_calibration,  # Calibration properties
+        camera.cpp.calibration_principal_point[:],
+        camera.cpp.calibration_skew,
+        camera.cpp.calibration_aspect_ratio,
+        camera.cpp.lens_distortion_radial_1,
+        camera.cpp.lens_distortion_radial_2,
+        camera.cpp.lens_distortion_radial_3,
+        camera.cpp.lens_distortion_tangential_1,
+        camera.cpp.lens_distortion_tangential_2,
+    )
 
-                camera.lens,
-                camera.cpp.use_calibration,  # Calibration properties
-                camera.cpp.calibration_principal_point[:],
-                camera.cpp.calibration_skew,
-                camera.cpp.calibration_aspect_ratio,
-                camera.cpp.lens_distortion_radial_1,
-                camera.cpp.lens_distortion_radial_2,
-                camera.cpp.lens_distortion_radial_3,
-                camera.cpp.lens_distortion_tangential_1,
-                camera.cpp.lens_distortion_tangential_2,
-        )):
+    if self.check_data_updated(check_tuple):
+        self.full_draw = True
+
+    if event.type not in ('TIMER', 'TIMER_REPORT'):
+        if self.data_updated(check_tuple):
             base.setup_basis_uv_layer(context)
             if scene.camera.data.cpp.use_calibration:
                 base.deform_uv_layer(self, context)
