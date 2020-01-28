@@ -22,7 +22,7 @@ from . import icons
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 2, 9),
+    "version": (0, 1, 3, 0),
     "blender": (2, 80, 0),
     "description": "Expanding the capabilities of clone brush for working with photo scans (alpha)",
     "location": "Tool settings > Camera Painter",
