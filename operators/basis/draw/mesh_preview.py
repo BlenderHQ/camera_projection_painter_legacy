@@ -184,16 +184,16 @@ def draw_projection_preview(self, context):
     width, height = image.cpp.static_size
 
     if camera.sensor_fit == 'HORIZONTAL':
-        image_aspect_scale = 1.0, width / height
+        camera_image_aspect_scale = 1.0, width / height
     elif camera.sensor_fit == 'VERTICAL':
-        image_aspect_scale = height / width, 1.0
+        camera_image_aspect_scale = height / width, 1.0
     else:
         if width > height:
-            image_aspect_scale = 1.0, width / height
+            camera_image_aspect_scale = 1.0, width / height
         elif height > width:
-            image_aspect_scale = height / width, 1.0
+            camera_image_aspect_scale = height / width, 1.0
         else:
-            image_aspect_scale = 1.0, 1.0
+            camera_image_aspect_scale = 1.0, 1.0
 
     if utils.warnings.gl_load(context, image):
         return
@@ -241,9 +241,9 @@ def draw_projection_preview(self, context):
     model_matrix = ob.matrix_world
     shader.uniform_float("model_matrix", model_matrix)
 
-    shader.uniform_float("image_aspect_scale", image_aspect_scale)
+    shader.uniform_float("image_aspect_scale", camera_image_aspect_scale)
 
-    camera_position, camera_forward, camera_up = get_camera_attributes(camera_object, image_aspect_scale)
+    camera_position, camera_forward, camera_up = get_camera_attributes(camera_object, camera_image_aspect_scale)
 
     shader.uniform_float("camera_position", camera_position)
     shader.uniform_float("camera_forward", camera_forward)
