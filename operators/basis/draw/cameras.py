@@ -197,30 +197,30 @@ def draw_cameras(self, context):
         image_has_data = False
         aspect_scale = 1.0, 1.0
 
-        width, height = image.cpp.static_size
-
-        if camera.sensor_fit == 'HORIZONTAL':
-            horizontal_fit = True
-            sensor_size = camera.lens / camera.sensor_width
-        elif camera.sensor_fit == 'VERTICAL':
-            horizontal_fit = False
-            sensor_size = camera.lens / camera.sensor_height
-        else:
-            horizontal_fit = width > height
-            sensor_size = camera.lens / camera.sensor_width
-
-        if horizontal_fit:
-            aspect_scale = 1.0, height / width
-        else:
-            aspect_scale = width / height, 1.0
-        
-        if width > height:
-            uv_aspect_scale = 1.0, height / width
-        else:
-            uv_aspect_scale = width / height, 1.0
-
         if image and image.cpp.valid:
             image_has_data = image.has_data
+
+            width, height = image.cpp.static_size
+
+            if camera.sensor_fit == 'HORIZONTAL':
+                horizontal_fit = True
+                sensor_size = camera.lens / camera.sensor_width
+            elif camera.sensor_fit == 'VERTICAL':
+                horizontal_fit = False
+                sensor_size = camera.lens / camera.sensor_height
+            else:
+                horizontal_fit = width > height
+                sensor_size = camera.lens / camera.sensor_width
+
+            if horizontal_fit:
+                aspect_scale = 1.0, height / width
+            else:
+                aspect_scale = width / height, 1.0
+
+            if width > height:
+                uv_aspect_scale = 1.0, height / width
+            else:
+                uv_aspect_scale = width / height, 1.0
 
             if (scene.cpp.use_camera_image_previews and image in _image_previews):
                 bindcode = _image_previews[image]
