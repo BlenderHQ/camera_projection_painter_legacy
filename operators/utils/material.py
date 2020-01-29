@@ -25,7 +25,7 @@ def nodes_recursive_search(nodes: bpy.types.bpy_prop_collection, active_output: 
     current_input_socket = None
     nodes_count = len(nodes)
 
-    while nodes_count > 1:
+    while nodes_count > 0:
         if current_node.bl_idname == "ShaderNodeTexImage":
             break
         for i, current_input_socket in enumerate(current_node.inputs):
@@ -51,6 +51,7 @@ def set_canvas_to_material_diffuse(material: bpy.types.Material, image: bpy.type
     active_output = get_nodes_active_output(nodes)
     if not active_output:
         active_output = material_node_tree.nodes.new(type="ShaderNodeOutputMaterial")
+        active_output.location = (250, 0)
 
     current_node, current_input_socket, current_node_index = nodes_recursive_search(nodes, active_output)
 
@@ -70,7 +71,7 @@ def set_canvas_to_material_diffuse(material: bpy.types.Material, image: bpy.type
 
         def create_node(node_type, next_node, node_index):
             """Function to add nodes"""
-            new_node = material_node_tree.nodes.new(node_type=node_type)
+            new_node = material_node_tree.nodes.new(type=node_type)
             new_node_location = Vector(next_node.location) - Vector([new_node.width + SPACE_BEETWEEN_NODES, 0])
             new_node.location = new_node_location
             new_node.parent = node_frame
@@ -105,7 +106,7 @@ def search_diffuse_node(material: bpy.types.Material):
 
     active_output = get_nodes_active_output(nodes)
     if not active_output:
-        return 1
+        return
     node = nodes_recursive_search(nodes, active_output)[0]
 
     if node.bl_idname == "ShaderNodeTexImage":
