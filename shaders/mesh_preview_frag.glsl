@@ -1,4 +1,4 @@
-uniform vec3 projector_forward;
+uniform vec3 camera_forward;
 
 uniform bool use_projection_preview;
 uniform bool use_normal_highlight;
@@ -62,10 +62,9 @@ void main() {
         }
 
         vec4 frag_nm_highlight;
-        float nm_highlight_fac = 35.0;
 
         if (use_normal_highlight == true) {
-            float nm_dot = 1.0 - clamp(dot(_nrm_interp, projector_forward) / nm_highlight_fac, 0.0, 1.0);
+            float nm_dot = 1.0 - clamp(dot(_nrm_interp, -camera_forward), 0.0, 1.0);
             frag_nm_highlight = linearrgb_to_srgb(normal_highlight_color) * nm_dot;
         }
 

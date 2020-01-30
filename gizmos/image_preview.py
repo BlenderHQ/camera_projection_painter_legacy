@@ -21,9 +21,26 @@ if "_rc" in locals():  # In case of module reloading
 _rc = None
 
 
+GIZMO_SNAP_POINTS = [
+    (0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 1.0),
+    (0.5, 1.0), (1.0, 1.0), (0.0, 0.5), (1.0, 0.5)
+]
+
+
+# Math
+
 def f_lerp(value0: float, value1: float, factor: float):
     """Linear interpolate float value"""
     return (value0 * (1.0 - factor)) + (value1 * factor)
+
+
+def f_clamp(value: float, min_value: float, max_value: float):
+    """Clamp float value"""
+    return max(min(value, max_value), min_value)
+
+
+def v_clamp(value: Vector):
+    return Vector((f_clamp(value[n], 0.0, 1.0) for n in range(2)))
 
 
 def get_curr_img_pos_from_context(context: bpy.types.Context):
@@ -72,14 +89,14 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
     pixel_pos: Vector
     pixel_size: Vector
     rel_offset: Vector
-    restore_show_brush: bool
+    initial_show_brush: bool
 
     __slots__ = (
         "image_batch",
         "pixel_pos",
         "pixel_size",
         "rel_offset",
-        "restore_show_brush",
+        "initial_show_brush",
     )
 
     @staticmethod
@@ -96,7 +113,8 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
     def draw(self, context):
         scene = context.scene
         rv3d = context.region_data
-        camera_ob = scene.camera
+        camera_object = scene.camera
+        camera = camera_object.data
         image_paint = scene.tool_settings.image_paint
         image = image_paint.clone_image
 
@@ -112,13 +130,11 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
         self.pixel_pos, self.pixel_size, possible = curr_img_pos
 
+        # If we look from the camera
         if rv3d.view_perspective == 'CAMERA':
-            view_frame = [camera_ob.matrix_world @
-                          v for v in camera_ob.data.view_frame(scene=scene)]
-            p0 = view3d_utils.location_3d_to_region_2d(
-                context.region, rv3d, coord=view_frame[2])
-            p1 = view3d_utils.location_3d_to_region_2d(
-                context.region, rv3d, coord=view_frame[0])
+            view_frame = [camera_object.matrix_world @ v for v in camera.view_frame(scene=scene)]
+            p0 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord=view_frame[2])
+            p1 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord=view_frame[0])
             pos = p0
             size = p1.x - p0.x, p1.y - p0.y
         else:
@@ -130,28 +146,26 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
         self.alpha = scene.cpp.current_image_alpha
 
+        if image.gl_load():
+            raise Exception()
+
         bgl.glEnable(bgl.GL_BLEND)
         bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
 
-        with gpu.matrix.push_pop():
-            gpu.matrix.translate(pos)
-            gpu.matrix.scale(size)
+        bgl.glActiveTexture(bgl.GL_TEXTURE0)
+        bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
 
-            if image.gl_load():
-                raise Exception()
+        shader.bind()
+        shader.uniform_int("image", 0)
+        shader.uniform_float("pixel_pos", pos)
+        shader.uniform_float("pixel_size", size)
 
-            bgl.glActiveTexture(bgl.GL_TEXTURE0)
-            bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+        alpha = self.alpha_highlight if self.is_highlight else scene.cpp.current_image_alpha
+        shader.uniform_float("alpha", alpha)
+        shader.uniform_bool("colorspace_srgb",
+                            (image.colorspace_settings.name == 'sRGB',))
 
-            shader.bind()
-            shader.uniform_int("image", 0)
-
-            alpha = self.alpha_highlight if self.is_highlight else scene.cpp.current_image_alpha
-            shader.uniform_float("alpha", alpha)
-            shader.uniform_bool("colorspace_srgb",
-                                (image.colorspace_settings.name == 'sRGB',))
-
-            batch.draw(shader)
+        batch.draw(shader)
 
         bgl.glDisable(bgl.GL_BLEND)
         bgl.glEnable(bgl.GL_POLYGON_SMOOTH)
@@ -164,7 +178,7 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
         curr_img_pos = get_curr_img_pos_from_context(context)
         if not curr_img_pos:
             return -1
-        pos, size, possible = curr_img_pos
+        possible = curr_img_pos[2]
         if not possible:
             return -1
 
@@ -184,34 +198,39 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
         wm = context.window_manager
         scene = context.scene
         image_paint = scene.tool_settings.image_paint
-        self.restore_show_brush = bool(image_paint.show_brush)
+
+        self.initial_show_brush = bool(image_paint.show_brush)
         image_paint.show_brush = False
-        self.rel_offset = Vector(
-            scene.cpp.current_image_position) - self._get_image_rel_pos(context, event)
+
+        rel_pos = self._get_image_rel_pos(context, event)
+        self.rel_offset = Vector(scene.cpp.current_image_position) - rel_pos
+
         wm.cpp_suspended = True
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event, tweak):
         scene = context.scene
         rel_pos = self._get_image_rel_pos(context, event) + self.rel_offset
-        snap_points = [(0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 1.0),
-                       (0.5, 1.0), (1.0, 1.0), (0.0, 0.5), (1.0, 0.5)]
+
         if 'PRECISE' in tweak:
-            pass  # Maybe, some another action for precise?
+            pass
         elif 'SNAP' in tweak:
             rel_pos = Vector(
-                (sorted(snap_points, key=lambda dist: (Vector(dist) - rel_pos).length)[0]))
+                (sorted(GIZMO_SNAP_POINTS, key=lambda dist: (Vector(dist) - rel_pos).length)[0]))
+
         scene.cpp.current_image_position = rel_pos
+
         for area in context.screen.areas:
             if area.type == 'VIEW_3D':
                 area.tag_redraw()
+
         return {'RUNNING_MODAL'}
 
     def exit(self, context, cancel):
         wm = context.window_manager
         wm.cpp_suspended = False
         image_paint = context.scene.tool_settings.image_paint
-        image_paint.show_brush = self.restore_show_brush
+        image_paint.show_brush = self.initial_show_brush
 
 
 class CPP_GGT_image_preview_gizmo_group(bpy.types.GizmoGroup):

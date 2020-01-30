@@ -133,6 +133,7 @@ def get_object_batch(context, ob):
         ("pos", vertices_positions),
         ("normal", vertices_normals)
     )
+
     # Structure of a vertex buffer
     vert_format = gpu.types.GPUVertFormat()
     for format_attr in format_attributes:
