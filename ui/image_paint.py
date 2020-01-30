@@ -42,9 +42,18 @@ class CPP_PT_camera_painter(bpy.types.Panel, ImagePaintOptions):
 
         col = layout.column(align=False)
 
-        v3d = context.space_data
+        rv3d = context.space_data
+        scene = context.scene
+        image_paint = scene.tool_settings.image_paint
+        clone_image = image_paint.clone_image
 
-        if v3d.use_local_camera:
+        if clone_image:
+            if not clone_image.cpp.valid:
+                col.label(text="Invalid Clone Image", icon='ERROR')
+        else:
+            col.label(text="Image Paint has no Clone Image", icon='ERROR')
+
+        if rv3d.use_local_camera:
             col.label(text="Current viewport use Local Camera.")
             col.label(text="Some display options may work incorrect")
 
