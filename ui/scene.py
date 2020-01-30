@@ -135,3 +135,6 @@ class CPP_PT_enter_context(bpy.types.Panel, SceneOptions):
         props.reverse = True
 
         col.prop(scene.cpp, "use_bind_canvas_diffuse")
+
+        col.label(text="Experimental:")
+        col.operator(operator=operators.CPP_OT_set_all_cameras_sensor.bl_idname)
