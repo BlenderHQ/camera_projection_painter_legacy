@@ -183,32 +183,34 @@ def draw_cameras(self, context):
 
     for camera_object in scene.cpp.initial_visible_camera_objects:
         camera = camera_object.data
-
+        model_matrix = camera_object.matrix_world
+        shift = camera.shift_x, camera.shift_y
+        image = camera.cpp.image
+        image_has_data = False
         line_width = preferences.camera_line_width
 
         if camera_object == scene.camera:
             if context.region_data.view_perspective == 'CAMERA':
                 continue
+            image = clone_image
             line_width = preferences.active_camera_line_width
 
-        model_matrix = camera_object.matrix_world
-        shift = camera.shift_x, camera.shift_y
-        image = camera.cpp.image
-        image_has_data = False
         aspect_scale = 1.0, 1.0
+        sensor_size = camera.lens / camera.sensor_width
+
+        if camera.sensor_fit == 'HORIZONTAL':
+            horizontal_fit = True
+            sensor_size = camera.lens / camera.sensor_width
+        elif camera.sensor_fit == 'VERTICAL':
+            horizontal_fit = False
+            sensor_size = camera.lens / camera.sensor_height
 
         if image and image.cpp.valid:
             image_has_data = image.has_data
 
             width, height = image.cpp.static_size
 
-            if camera.sensor_fit == 'HORIZONTAL':
-                horizontal_fit = True
-                sensor_size = camera.lens / camera.sensor_width
-            elif camera.sensor_fit == 'VERTICAL':
-                horizontal_fit = False
-                sensor_size = camera.lens / camera.sensor_height
-            else:
+            if camera.sensor_fit == 'AUTO':
                 horizontal_fit = width > height
                 sensor_size = camera.lens / camera.sensor_width
 
