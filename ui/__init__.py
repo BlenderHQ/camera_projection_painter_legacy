@@ -8,6 +8,7 @@ from . import camera
 from . import context_menu
 from . import image_paint
 from . import scene
+from . import preset_menus
 from . import template
 
 
@@ -16,12 +17,15 @@ if "_rc" in locals():  # In case of module reloading
     importlib.reload(context_menu)
     importlib.reload(image_paint)
     importlib.reload(scene)
+    importlib.reload(preset_menus)
     importlib.reload(template)
 
 _rc = None
 
 
 _classes = [
+    preset_menus.CPP_MT_workflow_presets,
+    
     camera.DATA_UL_bind_history_item,
     camera.CPP_PT_active_camera_options,
 

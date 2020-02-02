@@ -6,6 +6,7 @@ import os
 import bpy
 
 from . import template
+from . import preset_menus
 from .. import poll
 from .. import icons
 from .. import operators
@@ -38,6 +39,22 @@ class CPP_PT_camera_painter_scene(bpy.types.Panel, SceneOptions):
         col = layout.column(align=True)
 
         scene = context.scene
+
+        row = col.row(align=True)
+        row.menu(
+            preset_menus.CPP_MT_workflow_presets.__name__,
+            text=preset_menus.CPP_MT_workflow_presets.bl_label)
+
+        row.operator(
+            operator=operators.CPP_OT_add_workflow_preset.bl_idname,
+            text="", icon='ADD')
+
+        props = row.operator(
+            operator=operators.CPP_OT_add_workflow_preset.bl_idname,
+            text="", icon='REMOVE')
+        props.remove_active = True
+
+        col.separator()
 
         row = col.row(align=True)
         row.prop(scene.cpp, "source_images_path", icon='IMAGE')

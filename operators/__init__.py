@@ -18,6 +18,7 @@ from . import toggle_camera_usage
 from . import enable_all_cameras
 from . import set_camera_radial
 from . import set_sensors
+from . import add_workflow_preset
 
 
 if "_rc" in locals():  # In case of module reloading
@@ -35,6 +36,7 @@ if "_rc" in locals():  # In case of module reloading
     importlib.reload(enable_all_cameras)
     importlib.reload(set_camera_radial)
     importlib.reload(set_sensors)
+    importlib.reload(add_workflow_preset)
 
 _rc = None
 
@@ -54,6 +56,7 @@ CPP_OT_toggle_camera_usage = toggle_camera_usage.CPP_OT_toggle_camera_usage
 CPP_OT_enable_all_cameras = enable_all_cameras.CPP_OT_enable_all_cameras
 CPP_OT_set_camera_radial = set_camera_radial.CPP_OT_set_camera_radial
 CPP_OT_set_all_cameras_sensor = set_sensors.CPP_OT_set_all_cameras_sensor
+CPP_OT_add_workflow_preset = add_workflow_preset.CPP_OT_add_workflow_preset
 
 _classes = [
     CPP_OT_listener,
@@ -70,6 +73,7 @@ _classes = [
     CPP_OT_enable_all_cameras,
     CPP_OT_set_camera_radial,
     CPP_OT_set_all_cameras_sensor,
+    CPP_OT_add_workflow_preset,
 ]
 
 register, unregister = bpy.utils.register_classes_factory(_classes)

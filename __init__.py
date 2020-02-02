@@ -2,6 +2,18 @@
 
 __all__ = ["bl_info", "register", "unregister"]
 
+bl_info = {
+    "name": "Camera Projection Painter",
+    "author": "Vlad Kuzmin, Ivan Perevala",
+    "version": (0, 1, 3, 0),
+    "blender": (2, 80, 0),
+    "description": "Expanding the capabilities of clone brush for working with photo scans (alpha)",
+    "location": "Tool settings > Camera Painter",
+    "wiki_url": "",  # TODO: wiki
+    "support": 'COMMUNITY',
+    "category": "Paint",
+}
+
 import time
 import importlib
 
@@ -18,18 +30,7 @@ from . import shaders
 from . import overwrite_ui
 from . import handlers
 from . import icons
-
-bl_info = {
-    "name": "Camera Projection Painter",
-    "author": "Vlad Kuzmin, Ivan Perevala",
-    "version": (0, 1, 3, 0),
-    "blender": (2, 80, 0),
-    "description": "Expanding the capabilities of clone brush for working with photo scans (alpha)",
-    "location": "Tool settings > Camera Painter",
-    "wiki_url": "",  # TODO: wiki
-    "support": 'COMMUNITY',
-    "category": "Paint",
-}
+from . import presets
 
 
 if "_rc" in locals():  # In case of module reloading
@@ -45,6 +46,7 @@ if "_rc" in locals():  # In case of module reloading
     importlib.reload(shaders)
     importlib.reload(overwrite_ui)
     importlib.reload(handlers)
+    importlib.reload(presets)
 
     register_at_reload()
 else:
@@ -74,7 +76,8 @@ def load_post_register(dummy=None):
                 operators,
                 keymap,
                 gizmos,
-                handlers):
+                handlers,
+                presets):
             reg_func = getattr(module, "register")
             reg_func()
 
