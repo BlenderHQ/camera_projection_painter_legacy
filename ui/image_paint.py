@@ -190,15 +190,24 @@ class CPP_PT_material_options(bpy.types.Panel, ImagePaintOptions):
 
         scene = context.scene
 
-        col.operator(
-            operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text="Canvas Image To Diffuse"
-        ).reverse = False
+        ob = context.active_object
 
-        col.operator(
+        if ob.active_material:
+            col.label(text="Material:")
+        else:
+            col.label(text="Object have no active material", icon='INFO')
+
+        props = col.operator(
             operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text="Diffuse To Canvas Image"
-        ).reverse = True
+            text="Material from Canvas"
+        )
+        props.reverse = False
+
+        props = col.operator(
+            operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
+            text="Canvas from Material Texture"
+        )
+        props.reverse = True
 
         col.prop(scene.cpp, "use_bind_canvas_diffuse")
 
