@@ -141,13 +141,13 @@ class CPP_PT_enter_context(bpy.types.Panel, SceneOptions):
 
         props = col.operator(
             operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text="Canvas Image To Diffuse"
+            text="Material from Canvas"
         )
         props.reverse = False
 
         props = col.operator(
             operator=operators.CPP_OT_canvas_to_diffuse.bl_idname,
-            text="Diffuse To Canvas Image"
+            text="Canvas from Material Texture"
         )
         props.reverse = True
 
