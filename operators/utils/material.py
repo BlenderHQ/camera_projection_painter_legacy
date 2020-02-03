@@ -30,7 +30,7 @@ def nodes_recursive_search(nodes: bpy.types.bpy_prop_collection, active_output: 
             break
         for i, current_input_socket in enumerate(current_node.inputs):
             if current_input_socket.bl_idname in ("NodeSocketColor", "NodeSocketShader"):
-                if current_input_socket.is_linked:
+                if current_input_socket.is_linked and len(current_input_socket.links):
                     current_node = current_input_socket.links[0].from_node
                 else:
                     current_input_socket = current_input_socket
