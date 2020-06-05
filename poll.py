@@ -1,18 +1,9 @@
-# <pep8 compliant>
-
 # The module contains basic methods for checking context for compatible conditions
-
-import importlib
 import os
 
+from . import engine
+
 import bpy
-
-from . import constants
-
-if "_rc" in locals():  # In case of module reloading
-    importlib.reload(constants)
-
-_rc = None
 
 
 def check_uv_layers(ob: bpy.types.Object):
@@ -23,10 +14,10 @@ def check_uv_layers(ob: bpy.types.Object):
         uv_layers = ob.data.uv_layers
         uv_layers_count = len(uv_layers)
 
-        if constants.TEMP_DATA_NAME in uv_layers:
+        if engine.TEMP_DATA_NAME in uv_layers:
             uv_layers_count -= 1
 
-        if uv_layers_count and uv_layers.active.name != constants.TEMP_DATA_NAME:
+        if uv_layers_count and uv_layers.active.name != engine.TEMP_DATA_NAME:
             return True
     return False
 
@@ -50,9 +41,6 @@ def tool_setup_poll(context: bpy.types.Context):
         return False
 
     if not image_paint.use_clone_layer:
-        return False
-
-    if scene.cpp.mapping != 'CAMERA':
         return False
 
     ob = context.image_paint_object
@@ -83,7 +71,6 @@ def full_poll(context: bpy.types.Context):
             return False
     if not canvas.cpp.valid:
         return False
-
 
     if not scene.camera:
         return False

@@ -1,6 +1,11 @@
-# <pep8 compliant>
+from .. import __package__ as addon_pkg
+from .. import poll
+from .. import shaders
 
-import importlib
+if "bpy" in locals():  # In case of module reloading
+    import importlib
+    importlib.reload(poll)
+    importlib.reload(shaders)
 
 import bpy
 import gpu
@@ -10,16 +15,6 @@ from mathutils.geometry import intersect_point_quad_2d
 from bpy_extras import view3d_utils
 from gpu_extras.batch import batch_for_shader
 
-from .. import __package__ as addon_pkg
-from .. import poll
-from .. import shaders
-
-if "_rc" in locals():  # In case of module reloading
-    importlib.reload(poll)
-    importlib.reload(shaders)
-
-_rc = None
-
 
 GIZMO_SNAP_POINTS = [
     (0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (0.0, 1.0),
@@ -27,15 +22,11 @@ GIZMO_SNAP_POINTS = [
 ]
 
 
-# Math
-
 def f_lerp(value0: float, value1: float, factor: float):
-    """Linear interpolate float value"""
     return (value0 * (1.0 - factor)) + (value1 * factor)
 
 
 def f_clamp(value: float, min_value: float, max_value: float):
-    """Clamp float value"""
     return max(min(value, max_value), min_value)
 
 
@@ -43,15 +34,9 @@ def v_clamp(value: Vector):
     return Vector((f_clamp(value[n], 0.0, 1.0) for n in range(2)))
 
 
-def get_curr_img_pos_from_context(context: bpy.types.Context):
-    """
-    Returns the absolute position in pixels, the size of the square of the image,
-    and the ability to draw (only if the image frame does not go beyond the frame of the viewer)
-    relative to the square from the edge of the n-panel to the edge of the t-panel horizontally
-    and from the top to the bottom edge of the 3D view with the specified empty space tolerance
-    """
+def get_curr_img_pos_from_context(context):
     scene = context.scene
-    image_paint = scene.tool_settings.image_paint
+    image_paint = context.scene.tool_settings.image_paint
     image = image_paint.clone_image
 
     if image and image.cpp.valid:
@@ -59,27 +44,33 @@ def get_curr_img_pos_from_context(context: bpy.types.Context):
         empty_space = preferences.border_empty_space
 
         area = context.area
+        tools_width = [n for n in area.regions if n.type == 'TOOLS'][-1].width
+        ui_width = [n for n in area.regions if n.type == 'UI'][-1].width
 
-        tools_width = [n for n in area.regions if n.type ==
-                       'TOOLS'][-1].width  # N-panel width
-        ui_width = [n for n in area.regions if n.type ==
-                    'UI'][-1].width  # T-panel width
-        area_size = Vector(
-            [area.width - ui_width - tools_width - empty_space, area.height - empty_space])
+        areasx = area.width - ui_width - tools_width - empty_space
+        areasy = area.height - empty_space
 
-        image_size = Vector(image.cpp.aspect_scale) * \
-            scene.cpp.current_image_size
+        w, h = image.cpp.static_size
+
+        aspx = 1.0
+        aspy = 1.0
+        if w > h:
+            aspy = h / w
+        elif w < h:
+            aspx = w / h
+
+        gizmosx = aspx * scene.cpp.current_image_size
+        gizmosy = aspy * scene.cpp.current_image_size
+
         possible = True
-        if image_size.x > area_size.x - empty_space or image_size.y > area_size.y - empty_space:
+        if (gizmosx > areasx - empty_space) or (gizmosy > areasy - empty_space):
             possible = False
 
-        image_rel_pos = scene.cpp.current_image_position
-        rpx, rpy = image_rel_pos
-        apx = f_lerp(empty_space, area_size.x -
-                     image_size.x, rpx) + tools_width
-        apy = f_lerp(empty_space, area_size.y - image_size.y, rpy)
+        rpx, rpy = scene.cpp.current_image_position
+        gizmopx = f_lerp(empty_space, areasx - gizmosx, rpx) + tools_width
+        gizmopy = f_lerp(empty_space, areasy - gizmosy, rpy)
 
-        return Vector((apx, apy)), image_size, possible
+        return Vector((gizmopx, gizmopy)), Vector([gizmosx, gizmosy]), possible
 
 
 class CPP_GT_current_image_preview(bpy.types.Gizmo):
@@ -112,63 +103,60 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
     def draw(self, context):
         scene = context.scene
-        rv3d = context.region_data
-        camera_object = scene.camera
-        camera = camera_object.data
-        image_paint = scene.tool_settings.image_paint
-        image = image_paint.clone_image
+        camob = scene.camera
+        preferences = context.preferences.addons[addon_pkg].preferences
+        if camob and camob.type == 'CAMERA':
+            camera = camob.data
+            image = camera.cpp.image
 
-        if not image or (not image.cpp.valid):
-            return
+            if image and image.cpp.valid:
+                shader = shaders.shader.current_image
+                batch = self.image_batch
 
-        shader = shaders.shader.current_image
-        batch = self.image_batch
+                imapos = get_curr_img_pos_from_context(context)
+                if imapos:
+                    self.pixel_pos, self.pixel_size, possible = imapos
 
-        curr_img_pos = get_curr_img_pos_from_context(context)
-        if not curr_img_pos:
-            return
+                    # If we look from the camera
+                    rv3d = context.region_data
+                    if rv3d.view_perspective == 'CAMERA':
+                        view_frame = [camob.matrix_world @ v for v in camera.view_frame(scene=scene)]
+                        p0 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord=view_frame[2])
+                        p1 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord=view_frame[0])
+                        pos = p0
+                        size = p1.x - p0.x, p1.y - p0.y
+                        possible = True
+                    else:
+                        pos = self.pixel_pos
+                        size = self.pixel_size
 
-        self.pixel_pos, self.pixel_size, possible = curr_img_pos
+                    if possible:
+                        if image.cpp.gl_load(context):
+                            raise Exception()
 
-        # If we look from the camera
-        if rv3d.view_perspective == 'CAMERA':
-            view_frame = [camera_object.matrix_world @ v for v in camera.view_frame(scene=scene)]
-            p0 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord=view_frame[2])
-            p1 = view3d_utils.location_3d_to_region_2d(context.region, rv3d, coord=view_frame[0])
-            pos = p0
-            size = p1.x - p0.x, p1.y - p0.y
-        else:
-            pos = self.pixel_pos
-            size = self.pixel_size
+                        bgl.glEnable(bgl.GL_BLEND)
+                        bgl.glBlendFunc(bgl.GL_SRC_ALPHA, bgl.GL_ONE_MINUS_SRC_ALPHA)
+                        bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
 
-        if not possible:
-            return
+                        bgl.glActiveTexture(bgl.GL_TEXTURE0)
+                        bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
+                        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_S, bgl.GL_CLAMP_TO_BORDER)
+                        bgl.glTexParameteri(bgl.GL_TEXTURE_2D, bgl.GL_TEXTURE_WRAP_T, bgl.GL_CLAMP_TO_BORDER)
 
-        self.alpha = scene.cpp.current_image_alpha
+                        shader.bind()
+                        shader.uniform_int("image", 0)
+                        camera.cpp.set_shader_calibration(shader)
+                        shader.uniform_float("pixel_pos", pos)
+                        shader.uniform_float("pixel_size", size)
 
-        if image.gl_load():
-            raise Exception()
+                        alpha = self.alpha_highlight if self.is_highlight else scene.cpp.current_image_alpha
+                        shader.uniform_float("alpha", alpha)
+                        shader.uniform_float("image_space_color", preferences.image_space_color)
 
-        bgl.glEnable(bgl.GL_BLEND)
-        bgl.glDisable(bgl.GL_POLYGON_SMOOTH)
+                        batch.draw(shader)
 
-        bgl.glActiveTexture(bgl.GL_TEXTURE0)
-        bgl.glBindTexture(bgl.GL_TEXTURE_2D, image.bindcode)
-
-        shader.bind()
-        shader.uniform_int("image", 0)
-        shader.uniform_float("pixel_pos", pos)
-        shader.uniform_float("pixel_size", size)
-
-        alpha = self.alpha_highlight if self.is_highlight else scene.cpp.current_image_alpha
-        shader.uniform_float("alpha", alpha)
-        shader.uniform_bool("colorspace_srgb",
-                            (image.colorspace_settings.name == 'sRGB',))
-
-        batch.draw(shader)
-
-        bgl.glDisable(bgl.GL_BLEND)
-        bgl.glEnable(bgl.GL_POLYGON_SMOOTH)
+                        bgl.glDisable(bgl.GL_BLEND)
+                        bgl.glEnable(bgl.GL_POLYGON_SMOOTH)
 
     def test_select(self, context, location):
         rv3d = context.region_data
@@ -205,7 +193,7 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
         rel_pos = self._get_image_rel_pos(context, event)
         self.rel_offset = Vector(scene.cpp.current_image_position) - rel_pos
 
-        wm.cpp_suspended = True
+        wm.cpp.suspended = True
         return {'RUNNING_MODAL'}
 
     def modal(self, context, event, tweak):
@@ -228,7 +216,7 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
     def exit(self, context, cancel):
         wm = context.window_manager
-        wm.cpp_suspended = False
+        wm.cpp.suspended = False
         image_paint = context.scene.tool_settings.image_paint
         image_paint.show_brush = self.initial_show_brush
 
@@ -247,8 +235,7 @@ class CPP_GGT_image_preview_gizmo_group(bpy.types.GizmoGroup):
     def poll(cls, context):
         if not poll.full_poll(context):
             return False
-        scene = context.scene
-        return scene.cpp.use_current_image_preview and scene.cpp.current_image_alpha
+        return context.scene.cpp.current_image_alpha
 
     def setup(self, context):
         mpr = self.gizmos.new(CPP_GT_current_image_preview.bl_idname)

@@ -3,5 +3,5 @@ out vec4 fragColor;
 
 void main()
 {
-    fragColor = linearrgb_to_srgb(wire_color);
+    fragColor = wire_color;
 }

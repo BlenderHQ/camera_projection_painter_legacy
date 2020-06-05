@@ -1,5 +1,3 @@
-# <pep8 compliant>
-
 import bpy
 
 
@@ -16,12 +14,10 @@ class CPP_OT_call_pie(bpy.types.Operator):
         return text
 
     def execute(self, context):
-        scene = context.scene
-
-        if self.camera_name in scene.objects:
-            ob = scene.objects[self.camera_name]
-            if ob.type == 'CAMERA':
-                wm = context.window_manager
-                wm.cpp_current_selected_camera_ob = ob
-                bpy.ops.wm.call_menu_pie(name = "CPP_MT_camera_pie")
-        return {'FINISHED'}
+        if self.camera_name in context.scene.objects:
+            ob = context.scene.objects[self.camera_name]
+            wm = context.window_manager
+            wm.cpp.current_selected_camera_ob = ob
+            bpy.ops.wm.call_menu_pie(name="CPP_MT_camera_pie")
+            return {'FINISHED'}
+        return {'CANCELLED'}

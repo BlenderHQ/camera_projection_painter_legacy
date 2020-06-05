@@ -1,42 +1,29 @@
-# <pep8 compliant>
-
-# Extending the properties of the standard classes of the Scene, Object, Image and WindowManager
-import importlib
-
-import bpy
-from bpy.props import (
-    PointerProperty,
-    CollectionProperty
-)
-
 from . import camera
 from . import scene
 from . import image
-from . import obj
-from . import window_manager
+from . import node
+from . import wm
 
-if "_rc" in locals():  # In case of module reloading
+if "bpy" in locals():
+    import importlib
     importlib.reload(camera)
     importlib.reload(scene)
     importlib.reload(image)
-    importlib.reload(obj)
-    importlib.reload(window_manager)
+    importlib.reload(node)
+    importlib.reload(wm)
 
-_rc = None
+import bpy
+from bpy.props import BoolProperty, PointerProperty, CollectionProperty
+from bpy.types import Camera, Object, Scene, ShaderNodeTree, Image, WindowManager
 
-
-BindImageHistoryItem = camera.BindImageHistoryItem
-CameraProperties = camera.CameraProperties
-SceneProperties = scene.SceneProperties
-ImageProperties = image.ImageProperties
-ObjectProperties = obj.ObjectProperties
 
 _classes = [
-    BindImageHistoryItem,
-    CameraProperties,
-    SceneProperties,
-    ImageProperties,
-    ObjectProperties,
+    wm.ProgressItem,
+    wm.WindowManagerProperties,
+    camera.BindImageHistoryItem,
+    camera.CameraProperties,
+    scene.SceneProperties,
+    image.ImageProperties,
 ]
 
 _cls_register, _cls_unregister = bpy.utils.register_classes_factory(_classes)
@@ -45,31 +32,24 @@ _cls_register, _cls_unregister = bpy.utils.register_classes_factory(_classes)
 def register():
     _cls_register()
 
-    # To the window manager class are added properties that must be used to transfer data
-    # but there is no need to save along with the file
-    bpy.types.WindowManager.cpp_running = window_manager.cpp_running
-    bpy.types.WindowManager.cpp_suspended = window_manager.cpp_suspended
-    bpy.types.WindowManager.cpp_mouse_pos = window_manager.cpp_mouse_pos
-    bpy.types.WindowManager.cpp_current_selected_camera_ob = window_manager.cpp_current_selected_camera_ob
+    Camera.cpp = PointerProperty(type=camera.CameraProperties)
+    Scene.cpp = PointerProperty(type=scene.SceneProperties)
+    Image.cpp = PointerProperty(type=image.ImageProperties)
+    WindowManager.cpp = PointerProperty(type=wm.WindowManagerProperties)
+    WindowManager.cpp_progress_seq = CollectionProperty(type=wm.ProgressItem)
 
-    bpy.types.Camera.cpp_bind_history = CollectionProperty(
-        type=BindImageHistoryItem)
-    bpy.types.Camera.cpp = PointerProperty(type=CameraProperties)
-    bpy.types.Scene.cpp = PointerProperty(type=SceneProperties)
-    bpy.types.Image.cpp = PointerProperty(type=ImageProperties)
-    bpy.types.Object.cpp = PointerProperty(type=ObjectProperties)
+    ShaderNodeTree.active_texnode_index = node.active_texnode_index
+    Object.initial_visible = BoolProperty(name="Used", default=True)
+    Camera.cpp_bind_history = CollectionProperty(type=camera.BindImageHistoryItem)
 
 
 def unregister():
     _cls_unregister()
 
-    del bpy.types.Object.cpp
-    del bpy.types.Image.cpp
-    del bpy.types.Scene.cpp
-    del bpy.types.Camera.cpp
-    del bpy.types.Camera.cpp_bind_history
-
-    del bpy.types.WindowManager.cpp_running
-    del bpy.types.WindowManager.cpp_suspended
-    del bpy.types.WindowManager.cpp_mouse_pos
-    del bpy.types.WindowManager.cpp_current_selected_camera_ob
+    del Camera.cpp_bind_history
+    del Camera.cpp
+    del Scene.cpp
+    del Image.cpp
+    del WindowManager.cpp
+    del ShaderNodeTree.active_texnode_index
+    del Object.initial_visible

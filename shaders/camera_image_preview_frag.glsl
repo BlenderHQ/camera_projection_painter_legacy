@@ -1,9 +1,16 @@
 uniform sampler2D image;
+uniform vec4 image_space_color;
+
 in vec2 uvInterp;
-out vec4 fragColor;
+out vec4 frag;
 
 void main()
 {
-    fragColor = texture(image, uvInterp);
-    fragColor.a = 1.0;
+    vec2 undist_uv = undistorted_uv(uvInterp);
+
+    frag = blender_srgb_to_framebuffer_space(texture(image, undist_uv));
+    if (frag.a < 0.95f){
+        frag = image_space_color;
+    }
+
 }

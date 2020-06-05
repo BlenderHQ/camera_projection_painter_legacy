@@ -1,15 +1,10 @@
-# <pep8 compliant>
-
-import importlib
-
-import bpy
-
 from . import operators
 
-if "_rc" in locals():
+if "bpy" in locals():
+    import importlib
     importlib.reload(operators)
 
-_rc = None
+import bpy
 
 
 _keymaps = []
@@ -22,13 +17,6 @@ ADDON_KEYMAP = {
         ),
     ),
 
-    operators.CPP_OT_set_camera_by_view.bl_idname: (
-        (
-            {"type": 'X', "value": 'PRESS', "alt": True},
-            None
-        ),
-    ),
-
     operators.CPP_OT_enable_all_cameras.bl_idname: (
         (
             {"type": 'H', "value": 'PRESS', "alt": True},
@@ -36,40 +24,11 @@ ADDON_KEYMAP = {
         ),
     ),
 
-    operators.CPP_OT_set_camera_radial.bl_idname: (
-        (
-            {"type": 'LEFT_ARROW', "value": 'PRESS'},
-            {"order": 'PREV'}
-        ),
-
-        (
-            {"type": 'RIGHT_ARROW', "value": 'PRESS'},
-            {"order": 'NEXT'}
-        )
-    ),
-
     "view3d.view_center_pick": (
         (
             {"type": 'SPACE', "value": 'PRESS'},
             None
         ),
-    ),
-
-    "wm.context_toggle": (
-        (
-            {"type": 'I', "value": 'PRESS'},
-            {"data_path": "scene.cpp.use_camera_image_previews"}
-        ),
-
-        (
-            {"type": 'O', "value": 'PRESS'},
-            {"data_path": "scene.cpp.use_projection_preview"}
-        ),
-
-        (
-            {"type": 'P', "value": 'PRESS'},
-            {"data_path": "scene.cpp.use_current_image_preview"}
-        )
     ),
 }
 

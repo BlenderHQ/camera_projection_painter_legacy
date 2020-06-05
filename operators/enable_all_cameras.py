@@ -1,33 +1,10 @@
-# <pep8 compliant>
-
-import importlib
-
-import bpy
-
 from .. import poll
 
-if "_rc" in locals():
+if "bpy" in locals():
+    import importlib
     importlib.reload(poll)
 
-_rc = None
-
-
-def operator_execute(self, context):
-    """Operator Execution Method"""
-    scene = context.scene
-    enabled_count = 0
-    for camera_object in scene.cpp.camera_objects:
-        camera_object.cpp.initial_hide_viewport = False
-        enabled_count += 1
-
-    if enabled_count:
-        self.report(type={'INFO'}, message="Enabled %d cameras" %
-                    enabled_count)
-        for area in context.screen.areas:
-            if area.type == 'VIEW_3D':
-                area.tag_redraw()
-
-    return {'FINISHED'}
+import bpy
 
 
 class CPP_OT_enable_all_cameras(bpy.types.Operator):
@@ -40,4 +17,18 @@ class CPP_OT_enable_all_cameras(bpy.types.Operator):
     def poll(cls, context):
         return poll.tool_setup_poll(context)
 
-    execute = operator_execute
+    def execute(self, context):
+        enabled_count = 0
+        for camera_object in context.scene.cpp.camera_objects:
+            if (not camera_object.initial_visible):
+                enabled_count += 1
+            camera_object.initial_visible = True
+
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+                
+        if enabled_count:
+            self.report(type={'INFO'}, message=f"Enabled {enabled_count} cameras")
+
+        return {'FINISHED'}

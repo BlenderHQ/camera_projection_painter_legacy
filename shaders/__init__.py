@@ -1,10 +1,8 @@
-# <pep8 compliant>
-
 # A module containing all the shaders used.
 # All files with the *.glsl extension in the module directory during import are placed in the "shader" container.
 # Vertex, fragment, and other shader files must have the endings "_vert", "_frag", ect.
 
-__version__ = (1, 0, 0)
+__version__ = (1, 0, 1)
 
 import os
 
@@ -18,6 +16,10 @@ SHADER_FRAGMENT = "frag"
 SHADER_GEOMETRY = "geom"
 SHADER_DEFINES = "def"
 SHADER_LIBRARY = "lib"
+
+
+class ShaderCompileException(Exception):
+    pass
 
 
 def _generate_shaders():
@@ -97,8 +99,12 @@ def _generate_shaders():
 
         kwargs = dict(filter(lambda item: item[1] is not None, kwargs.items()))
 
-        data = gpu.types.GPUShader(**kwargs)
-        _res[shader_name] = data
+        try:
+            data = gpu.types.GPUShader(**kwargs)
+            _res[shader_name] = data
+        except Exception as ex:
+            print(ex)
+            raise ShaderCompileException(f"Error shader compile: {shader_name}")
 
     assert len(_res)
 

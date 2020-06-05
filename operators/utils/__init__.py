@@ -1,18 +1,11 @@
-# <pep8 compliant>
-
-import importlib
-
-from . import common
 from . import warnings
-from . import cameras
 from . import screen
-from . import material
+from . import progress
 
-if "_rc" in locals():
-    importlib.reload(common)
+if "bpy" in locals():
+    import importlib
     importlib.reload(warnings)
-    importlib.reload(cameras)
     importlib.reload(screen)
-    importlib.reload(material)
+    importlib.reload(progress)
 
-_rc = None
+import bpy

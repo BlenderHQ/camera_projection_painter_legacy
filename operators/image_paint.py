@@ -1,39 +1,12 @@
-# <pep8 compliant>
-
-import importlib
-
-import bpy
-
 from . import utils
-from .. import constants
 from .. import poll
 
-if "_rc" in locals():  # In case of module reloading
+if "bpy" in locals():
+    import importlib
     importlib.reload(utils)
-    importlib.reload(constants)
     importlib.reload(poll)
 
-_rc = None
-
-
-def operator_execute(self, context):
-    """Operator Execution Method"""
-    scene = context.scene
-    wm = context.window_manager
-
-    mouse_position = wm.cpp_mouse_pos
-    warning_status = utils.warnings.get_warning_status(context, mouse_position)
-
-    if warning_status:
-        self.report(type={'WARNING'}, message="Danger zone!")
-        if scene.cpp.use_warning_action_popup:
-            wm.popup_menu(utils.warnings.danger_zone_popup_menu, title="Danger zone", icon='INFO')
-        if scene.cpp.use_warning_action_lock:
-            return {'FINISHED'}
-
-    bpy.ops.paint.image_paint('INVOKE_DEFAULT')
-
-    return {'FINISHED'}
+import bpy
 
 
 class CPP_OT_image_paint(bpy.types.Operator):
@@ -50,4 +23,33 @@ class CPP_OT_image_paint(bpy.types.Operator):
             return False
         return poll.full_poll(context)
 
-    execute = operator_execute
+    def execute(self, context):
+        wm = context.window_manager
+
+        if utils.warnings.get_warning_status(context, wm.cpp.mouse_pos):
+            self.report(type={'WARNING'}, message="Danger zone!")
+            if context.scene.cpp.use_warning_action_popup:
+                wm.popup_menu(self.danger_zone_popup_menu, title="Danger zone", icon='INFO')
+            if context.scene.cpp.use_warning_action_lock:
+                return {'FINISHED'}
+
+        bpy.ops.paint.image_paint('INVOKE_DEFAULT')
+
+        return {'FINISHED'}
+
+    @staticmethod
+    def danger_zone_popup_menu(self, context):
+        scene = context.scene
+
+        col = self.layout.column(align=True)
+        col.emboss = 'NONE'
+        col.label(text="Safe Options")
+        col.separator()
+        row = col.row()
+
+        col = row.column()
+        col.label(text="Unprojected Radius:")
+
+        col = row.column()
+        col.emboss = 'NORMAL'
+        col.label(text=f"{scene.cpp.distance_warning} {str(scene.unit_settings.length_unit).capitalize()}")

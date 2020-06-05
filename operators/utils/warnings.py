@@ -1,44 +1,11 @@
-# <pep8 compliant>
+from math import radians
 
-import bpy
 from bpy_extras import view3d_utils
 from mathutils import Vector, Matrix
 
 
-_image_loading_order = []
-
-
-def gl_load(context, image: bpy.types.Image):
-    scene = context.scene
-    for index, item in enumerate(_image_loading_order):
-        try:
-            if (not item) or (not item.cpp.valid) or (not item.has_data):
-                _image_loading_order.pop(index)
-        except ReferenceError:
-            _image_loading_order.pop(index)
-
-    if not image.gl_load():
-        if image in _image_loading_order:
-            _image_loading_order.remove(image)
-        _image_loading_order.insert(0, image)
-        if len(_image_loading_order) > scene.cpp.max_loaded_images:
-            last_image = _image_loading_order[-1]
-            last_image.gl_free()
-            last_image.buffers_free()
-            _image_loading_order.remove(last_image)
-
-    elif image in _image_loading_order:
-        _image_loading_order.remove(image)
-
-
-def clear_image_loading_order():
-    global _image_loading_order
-    _image_loading_order = []
-
-
 def ray_cast(context, mpos):
     ob = context.active_object
-    scene = context.scene
     region = context.region
     rv3d = context.region_data
 
@@ -66,17 +33,20 @@ def ray_cast(context, mpos):
 
 
 def _get_check_pattern():
-    from math import radians
     pattern = []
     p0 = Vector((1.0, 0.0, 0.0))
-    for i in range(8):
-        angle = radians(45 * i)
-        mat_rotation = Matrix.Rotation(angle, 3, 'Z')
-        p1 = p0.copy()
-        p1.rotate(mat_rotation)
-        pattern.append(p1.to_2d())
+    rays_rows = 36
+    rays_cols = 4
+    for i in range(rays_rows):
+        angle = radians(360 / rays_rows * i)
+        for j in range(rays_cols):
+            mat_rotation = Matrix.Rotation(angle, 3, 'Z')
+            p1 = p0.copy()
+            p1.rotate(mat_rotation)
+            pattern.append(p1.to_2d() * (1.0 / rays_cols * j))
     pattern.append(Vector((0.0, 0.0)))
     return pattern
+
 
 CHECK_PATTERN = _get_check_pattern()  # do it at stage of import, it's constant
 
@@ -84,15 +54,13 @@ CHECK_PATTERN = _get_check_pattern()  # do it at stage of import, it's constant
 def get_warning_status(context, mpos):
     mpos = Vector(mpos)
 
-    scene = context.scene
     region = context.region
     rv3d = context.region_data
 
-    brush_radius = scene.tool_settings.unified_paint_settings.size
+    brush_radius = context.scene.tool_settings.unified_paint_settings.size
 
     p0 = view3d_utils.region_2d_to_vector_3d(region, rv3d, mpos)
-    p1 = view3d_utils.region_2d_to_vector_3d(
-        region, rv3d, (mpos[0] + brush_radius, mpos[1]))
+    p1 = view3d_utils.region_2d_to_vector_3d(region, rv3d, (mpos[0] + brush_radius, mpos[1]))
     scr_radius = (p0 - p1).length
 
     lens = context.space_data.lens * 0.01  # convert to meters
@@ -113,28 +81,7 @@ def get_warning_status(context, mpos):
         b = lens
         tan_a = a / b
         unprojected_radius = tan_a * distance
-        if unprojected_radius > scene.cpp.distance_warning:
+        if unprojected_radius > context.scene.cpp.distance_warning:
             return True
 
     return False
-
-
-def danger_zone_popup_menu(self, context):
-    layout = self.layout
-
-    layout.emboss = 'NONE'
-
-    scene = context.scene
-
-    layout.label(text="Safe Options:")
-    layout.separator()
-    row = layout.row()
-
-    col = row.column()
-    col.label(text="Unprojected Radius:")
-
-    col = row.column()
-    col.emboss = 'NORMAL'
-    col.label(text="%d %s" % (
-        scene.cpp.distance_warning,
-        str(scene.unit_settings.length_unit).capitalize()))

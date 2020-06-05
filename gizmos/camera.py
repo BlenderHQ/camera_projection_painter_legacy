@@ -4,17 +4,14 @@
 # splitting a window (see link), therefore, standard
 # https://developer.blender.org/T71941
 
-import importlib
-
-import bpy
-
 from .. import poll
 from .. import __package__ as pkg
 
-if "_rc" in locals():  # In case of module reloading
+if "bpy" in locals():
+    import importlib
     importlib.reload(poll)
 
-_rc = None
+import bpy
 
 
 class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
@@ -48,8 +45,6 @@ class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
         return mpr
 
     def setup(self, context):
-        scene = context.scene
-
         self._camera_gizmos = {}
 
         # Gizmo created for every camera in the scene.
