@@ -42,7 +42,7 @@ CPP_OT_enable_all_cameras = enable_all_cameras.CPP_OT_enable_all_cameras
 CPP_OT_import_cameras_csv = import_cameras_csv.CPP_OT_import_cameras_csv
 CPP_OT_import_cameras_xml = import_cameras_xml.CPP_OT_import_cameras_xml
 
-CPP_OT_io_fbx = enter_context.fbx.CPP_OT_io_fbx
+CPP_OT_io_fbx = enter_context.io_fbx.CPP_OT_io_fbx
 CPP_OT_enter_context = enter_context.CPP_OT_enter_context
 
 CPP_OT_refresh_image_preview = refresh_image_preview.CPP_OT_refresh_image_preview
@@ -62,11 +62,11 @@ _classes = [
 
     # Enter context
     CPP_OT_io_fbx,
-    enter_context.ui.CPP_PT_fbx_import_include,
-    enter_context.ui.CPP_PT_fbx_import_transform,
-    enter_context.ui.CPP_PT_fbx_import_transform_manual_orientation,
-    enter_context.ui.CPP_PT_fbx_import_animation,
-    enter_context.ui.CPP_PT_fbx_import_armature,
+    enter_context.ui_io_fbx.CPP_PT_fbx_import_include,
+    enter_context.ui_io_fbx.CPP_PT_fbx_import_transform,
+    enter_context.ui_io_fbx.CPP_PT_fbx_import_transform_manual_orientation,
+    enter_context.ui_io_fbx.CPP_PT_fbx_import_animation,
+    enter_context.ui_io_fbx.CPP_PT_fbx_import_armature,
     CPP_OT_enter_context,
 
     # Previews

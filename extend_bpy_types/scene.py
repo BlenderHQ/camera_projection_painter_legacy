@@ -131,6 +131,9 @@ class SceneProperties(PropertyGroup):
                 continue
             ob.initial_visible = value
 
+    def _calibration_source_file_update(self, context):
+        bpy.ops.cpp.import_cameras_csv()
+
     used_all_cameras: BoolProperty(name="Use All", get=_get_used_all_cameras, set=_set_used_all_cameras)
 
     # Properties
@@ -145,12 +148,13 @@ class SceneProperties(PropertyGroup):
         name="Camera Calibration File",
         subtype='FILE_PATH',
         description="Path to third-party application *.csv file."
-        "Used for automatic setup camera calibration parameters"
+        "Used for automatic setup camera calibration parameters",
+        update=_calibration_source_file_update
     )
 
     cameras_viewport_size: FloatProperty(
         name="Viewport Display Size",
-        default=1.0, soft_min=1.0, soft_max=5.0, step=0.1,
+        default=1.75, soft_min=0.5, soft_max=5.0, step=0.1,
         subtype='DISTANCE',
         options={'HIDDEN'},
         description="The size of the cameras to display in the viewport. Does not affect camera settings"

@@ -1,15 +1,12 @@
-from ... import engine
 from ... import poll
-from .. import utils
-from . import ui
-from . import fbx
+from . import io_fbx
+from . import ui_io_fbx
+from ... import __package__ as addon_pkg
 
 if "bpy" in locals():
     import importlib
     importlib.reload(poll)
-    importlib.reload(utils)
-    importlib.reload(ui)
-    importlib.reload(fbx)
+    importlib.reload(io_fbx)
 
 import bpy
 
@@ -30,50 +27,32 @@ def get_valid_mesh_object(context):
     return A_ob
 
 
-def step_import(self, context, event):
+def stage_none(self, context, event):
     wm = context.window_manager
-    ob = context.active_object
-
-    if wm.cpp.import_state == 'FILESELECT':
-        return {'PASS_THROUGH'}
-
-    elif wm.cpp.import_state == 'FINISHED':
-        context.window.cursor_modal_set('WAIT')
-
-        if context.area.type == 'VIEW_3D':
-            bpy.ops.view3d.view_all('INVOKE_DEFAULT')
-
-        if not _check(ob):
-            A_ob = get_valid_mesh_object(context)
-            if A_ob:
-                context.view_layer.objects.active = A_ob
-
-        ob = context.active_object
-        if not _check(ob):
-            self.report(type={'WARNING'}, message="Missing mesh object")
-            self.cancel(context)
-            return {'CANCELLED'}
-
-        self.progress.skip_tics = 30
-        self.progress.step += 1
-        return {'PASS_THROUGH'}
-
-    elif wm.cpp.import_state == 'CANCELLED':
-        self.cancel(context)
-        return {'CANCELLED'}
+    wm.cpp.progress_stage_complete()
     return {'RUNNING_MODAL'}
 
 
-def step_mesh_check(self, context, event):
-    self.progress.text = "Mesh Check"
-    self.progress.icon = 'MESH_DATA'
+def stage_mesh_check(self, context, event):
+    wm = context.window_manager
+
+    preferences = context.preferences.addons[addon_pkg].preferences
+
+    if not _check(context.active_object):
+        A_ob = get_valid_mesh_object(context)
+        if A_ob:
+            context.view_layer.objects.active = A_ob
+    if not _check(context.active_object):
+        self.report(type={'WARNING'}, message="Missing mesh object")
+        self.cancel(context)
+        return {'CANCELLED'}
 
     ob = context.active_object
     image_paint = context.scene.tool_settings.image_paint
 
     if ob.active_material is None:
-        new_material = bpy.data.materials.new("Material")
-        ob.data.materials.append(new_material)
+        self.report(type={'INFO'}, message="No active material detected, new material created")
+        ob.data.materials.append(bpy.data.materials.new("Material"))
 
     material = ob.active_material
     if material is None:
@@ -86,27 +65,46 @@ def step_mesh_check(self, context, event):
 
         new_canvas = None
         for i, node in enumerate(nodes):
-            if (node.bl_idname == "ShaderNodeTexImage") and (node.image) and (node.image.cpp.valid):
+            if (node.bl_idname == "ShaderNodeTexImage") and (node.image):
                 new_canvas = node.image
                 break
+
         if new_canvas and new_canvas != image_paint.canvas:
+            self.report(type={'INFO'}, message=f"""Image "{node.image.name}" set as texture (canvas)""")
             image_paint.canvas = new_canvas
 
         if tree.active_texnode_index == -1:
+            dim = preferences.new_texture_size
             bpy.ops.paint.add_texture_paint_slot(
-                width=2048, height=2048, color=(0.8, 0.8, 0.8, 1.0),
+                width=dim[0], height=dim[1], color=(0.8, 0.8, 0.8, 1.0),
                 alpha=False, generated_type='BLANK', float=True)
+            self.report(type={'INFO'}, message=f"No texture found (canvas), a new one was created ({dim[0]}x{dim[1]})")
+
         tex_node = nodes[tree.active_texnode_index]
-        if tex_node and tex_node.image and tex_node.image.cpp.valid:
+        if tex_node and tex_node.image:
             image_paint.canvas = tex_node.image
 
-    self.progress.step += 1
+    wm.cpp.progress_stage_complete()
     return {'RUNNING_MODAL'}
 
 
-def step_tool_settings(self, context, event):
-    self.progress.text = "Scene Settings Check"
-    self.progress.icon = 'TIME'
+def stage_bind_images(self, context, event):
+    wm = context.window_manager
+
+    if wm.cpp.import_dir:
+        context.scene.cpp.source_dir = wm.cpp.import_dir
+
+    bpy.ops.cpp.bind_camera_image('INVOKE_DEFAULT', mode='ALL', search_blend=True,
+                                  rename=True, refresh_image_previews=True)
+
+    bpy.ops.cpp.import_cameras_csv('EXEC_DEFAULT')
+
+    wm.cpp.progress_stage_complete()
+    return {'RUNNING_MODAL'}
+
+
+def stage_tool_settings(self, context, event):
+    wm = context.window_manager
 
     ob = context.active_object
     scene = context.scene
@@ -137,29 +135,19 @@ def step_tool_settings(self, context, event):
         if area.type == 'VIEW_3D':
             area.spaces.active.shading.light = 'FLAT'
 
-    self.progress.step += 1
+    wm.cpp.progress_stage_complete()
     return {'RUNNING_MODAL'}
 
 
-def step_bind_images(self, context, event):
-    self.progress.text = "Bind Images"
-    self.progress.icon = 'IMAGE'
-
+def stage_view_all(self, context, event):
     wm = context.window_manager
-    if wm.cpp.import_dir:
-        context.scene.cpp.source_dir = wm.cpp.import_dir
-    bpy.ops.cpp.bind_camera_image('INVOKE_DEFAULT', mode='ALL', search_blend=True,
-                                  rename=True, refresh_image_previews=True)
+    if context.area.type == 'VIEW_3D':
+        bpy.ops.view3d.view_all('INVOKE_DEFAULT')
+        # duration = context.preferences.view.smooth_view / 100.0
+        # wm.cpp.progress_wait_before_next_stage(duration)
 
-    self.progress.step += 1
+    wm.cpp.progress_stage_complete()
     return {'RUNNING_MODAL'}
-
-func_steps = (
-    step_import,
-    step_mesh_check,
-    step_bind_images,
-    step_tool_settings,
-)
 
 
 class CPP_OT_enter_context(bpy.types.Operator):
@@ -167,7 +155,7 @@ class CPP_OT_enter_context(bpy.types.Operator):
     bl_label = "Setup Context"
     bl_options = {'INTERNAL'}
 
-    __slots__ = ("timer", "progress")
+    __slots__ = ("timer", "is_import", "func_stages")
 
     @classmethod
     def poll(cls, context):
@@ -260,9 +248,12 @@ class CPP_OT_enter_context(bpy.types.Operator):
     def invoke(self, context, event):
         wm = context.window_manager
 
-        wm.cpp.invoke_progress(context, 0, 5)
-
-        self.progress = utils.progress.invoke_progress(context, steps_count=len(func_steps))
+        self.func_stages = [
+            stage_bind_images,
+            stage_mesh_check,
+            stage_tool_settings,
+            stage_view_all
+        ]
 
         # Object check
         if not _check(context.active_object):
@@ -270,48 +261,69 @@ class CPP_OT_enter_context(bpy.types.Operator):
             if A_ob:
                 context.view_layer.objects.active = A_ob
 
-        if not _check(context.active_object):
-            self.progress.text = 'Import FBX'
-            self.progress.icon = 'IMPORT'
+        # Invoke import if not found any valid object
+        self.is_import = not _check(context.active_object)
+
+        if self.is_import:
             bpy.ops.cpp.io_fbx('INVOKE_DEFAULT')
+            self.func_stages.insert(0, stage_none)
         else:
-            self.progress.step = 1
+            wm.cpp.progress_invoke(
+                progress_stages_count=len(self.func_stages),
+                text=self.__class__.bl_label,
+                icon='TIME'
+            )
 
-        self.progress.ui_cancel_button = 'ESC'
-
-        wm.modal_handler_add(self)
         self.timer = wm.event_timer_add(time_step=1 / 60, window=context.window)
+        wm.modal_handler_add(self)
+
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
         wm = context.window_manager
-        wm.event_timer_remove(self.timer)
-        utils.progress.end_progress(context, self.progress)
+        wm.cpp.progress_complete()
         context.window.cursor_modal_restore()
+        wm.event_timer_remove(self.timer)
 
     def modal(self, context, event):
         wm = context.window_manager
 
-        if wm.cpp.import_state == 'FILESELECT':
-            return {'PASS_THROUGH'}
+        pstage = wm.cpp.progress_modal(self.timer)
+
+        if self.is_import:
+            if wm.cpp.import_state == 'FILESELECT':
+                return {'PASS_THROUGH'}
+
+            elif wm.cpp.import_state == 'FINISHED':
+                wm.cpp.progress_invoke(
+                    progress_stages_count=len(self.func_stages),
+                    text="Setup Context",
+                    icon='TIME',
+                    ui_cancel_button='ESC'
+                )
+                self.is_import = False
+                return {'RUNNING_MODAL'}
+
+            elif wm.cpp.import_state == 'CANCELLED':
+                self.cancel(context)
+                return {'CANCELLED'}
+
         elif event.type != 'TIMER':
             return {'RUNNING_MODAL'}
-        elif event.type == 'ESC' and event.value == 'PRESS':
-            self.cancel(context)
-            return {'CANCELLED'}
 
-        pstep = utils.progress.modal_progress(context, self.progress)
-        if pstep == -1:
-            return {'RUNNING_MODAL'}
-        elif pstep == -2:
-            wm.event_timer_remove(self.timer)
-            utils.progress.end_progress(context, self.progress)
-            context.window.cursor_modal_restore()
+        if pstage == -2:
+            if poll.full_poll(context):
+                self.report(type={'INFO'}, message="Context is ready")
+            else:
+                self.report(type={'INFO'}, message="Context is not completely ready")
+            self.cancel(context)
             return {'FINISHED'}
 
-        elif pstep < len(func_steps):
-            return func_steps[pstep](self, context, event)
+        elif pstage == -1:
+            return {'RUNNING_MODAL'}
 
-        # It would newer be happen
+        else:
+            return self.func_stages[pstage](self, context, event)
+
         self.cancel(context)
         return {'CANCELLED'}

@@ -1,82 +1,24 @@
-import os
+from .. import ui
 
 if "bpy" in locals():
+    import importlib
+    importlib.reload(ui)
     bpy.types.STATUSBAR_HT_header.draw = original_status_bar_draw
 else:
     import bpy
     original_status_bar_draw = bpy.types.STATUSBAR_HT_header.draw
 
-
-import bpy
+import os
 from bpy.types import PropertyGroup
 from bpy.props import (
     BoolProperty,
     IntProperty,
+    FloatProperty,
     IntVectorProperty,
     EnumProperty,
     PointerProperty,
     StringProperty
 )
-
-
-
-def _restore(wm):
-    bpy.types.STATUSBAR_HT_header.draw = original_status_bar_draw
-    wm.cpp_progress_seq.clear()
-
-
-def progress_draw(self, context):  # TODO: Move to ui.py
-    layout = self.layout
-    layout.use_property_split = True
-    layout.use_property_decorate = False
-    wm = context.window_manager
-
-    progress_ui_cancel_button = ""
-    for progress in wm.cpp_progress_seq:
-        progress_ui_cancel_button = progress.ui_cancel_button
-
-    if progress_ui_cancel_button:
-        layout.label(text="Cancel", icon=f"EVENT_{progress_ui_cancel_button}")
-
-    layout.separator_spacer()
-    for progress in wm.cpp_progress_seq:
-        row = layout.row(align=True)
-        row.label(text=progress.text, icon=progress.icon)
-        srow = row.row(align=True)
-        srow.enabled = True
-        srow.ui_units_x = 6
-        srow.prop(progress, "value", text="")
-
-    layout.separator_spacer()
-    scene = context.scene
-    view_layer = context.view_layer
-    layout.label(text=scene.statistics(view_layer), translate=False)
-
-
-class ProgressItem(PropertyGroup):
-    steps_count: IntProperty(default=1, min=0)
-
-    def _step_update(self, context):
-        if self.step > self.steps_count:
-            self.step = self.steps_count
-
-    step: IntProperty(default=0, min=0, update=_step_update)
-
-    skip_ticks: IntProperty()
-    tic: IntProperty()
-
-    def _get_value(self):
-        return int(100 * self.step / self.steps_count)
-
-    value: IntProperty(
-        name="Progress",
-        default=0, min=0, max=100,
-        subtype='PERCENTAGE',
-        get=_get_value
-    )
-    text: StringProperty(default="Progress")
-    icon: StringProperty(default='NONE')
-    ui_cancel_button: StringProperty(default='')
 
 
 class WindowManagerProperties(PropertyGroup):
@@ -85,6 +27,7 @@ class WindowManagerProperties(PropertyGroup):
     mouse_pos: IntVectorProperty(size=2, default=(0, 0))
     current_selected_camera_ob: PointerProperty(type=bpy.types.Object)
 
+    # Import
     def cpp_import_dir_update(self, context):
         if self.import_dir == "":
             return
@@ -105,15 +48,68 @@ class WindowManagerProperties(PropertyGroup):
         default='FILESELECT'
     )
 
-    def invoke_progress(self, context, steps_count=1, step=0):
-        assert steps_count > 0
-        assert steps_count > step >= 0
-        wm = self.id_data
+    # Progress
+    def _get_progress(self):
+        if self.p_stages_count:
+            return int(100.0 * self.p_stage / self.p_stages_count)
+        return 100
 
-        progress_item = wm.cpp_progress_seq.add()
-        progress_item.steps_count = steps_count
-        progress_item.step = step
+    def _progress_stage_update(self, context):
+        if self.p_stage > self.p_stages_count:
+            self.p_stage = self.p_stages_count
 
-        bpy.types.STATUSBAR_HT_header.draw = progress_draw
+    def _progress_set_defaults(self):
+        self.p_stage = 0
+        self.p_stages_count = 0
+        self.p_wait_duration = 0.0
 
-        return progress_item
+        self.p_text = ""
+        self.p_icon = 'NONE'
+        self.p_ui_cancel_button = 'NONE'
+
+        bpy.types.STATUSBAR_HT_header.draw = original_status_bar_draw
+
+    def progress_invoke(self, progress_stages_count=1, text="Progress", icon='NONE', ui_cancel_button=''):
+        self._progress_set_defaults()
+        self.p_stages_count = progress_stages_count
+        self.p_text = text
+        self.p_icon = icon
+        self.p_ui_cancel_button = ui_cancel_button
+
+        bpy.types.STATUSBAR_HT_header.draw = ui.progress_draw
+
+    def progress_modal(self, timer):
+        if self.progress >= 100:
+            self._progress_set_defaults()
+            return -2
+
+        elif self.p_wait_duration > 0.0:
+            self.p_wait_duration -= timer.time_delta
+            return -1
+
+        return self.p_stage
+
+    def progress_stage_complete(self):
+        self.p_stage += 1
+
+    def progress_wait_before_next_stage(self, duration: float):
+        self.p_wait_duration = duration
+
+    def progress_complete(self):
+        self._progress_set_defaults()
+
+    progress: IntProperty(
+        name="Progress",
+        default=0, min=0, max=100,
+        subtype='PERCENTAGE',
+        get=_get_progress
+    )
+    p_wait_duration: FloatProperty(default=0.0, min=0.0)
+    p_stages_count: IntProperty(default=0, min=0)
+    p_stage: IntProperty(default=0, min=0, update=_progress_stage_update)
+
+    p_text: StringProperty(default="Progress")
+    p_icon: StringProperty(default='NONE')
+    p_ui_cancel_button: StringProperty(default='')
+
+    #

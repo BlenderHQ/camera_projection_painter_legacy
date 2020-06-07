@@ -24,10 +24,6 @@ class CPP_OT_import_cameras_csv(bpy.types.Operator):
     bl_label = "Import CSV"
     bl_options = {'INTERNAL'}
 
-    @classmethod
-    def poll(cls, context):
-        return get_csv_file_filepath(context.scene.cpp.calibration_source_file)
-
     @staticmethod
     def iter_name_variations(name: str):
         splext = os.path.splitext(name)
@@ -39,6 +35,9 @@ class CPP_OT_import_cameras_csv(bpy.types.Operator):
         scene = context.scene
 
         fp = get_csv_file_filepath(scene.cpp.calibration_source_file)
+        if not fp:
+            return {'CANCELLED'}
+
         filename = os.path.basename(fp)
 
         dt = time.time()

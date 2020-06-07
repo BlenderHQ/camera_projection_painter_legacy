@@ -5,7 +5,7 @@
 # https://developer.blender.org/T71941
 
 from .. import poll
-from .. import __package__ as pkg
+from .. import __package__ as addon_pkg
 
 if "bpy" in locals():
     import importlib
@@ -75,7 +75,7 @@ class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
                 mpr = self._create_gizmo(camera_ob)
 
     def draw_prepare(self, context):
-        preferences = context.preferences.addons[pkg].preferences
+        preferences = context.preferences.addons[addon_pkg].preferences
         # Properties concerning only rendering are changed when possible
         for mpr in self.gizmos:
             mpr.color = preferences.gizmo_color[0:3]

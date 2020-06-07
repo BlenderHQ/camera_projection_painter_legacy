@@ -6,7 +6,7 @@ if "bpy" in locals():
 
 import bpy
 import rna_keymap_ui
-from bpy.props import (FloatProperty, IntProperty, EnumProperty, FloatVectorProperty)
+from bpy.props import (FloatProperty, IntProperty, EnumProperty, FloatVectorProperty, IntVectorProperty)
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
@@ -155,6 +155,15 @@ class CppPreferences(bpy.types.AddonPreferences):
         subtype='PIXEL',
         description="Border Empty Space")
 
+    # Defaults
+    new_texture_size: IntVectorProperty(
+        name="New Texture Size",
+        size=2,
+        default=(2048, 2048),
+        min=512, soft_max=16384,
+        description="Width and height for automatically generated textures"
+    )
+
     def draw(self, context):
         layout = self.layout
         wm = bpy.context.window_manager
@@ -215,6 +224,12 @@ class CppPreferences(bpy.types.AddonPreferences):
         col.prop(self, "camera_color_loaded_data")
         col.separator()
 
+        # Defaults
+        col.label(text="Defaults", icon='FILE_BLANK')
+        col.prop(self, "new_texture_size")
+
+        col.separator()
+
         # Keymap
         layout.label(text="Keymap", icon='KEYINGSET')
 
@@ -223,11 +238,6 @@ class CppPreferences(bpy.types.AddonPreferences):
         km = kc.keymaps["Image Paint"]
 
         kmi = get_hotkey_entry_item(km, operators.CPP_OT_image_paint.bl_idname, None, None)
-        if kmi:
-            col.context_pointer_set("keymap", km)
-            rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)
-
-        kmi = get_hotkey_entry_item(km, operators.CPP_OT_set_camera_by_view.bl_idname, None, None)
         if kmi:
             col.context_pointer_set("keymap", km)
             rna_keymap_ui.draw_kmi([], kc, km, kmi, col, 0)

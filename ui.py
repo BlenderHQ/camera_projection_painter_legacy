@@ -15,6 +15,31 @@ import math
 COMPAT_MODES = frozenset({'OBJECT', 'PAINT_TEXTURE'})
 
 
+def progress_draw(self, context):
+    layout = self.layout
+    layout.use_property_split = True
+    layout.use_property_decorate = False
+    wm = context.window_manager
+
+    ui_cancel_button = wm.cpp.p_ui_cancel_button
+    if ui_cancel_button and ui_cancel_button != 'NONE':
+        layout.label(text="Cancel", icon=f"EVENT_{ui_cancel_button}")
+
+    layout.separator_spacer()
+
+    row = layout.row(align=True)
+    row.label(text=wm.cpp.p_text, icon=wm.cpp.p_icon)
+    srow = row.row(align=True)
+    srow.enabled = True
+    srow.ui_units_x = 6
+    srow.prop(wm.cpp, "progress", text="")
+
+    layout.separator_spacer()
+    scene = context.scene
+    view_layer = context.view_layer
+    layout.label(text=scene.statistics(view_layer), translate=False)
+
+
 class DATA_UL_scene_camera_item(bpy.types.UIList):
     IMAGE = 1 << 0
     NONE_IMAGE = 2 << 0
@@ -37,7 +62,7 @@ class DATA_UL_scene_camera_item(bpy.types.UIList):
 
     filter_used: bpy.props.BoolProperty(
         name="Only Used",
-        default=False,
+        default=True,
         description="Show only used cameras"
     )
 
@@ -71,22 +96,7 @@ class DATA_UL_scene_camera_item(bpy.types.UIList):
                     row.prop(item.data.cpp, "image", text="", icon='LIBRARY_DATA_BROKEN')
 
         # elif self.layout_type in {'GRID'}:
-
-        #     col = layout.column(align=True)
-        #     row = col.row(align=True)
-        #     row.prop(item, "initial_visible", text="")
-        #     row.label(text=item.name)
-
-        #     if is_image:
-        #         col.template_ID_preview(item.data.cpp, "image", open="image.open",
-        #                                 rows=3, cols=8, hide_buttons=not is_active)
-
-        #     elif is_none_image:
-        #         col.template_ID(item.data.cpp, "image", open="image.open")
-
-        #     elif is_invalid_image:
-        #         col.label(text="Invalid Image", icon='ERROR')
-        #         col.template_ID(item.data.cpp, "image", open="image.open")
+            # TODO: https://developer.blender.org/T75784
 
     def filter_items(self, context, data, propname):
         objects = getattr(data, propname)
@@ -243,7 +253,7 @@ class CPP_MT_camera_pie(bpy.types.Menu):
 
         if image:
             if image.cpp.valid:
-                col.template_ID_preview(cam.cpp, "image", open="image.open", rows=3, cols=8)
+                col.template_ID_preview(cam.cpp, "image", open="image.open", rows=4, cols=5)
             else:
                 col.label(text="Invalid image", icon='LIBRARY_DATA_BROKEN')
                 col.template_ID(cam.cpp, "image", open="image.open")
@@ -293,7 +303,7 @@ class CPP_PT_camera_painter(bpy.types.Panel, CameraPainterPanelBase):
     bl_options = set()
 
     def draw(self, context):
-        self.layout.operator(operator=operators.CPP_OT_refresh_image_preview.bl_idname)
+        pass
 
 
 class CPP_PT_dataset(bpy.types.Panel, CameraPainterPanelBase):
@@ -333,9 +343,12 @@ class CPP_PT_dataset(bpy.types.Panel, CameraPainterPanelBase):
             ).mode = 'ALL'
 
         col.label(text="Calibration File:")
-        col.prop(scene.cpp, "calibration_source_file", text="", icon='FILE_BLANK')
-        col.operator(
-            operator=operators.CPP_OT_import_cameras_csv.bl_idname
+        row = col.row(align=True)
+        row.prop(scene.cpp, "calibration_source_file", text="", icon='FILE_BLANK')
+        row.operator(
+            operator=operators.CPP_OT_import_cameras_csv.bl_idname,
+            text="",
+            icon='IMPORT'
         )
 
 
@@ -422,8 +435,8 @@ class CPP_PT_workflow(bpy.types.Panel, CameraPainterPanelBase):
                 type='GRID', columns=num_columns
             )
         else:
-            row.label(text="Camera")
-            row.label(text="Image")
+            row.label(text="Cameras")
+            row.label(text="Images")
             col.template_list(
                 "DATA_UL_scene_camera_item", "", scene, "objects", scene.cpp, "active_camera_index",
                 type='DEFAULT', rows=3

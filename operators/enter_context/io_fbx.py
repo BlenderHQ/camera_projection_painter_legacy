@@ -157,27 +157,27 @@ class CPP_OT_io_fbx(bpy.types.Operator, ImportHelper):
     )
     # End
 
-    def draw(self, context):
-        layout = self.layout
+    draw = io_scene_fbx.ImportFBX.draw
 
     def cancel(self, context):
         wm = context.window_manager
         wm.cpp.import_state = 'CANCELLED'
-        context.window.cursor_modal_restore()
+        wm.cpp.progress_complete()
 
     def invoke(self, context, event):
         wm = context.window_manager
+
         wm.cpp.import_state = 'FILESELECT'
 
         # Call standard invoke method
         return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
-        # Call standard execute method
-        context.window.cursor_modal_set('WAIT')
-        ret = io_scene_fbx.ImportFBX.execute(self, context)
-        context.window.cursor_modal_restore()
         wm = context.window_manager
         wm.cpp.import_dir = self.filepath
+
+        # Call standard execute method
+        ret = io_scene_fbx.ImportFBX.execute(self, context)
+
         wm.cpp.import_state = 'FINISHED'
         return ret

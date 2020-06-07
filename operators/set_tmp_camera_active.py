@@ -29,5 +29,4 @@ class CPP_OT_set_tmp_camera_active(bpy.types.Operator):
                 if image_paint.clone_image != image:
                     image_paint.clone_image = image
 
-            self.report(type={'INFO'}, message="%s is set as active for the scene" % scene.camera.name)
         return {'FINISHED'}

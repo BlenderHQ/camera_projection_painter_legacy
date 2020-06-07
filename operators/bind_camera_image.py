@@ -1,8 +1,3 @@
-# <pep8 compliant>
-
-import os
-import time
-
 import bpy
 
 from .. import engine
@@ -93,9 +88,7 @@ class CPP_OT_bind_camera_image(bpy.types.Operator):
         scene = context.scene
         camera_seq = list([_ for _ in self.iter_processed_cameras(context)])
 
-        dt = time.time()
         binded = engine.bindCameraImages(camera_seq, scene.cpp.source_dir, self.search_blend, self.rename)
-        t = round(time.time() - dt, 3)
 
         cam_txt = "cameras"
         mtp = 'INFO'
@@ -104,10 +97,10 @@ class CPP_OT_bind_camera_image(bpy.types.Operator):
         elif binded == 1:
             cam_txt = "camera"
 
-        self.report(type={mtp}, message=f"Binded {binded} {cam_txt} in {t} sec")
+        self.report(type={mtp}, message=f"Binded {binded} {cam_txt}")
 
         engine.updateImageSeqStaticSize(bpy.data.images, skip_already_set=True)
         if self.refresh_image_previews:
-            bpy.ops.cpp.refresh_image_preview('INVOKE_DEFAULT', skip_already_set=True)
+            bpy.ops.cpp.refresh_image_preview('EXEC_DEFAULT', skip_already_set=True)
 
         return {'FINISHED'}

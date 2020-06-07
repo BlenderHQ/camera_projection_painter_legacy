@@ -18,7 +18,6 @@ from bpy.types import Camera, Object, Scene, ShaderNodeTree, Image, WindowManage
 
 
 _classes = [
-    wm.ProgressItem,
     wm.WindowManagerProperties,
     camera.BindImageHistoryItem,
     camera.CameraProperties,
@@ -36,7 +35,6 @@ def register():
     Scene.cpp = PointerProperty(type=scene.SceneProperties)
     Image.cpp = PointerProperty(type=image.ImageProperties)
     WindowManager.cpp = PointerProperty(type=wm.WindowManagerProperties)
-    WindowManager.cpp_progress_seq = CollectionProperty(type=wm.ProgressItem)
 
     ShaderNodeTree.active_texnode_index = node.active_texnode_index
     Object.initial_visible = BoolProperty(name="Used", default=True)
