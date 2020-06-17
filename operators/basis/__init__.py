@@ -2,6 +2,7 @@ from . import draw
 from ... import poll
 from ... import extend_bpy_types
 from ... import engine
+from ... import __package__ as addon_pkg
 
 if "bpy" in locals():
     import importlib
@@ -18,8 +19,6 @@ if "bpy" in locals():
             print(traceback.format_exc())
 
 import bpy
-
-import time
 
 modal_ops = []
 LISTEN_TIME_STEP = 1 / 4
@@ -86,6 +85,8 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
         "suspended",
         "suspended_mouse",
         "suspended_brush",
+        "paint_time",
+        "paint_step",
 
         "full_draw",
         "draw_handler",
@@ -109,6 +110,8 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
         self.suspended = False
         self.suspended_mouse = False
         self.suspended_brush = False
+        self.paint_time = 0.0
+        self.paint_step = 0
 
         self.full_draw = False
         self.draw_handler = None
@@ -168,7 +171,6 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
 
         # Create an environment for the current object
         self.environment = engine.Environment(ob, clone_uv_layer)
-        self.environment.setProjector(context.scene.camera)
 
         self.mesh_batch = draw.mesh_preview.get_object_batch(context, ob)
         self.axes_batch = draw.cameras.get_axes_batch()
@@ -193,7 +195,8 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
 
         ob = context.active_object
         wm = context.window_manager
-        wm.event_timer_remove(self.timer)
+        if self.timer is not None:
+            wm.event_timer_remove(self.timer)
 
         extend_bpy_types.image.ImageCache.clear()
 
@@ -209,6 +212,7 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
         self.set_properties_defaults()
 
     def modal(self, context, event):
+        preferences = context.preferences.addons[addon_pkg].preferences
         wm = context.window_manager
 
         if not poll.full_poll(context):
@@ -224,6 +228,8 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
         camera = camera_ob.data
         image_paint = scene.tool_settings.image_paint
         clone_image = image_paint.clone_image
+
+        engine.updateImageSeqStaticSize(bpy.data.images, skip_already_set=True)
 
         # update viewports on mouse movements
         if event.type == 'MOUSEMOVE':
@@ -241,6 +247,7 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
         elif event.value == 'RELEASE':
             self.suspended_mouse = False
             self.suspended_brush = False
+            wm.cpp.is_image_paint = False
 
         if not self.suspended_mouse:
             wm.cpp.mouse_pos = event.mouse_x, event.mouse_y
@@ -249,8 +256,23 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
         if image and clone_image != image and image.cpp.valid:
             image_paint.clone_image = image
 
-        if scene.cpp.use_projection_preview:
+        if (scene.cpp.use_projection_preview or (scene.cpp.use_warnings and scene.cpp.use_warning_action_draw)):
             draw.mesh_preview.update_brush_texture_bindcode(self, context)
+
+        if scene.cpp.auto_distance_warning and wm.cpp.is_image_paint:
+            paint_steps = 5
+            if self.paint_step < paint_steps:
+                self.paint_time += self.timer.time_delta
+                self.paint_step += 1
+            else:
+                average_paint_time = self.paint_time / paint_steps
+                self.paint_time = 0.0
+                self.paint_step = 0
+
+                if average_paint_time > 0.045:  # TODO: Maybe, this value should be in user preferences?
+                    scene.cpp.distance_warning -= 0.1
+                    self.report(type={'WARNING'},
+                                message=f"Safe radius is set to {round(scene.cpp.distance_warning, 1)}")
 
         check_tuple = (
             camera_ob,
@@ -286,9 +308,7 @@ class CPP_OT_camera_projection_painter(bpy.types.Operator):
 
         if event.type not in ('TIMER', 'TIMER_REPORT'):
             if self.data_updated(check_tuple):
-                dt = time.time()
-                self.environment.setProjector(camera_ob)
-                print(f"Set Projector in {round(time.time() - dt, 6)} sec")
+                self.environment.setProjector(camera_ob, preferences.debug_info)
 
                 self.full_draw = False
 

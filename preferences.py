@@ -6,7 +6,28 @@ if "bpy" in locals():
 
 import bpy
 import rna_keymap_ui
-from bpy.props import (FloatProperty, IntProperty, EnumProperty, FloatVectorProperty, IntVectorProperty)
+from bpy.props import (
+    BoolProperty,
+    FloatProperty,
+    IntProperty,
+    EnumProperty,
+    FloatVectorProperty,
+    IntVectorProperty
+)
+
+import sys
+
+SUPPORTED_PLATFORMS = ("win32",)
+SUPPORTED_BLENDER_VERSION = (2, 83)
+
+
+readable_platforms = {
+    'aix': "AIX",
+    'linux': "Linux",
+    'win32': "Windows",
+    'cygwin': "Windows/Cygwin",
+    'darwin': "macOS"
+}
 
 
 def get_hotkey_entry_item(km, kmi_name, kmi_value, properties):
@@ -70,7 +91,7 @@ class CppPreferences(bpy.types.AddonPreferences):
 
     normal_highlight_color: FloatVectorProperty(
         name="Normal Highlight",
-        default=[0.076387, 0.135512, 0.626662, 0.742857],
+        default=[0.088655, 0.208637, 0.527115, 0.770000],
         subtype="COLOR",
         size=4,
         min=0.0,
@@ -132,7 +153,7 @@ class CppPreferences(bpy.types.AddonPreferences):
     # Gizmos
     gizmo_color: FloatVectorProperty(
         name="Color",
-        default=[0.019613, 0.356583, 0.827556, 0.742857],
+        default=[0.199764, 0.650005, 0.363861, 0.770000],
         subtype="COLOR",
         size=4,
         min=0.0,
@@ -164,10 +185,35 @@ class CppPreferences(bpy.types.AddonPreferences):
         description="Width and height for automatically generated textures"
     )
 
+    debug_info: BoolProperty(
+        name="Print debug info",
+        default=True,
+        description="Print information about execution time into console"
+    )
+
     def draw(self, context):
         layout = self.layout
         wm = bpy.context.window_manager
         kc = wm.keyconfigs.user
+
+        is_valid_env = True
+        bver = bpy.app.version
+        sbver = SUPPORTED_BLENDER_VERSION
+        if not (bver[0] == sbver[0] and bver[1] == sbver[1]):
+            is_valid_env = False
+            layout.label(text=f"""Required Blender version min: "{sbver[0]}.{sbver[1]}" """, icon='FILE_BLEND')
+        if sys.platform not in SUPPORTED_PLATFORMS:
+            is_valid_env = False
+            env_platform = readable_platforms[sys.platform]
+            layout.label(text=f"OS {env_platform} currently is unsupported", icon="ERROR")
+
+            str_supported_os = ""
+            for i in SUPPORTED_PLATFORMS:
+                str_supported_os += readable_platforms[i]
+            layout.label(text=f"Supported operating system is {str_supported_os}", icon='INFO')
+
+        if not is_valid_env:
+            return
 
         if not hasattr(wm, "cpp"):
             col = layout.column()
@@ -227,6 +273,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         # Defaults
         col.label(text="Defaults", icon='FILE_BLANK')
         col.prop(self, "new_texture_size")
+        col.prop(self, "debug_info")
 
         col.separator()
 

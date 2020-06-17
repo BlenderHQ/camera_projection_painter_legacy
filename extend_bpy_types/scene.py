@@ -59,24 +59,6 @@ class SceneProperties(PropertyGroup):
         return (ob for ob in self.camera_objects if ob.initial_visible)
 
     @property
-    def has_available_camera_objects(self):
-        """
-        True if there are cameras available for automation in the scene
-        @return: bool
-        """
-        for _ in self.available_camera_objects:
-            return True
-        return False
-
-    @property
-    def available_camera_objects(self):
-        """
-        Generates a generator of available camera objects
-        @return: generator
-        """
-        return (ob for ob in self.camera_objects if (ob.data.cpp.image and ob.data.cpp.image.cpp.valid))
-
-    @property
     def has_camera_objects_selected(self):
         """
         True if there are selected cameras in the scene
@@ -115,8 +97,6 @@ class SceneProperties(PropertyGroup):
             camera_object.select_set(True)
             bpy.context.view_layer.objects.active = camera_object
 
-    active_camera_index: IntProperty(name="Active Camera", get=_get_camera_index, set=_set_camera_index)
-
     def _get_used_all_cameras(self):
         for ob in self.camera_objects:
             if ob == self.id_data.camera:
@@ -133,6 +113,8 @@ class SceneProperties(PropertyGroup):
 
     def _calibration_source_file_update(self, context):
         bpy.ops.cpp.import_cameras_csv()
+
+    active_camera_index: IntProperty(name="Active Camera", get=_get_camera_index, set=_set_camera_index)
 
     used_all_cameras: BoolProperty(name="Use All", get=_get_used_all_cameras, set=_set_used_all_cameras)
 
@@ -154,7 +136,7 @@ class SceneProperties(PropertyGroup):
 
     cameras_viewport_size: FloatProperty(
         name="Viewport Display Size",
-        default=1.75, soft_min=0.5, soft_max=5.0, step=0.1,
+        default=1.0, soft_min=0.5, soft_max=5.0, min=0.1, step=0.1,
         subtype='DISTANCE',
         options={'HIDDEN'},
         description="The size of the cameras to display in the viewport. Does not affect camera settings"
@@ -167,16 +149,10 @@ class SceneProperties(PropertyGroup):
         description="Display preview overlay projection clone image in brush"
     )
 
-    use_projection_outline: BoolProperty(
-        name="Outline", default=True,
-        options={'HIDDEN'},
-        description="Display the stroke around the borders of the projected image"
-    )
-
     use_normal_highlight: BoolProperty(
-        name="Normal Highlight", default=False,
+        name="Normal Highlight", default=True,
         options={'HIDDEN'},
-        description="Visualization of the angle between"
+        description="Visualization of the angle between "
         "the direction of the projector and the normal of the mesh in the current fragment"
     )
 
@@ -202,7 +178,7 @@ class SceneProperties(PropertyGroup):
         default=0.25, soft_min=0.0, soft_max=1.0, step=1,
         subtype='FACTOR',
         options={'HIDDEN'},
-        description="The transparency of the displayed gizmo."
+        description="The transparency of the displayed gizmo. "
         "If the cursor is over the gizmo, an opaque image is displayed"
     )
 
@@ -243,6 +219,12 @@ class SceneProperties(PropertyGroup):
         subtype='DISTANCE',
         options={'HIDDEN'},
         description="User recommended radius projected onto the plane brush"
+    )
+
+    auto_distance_warning: BoolProperty(
+        name="Auto Safe Radius", default=False,
+        options={'HIDDEN'},
+        description="Automatically set radius considering actual performance"
     )
 
     max_loaded_images: IntProperty(

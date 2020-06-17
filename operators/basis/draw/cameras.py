@@ -1,9 +1,5 @@
-from .... import shaders
+from .... import engine
 from .... import __package__ as addon_pkg
-
-if "bpy" in locals():
-    import importlib
-    importlib.reload(shaders)
 
 import bpy
 import bgl
@@ -25,8 +21,8 @@ def get_camera_batches():
         (1, 2), (2, 3), (3, 4), (1, 4)
     )
 
-    shader_camera = shaders.shader.camera
-    shader_camera_image_preview = shaders.shader.camera_image_preview
+    shader_camera = engine.shaders.getShader("camera")
+    shader_camera_image_preview = engine.shaders.getShader("camera_image_preview")
 
     camera_wire_batch = batch_for_shader(
         shader_camera, 'LINES',
@@ -42,7 +38,7 @@ def get_camera_batches():
     )
 
     image_rect_uv = (
-        (1.0, 1.0), (1.0, 0.0), (0.0, 0.0), (0.0, 1.0),
+        (0.5, 0.5), (0.5, -0.5), (-0.5, -0.5), (-0.5, 0.5),
     )
 
     image_rect_batch = batch_for_shader(
@@ -70,7 +66,7 @@ def get_axes_batch():
 
     indices = ((0, 1), (0, 2), (0, 3))
 
-    shader_axes = shaders.shader.axes
+    shader_axes = engine.shaders.getShader("axes")
 
     batch_axes = batch_for_shader(
         shader_axes, 'LINES',
@@ -90,9 +86,9 @@ def draw_cameras(self, context):
     clone_image = image_paint.clone_image
 
     # Shaders
-    shader_camera = shaders.shader.camera
-    shader_camera_image_preview = shaders.shader.camera_image_preview
-    shader_axes = shaders.shader.axes
+    shader_camera = engine.shaders.getShader("camera")
+    shader_camera_image_preview = engine.shaders.getShader("camera_image_preview")
+    shader_axes = engine.shaders.getShader("axes")
 
     # Batches
     axes_batch = self.axes_batch

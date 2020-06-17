@@ -585,7 +585,6 @@ class CPP_PT_brush_preview(bpy.types.Panel, CameraPainterPanelBase):
         col.enabled = context.scene.cpp.use_projection_preview
 
         col.use_property_split = True
-        col.prop(context.scene.cpp, "use_projection_outline")
         col.prop(context.scene.cpp, "use_normal_highlight")
 
 
@@ -604,7 +603,9 @@ class CPP_PT_warnings(bpy.types.Panel, CameraPainterPanelBase):
         col = self.get_col()
         col.enabled = context.scene.cpp.use_warnings
 
-        col.prop(context.scene.cpp, "distance_warning")
+        row = col.row(align=True)
+        row.prop(context.scene.cpp, "distance_warning")
+        row.prop(context.scene.cpp, "auto_distance_warning", text="", icon='DOT')
         col.use_property_split = True
         col.prop(context.scene.cpp, "use_warning_action_draw")
         col.prop(context.scene.cpp, "use_warning_action_popup")
@@ -629,16 +630,19 @@ class CPP_PT_brush(bpy.types.Panel, CameraPainterPanelBase):
 
         col.prop(brush, "curve_preset", text="")
 
-        if brush.curve_preset == 'CUSTOM':
-            col.template_curve_mapping(brush, "curve", brush=True)
+        row = col.row(align=True)
 
-            row = col.row(align=True)
-            row.operator("brush.curve_preset", icon='SMOOTHCURVE', text="").shape = 'SMOOTH'
-            row.operator("brush.curve_preset", icon='SPHERECURVE', text="").shape = 'ROUND'
-            row.operator("brush.curve_preset", icon='ROOTCURVE', text="").shape = 'ROOT'
-            row.operator("brush.curve_preset", icon='SHARPCURVE', text="").shape = 'SHARP'
-            row.operator("brush.curve_preset", icon='LINCURVE', text="").shape = 'LINE'
-            row.operator("brush.curve_preset", icon='NOCURVE', text="").shape = 'MAX'
+        if brush.curve_preset == 'CUSTOM':
+            scol = row.column(align=True)
+            scol.template_curve_mapping(brush, "curve", brush=True)
+
+            scol = row.column(align=True)
+            scol.operator("brush.curve_preset", icon='SMOOTHCURVE', text="").shape = 'SMOOTH'
+            scol.operator("brush.curve_preset", icon='SPHERECURVE', text="").shape = 'ROUND'
+            scol.operator("brush.curve_preset", icon='ROOTCURVE', text="").shape = 'ROOT'
+            scol.operator("brush.curve_preset", icon='SHARPCURVE', text="").shape = 'SHARP'
+            scol.operator("brush.curve_preset", icon='LINCURVE', text="").shape = 'LINE'
+            scol.operator("brush.curve_preset", icon='NOCURVE', text="").shape = 'MAX'
 
 
 _classes = [

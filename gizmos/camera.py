@@ -56,7 +56,7 @@ class CPP_GGT_camera_gizmo_group(bpy.types.GizmoGroup):
         # Fill the dictionary with links to cameras that are deleted
         for camera_ob, mpr in self._camera_gizmos.items():
             try:
-                _name = camera_ob.name
+                _ = camera_ob.name
             except ReferenceError:
                 _invalid_camera_gizmos[camera_ob] = mpr
 

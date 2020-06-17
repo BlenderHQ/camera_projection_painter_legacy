@@ -25,6 +25,16 @@ class BindImageHistoryItem(PropertyGroup):
     )
 
 
+camera_lens_model_items = [
+    ('perspective', "No lens distortion", ""),
+    ('division', "Division", ""),
+    ('brown3', "Brown 3", ""),
+    ('brown4', "Brown 4", ""),
+    ('brown3t2', "Brown 3 with tangential distortion", ""),
+    ('brown4t2', "Brown 4 with tangential distortion", "")
+]
+
+
 class CameraProperties(PropertyGroup):
     """
     Serves for storing the properties associated with the data of each individual camera,
@@ -79,12 +89,6 @@ class CameraProperties(PropertyGroup):
         update=_image_update)
 
     # Calibration properties
-    xmp_filepath: StringProperty(
-        name="XMP File",
-        subtype='FILE_PATH',
-        description="Path to third-party application *.xmp file."
-    )
-
     skew: FloatProperty(
         name="Skew", default=0.0, soft_min=-1.0, soft_max=1.0,
         subtype='FACTOR',
@@ -118,16 +122,9 @@ class CameraProperties(PropertyGroup):
     )
 
     camera_lens_model: EnumProperty(
-        items=[
-            ('perspective', "No lens distortion", ""),
-            ('division', "Division", ""),
-            ('brown3', "Brown 3", ""),
-            ('brown4', "Brown 4", ""),
-            ('brown3t2', "Brown 3 with tangential distortion", ""),
-            ('brown4t2', "Brown 4 with tangential distortion", ""),
-        ],
+        items=camera_lens_model_items,
         name="Lens Model",
-        default='brown3t2',
+        default=camera_lens_model_items[0][0],
         options={'HIDDEN'},
         description="Camera projection and distortion mathematical model"
     )
@@ -184,48 +181,32 @@ class CameraProperties(PropertyGroup):
         image = self.image
         if image and image.cpp.valid:
             width, height = image.cpp.static_size
-            shader.uniform_float("image_width", width)
-            shader.uniform_float("image_height", height)
+            shader.uniform_float("UND_image_width", width)
+            shader.uniform_float("UND_image_height", height)
+            shader.uniform_float("UND_lens", self.id_data.lens)
 
-            shader.uniform_float("lens", self.id_data.lens)
-            shader.uniform_float("shiftx", self.principal_point_x)
-            shader.uniform_float("shifty", self.principal_point_y)
-            shader.uniform_float("skew", self.skew)
-            shader.uniform_float("aspect_ratio", self.aspect_ratio)
+            uniforms_seq = ["principal_point_x", "principal_point_y", "skew", "aspect_ratio"]
 
-            lens_distortion_model = [2]
+            for i, item in enumerate(camera_lens_model_items):
+                if self.camera_lens_model == item[0]:
+                    shader.uniform_int("UND_lens_distortion_model", i)
 
-            if self.camera_lens_model == 'perspective':
-                lens_distortion_model = [0]
-
-            elif self.camera_lens_model == 'division':
-                lens_distortion_model = [1]
-                shader.uniform_float("k1", self.k1)
+            if self.camera_lens_model == 'division':
+                uniforms_seq.extend(["k1"])
 
             elif self.camera_lens_model == 'brown3':
-                shader.uniform_float("k1", self.k1)
-                shader.uniform_float("k2", self.k2)
-                shader.uniform_float("k3", self.k3)
-
-            elif self.camera_lens_model == 'brown3t2':
-                shader.uniform_float("k1", self.k1)
-                shader.uniform_float("k2", self.k2)
-                shader.uniform_float("k3", self.k3)
-                shader.uniform_float("t1", self.t1)
-                shader.uniform_float("t2", self.t2)
+                uniforms_seq.extend(["k1", "k2", "k3"])
 
             elif self.camera_lens_model == 'brown4':
-                shader.uniform_float("k1", self.k1)
-                shader.uniform_float("k2", self.k2)
-                shader.uniform_float("k3", self.k3)
-                shader.uniform_float("k4", self.k4)
+                uniforms_seq.extend(["k1", "k2", "k3", "k4"])
+
+            elif self.camera_lens_model == 'brown3t2':
+                uniforms_seq.extend(["k1", "k2", "k3", "t1", "t2"])
 
             elif self.camera_lens_model == 'brown4t2':
-                shader.uniform_float("k1", self.k1)
-                shader.uniform_float("k2", self.k2)
-                shader.uniform_float("k3", self.k3)
-                shader.uniform_float("k4", self.k4)
-                shader.uniform_float("t1", self.t1)
-                shader.uniform_float("t2", self.t2)
+                uniforms_seq.extend(["k1", "k2", "k3", "k4", "t1", "t2"])
 
-            shader.uniform_int("lens_distortion_model", lens_distortion_model)
+            for uname in uniforms_seq:
+                value = getattr(self, uname)
+                if isinstance(value, float):
+                    shader.uniform_float(f"UND_{uname}", value)

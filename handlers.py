@@ -1,5 +1,32 @@
+from . import operators
+
+if "bpy" in locals():
+    import importlib
+    importlib.reload(operators)
+
 import bpy
 from bpy.app.handlers import persistent
+
+
+@persistent
+def render_pre_handler(dummy=None):
+    wm = bpy.context.window_manager
+    if wm.cpp.running:
+        wm.cpp.suspended = True
+
+
+@persistent
+def render_post_handler(dummy=None):
+    wm = bpy.context.window_manager
+    if wm.cpp.running:
+        wm.cpp.suspended = False
+
+
+@persistent
+def load_pre_handler(dummy=None):
+    for op in operators.basis.modal_ops:
+        if hasattr(op, "cancel"):
+            op.cancel(bpy.context)
 
 
 @persistent
@@ -38,6 +65,9 @@ def depsgraph_update_pre_handler(scene=None):
 
 
 _handlers = (
+    (bpy.app.handlers.render_pre, render_pre_handler),
+    (bpy.app.handlers.render_post, render_post_handler),
+    (bpy.app.handlers.load_pre, load_pre_handler),
     (bpy.app.handlers.load_post, load_post_handler),
     (bpy.app.handlers.save_pre, save_pre_handler),
     (bpy.app.handlers.save_post, save_post_handler),

@@ -1,10 +1,10 @@
-from . import utils
 from .. import poll
+from .. import warnings
 
 if "bpy" in locals():
     import importlib
-    importlib.reload(utils)
     importlib.reload(poll)
+    importlib.reload(warnings)
 
 import bpy
 
@@ -26,13 +26,14 @@ class CPP_OT_image_paint(bpy.types.Operator):
     def execute(self, context):
         wm = context.window_manager
 
-        if utils.warnings.get_warning_status(context, wm.cpp.mouse_pos):
+        if warnings.get_warning_status(context, wm.cpp.mouse_pos):
             self.report(type={'WARNING'}, message="Danger zone!")
             if context.scene.cpp.use_warning_action_popup:
                 wm.popup_menu(self.danger_zone_popup_menu, title="Danger zone", icon='INFO')
             if context.scene.cpp.use_warning_action_lock:
                 return {'FINISHED'}
 
+        wm.cpp.is_image_paint = True
         bpy.ops.paint.image_paint('INVOKE_DEFAULT')
 
         return {'FINISHED'}

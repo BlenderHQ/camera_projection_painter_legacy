@@ -41,7 +41,8 @@ class ImageProperties(bpy.types.PropertyGroup):
     static_size: IntVectorProperty(
         name="Size",
         size=2,
-        default=(0, 0)
+        default=(0, 0),
+        description="Image width and height"
     )
 
     @property

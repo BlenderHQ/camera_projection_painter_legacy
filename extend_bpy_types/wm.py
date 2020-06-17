@@ -26,6 +26,7 @@ class WindowManagerProperties(PropertyGroup):
     suspended: BoolProperty(default=False)
     mouse_pos: IntVectorProperty(size=2, default=(0, 0))
     current_selected_camera_ob: PointerProperty(type=bpy.types.Object)
+    is_image_paint: BoolProperty(default=False)
 
     # Import
     def cpp_import_dir_update(self, context):
@@ -111,5 +112,3 @@ class WindowManagerProperties(PropertyGroup):
     p_text: StringProperty(default="Progress")
     p_icon: StringProperty(default='NONE')
     p_ui_cancel_button: StringProperty(default='')
-
-    #

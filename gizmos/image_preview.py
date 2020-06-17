@@ -1,11 +1,10 @@
+from .. import engine
 from .. import __package__ as addon_pkg
 from .. import poll
-from .. import shaders
 
 if "bpy" in locals():  # In case of module reloading
     import importlib
     importlib.reload(poll)
-    importlib.reload(shaders)
 
 import bpy
 import gpu
@@ -97,9 +96,9 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
 
     def setup(self):
         self.image_batch = batch_for_shader(
-            shaders.shader.current_image, 'TRI_FAN',
+            engine.shaders.getShader("current_image"), 'TRI_FAN',
             {"pos": ((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)),
-             "uv": ((0, 0), (1, 0), (1, 1), (0, 1))})
+             "uv": ((-0.5, -0.5), (0.5, -0.5), (0.5, 0.5), (-0.5, 0.5))})
 
     def draw(self, context):
         scene = context.scene
@@ -110,7 +109,10 @@ class CPP_GT_current_image_preview(bpy.types.Gizmo):
             image = camera.cpp.image
 
             if image and image.cpp.valid:
-                shader = shaders.shader.current_image
+                shader = engine.shaders.getShader("current_image")
+                if shader is None:
+                    return
+                
                 batch = self.image_batch
 
                 imapos = get_curr_img_pos_from_context(context)

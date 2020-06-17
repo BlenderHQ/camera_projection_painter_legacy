@@ -34,14 +34,13 @@ def ray_cast(context, mpos):
 
 def _get_check_pattern():
     pattern = []
-    p0 = Vector((1.0, 0.0, 0.0))
-    rays_rows = 36
-    rays_cols = 4
+    rays_rows = 16  # 128 rays
+    rays_cols = 8
     for i in range(rays_rows):
-        angle = radians(360 / rays_rows * i)
+        angle = radians(360.0 / rays_rows * i)
         for j in range(rays_cols):
             mat_rotation = Matrix.Rotation(angle, 3, 'Z')
-            p1 = p0.copy()
+            p1 = Vector((1.0, 0.0, 0.0))
             p1.rotate(mat_rotation)
             pattern.append(p1.to_2d() * (1.0 / rays_cols * j))
     pattern.append(Vector((0.0, 0.0)))
@@ -51,23 +50,18 @@ def _get_check_pattern():
 CHECK_PATTERN = _get_check_pattern()  # do it at stage of import, it's constant
 
 
-def get_warning_status(context, mpos):
+def get_warning_status(context, mpos) -> bool:
     mpos = Vector(mpos)
-
-    region = context.region
-    rv3d = context.region_data
-
     brush_radius = context.scene.tool_settings.unified_paint_settings.size
 
-    p0 = view3d_utils.region_2d_to_vector_3d(region, rv3d, mpos)
-    p1 = view3d_utils.region_2d_to_vector_3d(region, rv3d, (mpos[0] + brush_radius, mpos[1]))
+    p0 = view3d_utils.region_2d_to_vector_3d(context.region, context.region_data, mpos)
+    p1 = view3d_utils.region_2d_to_vector_3d(context.region, context.region_data, (mpos.x + brush_radius, mpos.y))
     scr_radius = (p0 - p1).length
-
-    lens = context.space_data.lens * 0.01  # convert to meters
+    lens = context.space_data.lens * 0.01
 
     distances = []
     for p in CHECK_PATTERN:
-        ppos = mpos + (p * brush_radius)
+        ppos = mpos + (p * context.scene.tool_settings.unified_paint_settings.size)
         dist = ray_cast(context, ppos)
         if dist != -1:
             distances.append(dist)
@@ -76,12 +70,6 @@ def get_warning_status(context, mpos):
     if distances:
         distance = sum(distances) / len(distances)
 
-    if distance != -1:
-        a = scr_radius
-        b = lens
-        tan_a = a / b
-        unprojected_radius = tan_a * distance
-        if unprojected_radius > context.scene.cpp.distance_warning:
-            return True
-
+    if (distance != -1) and ((scr_radius / lens * distance) > context.scene.cpp.distance_warning):
+        return True
     return False

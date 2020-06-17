@@ -7,7 +7,6 @@ from . import set_tmp_camera_active
 from . import toggle_camera_usage
 from . import enable_all_cameras
 from . import import_cameras_csv
-from . import import_cameras_xml
 from . import enter_context
 from . import refresh_image_preview
 
@@ -23,7 +22,6 @@ if "bpy" in locals():
     importlib.reload(toggle_camera_usage)
     importlib.reload(enable_all_cameras)
     importlib.reload(import_cameras_csv)
-    importlib.reload(import_cameras_xml)
     importlib.reload(enter_context)
     importlib.reload(refresh_image_preview)
 
@@ -40,16 +38,16 @@ CPP_OT_bind_history_remove = bind_history_remove.CPP_OT_bind_history_remove
 CPP_OT_toggle_camera_usage = toggle_camera_usage.CPP_OT_toggle_camera_usage
 CPP_OT_enable_all_cameras = enable_all_cameras.CPP_OT_enable_all_cameras
 CPP_OT_import_cameras_csv = import_cameras_csv.CPP_OT_import_cameras_csv
-CPP_OT_import_cameras_xml = import_cameras_xml.CPP_OT_import_cameras_xml
-
 CPP_OT_io_fbx = enter_context.io_fbx.CPP_OT_io_fbx
 CPP_OT_enter_context = enter_context.CPP_OT_enter_context
-
 CPP_OT_refresh_image_preview = refresh_image_preview.CPP_OT_refresh_image_preview
 
 _classes = [
+    # Base operators
     CPP_OT_listener,
     CPP_OT_camera_projection_painter,
+    
+    # Misc
     CPP_OT_image_paint,
     CPP_OT_bind_camera_image,
     CPP_OT_set_tmp_camera_active,
@@ -58,7 +56,6 @@ _classes = [
     CPP_OT_toggle_camera_usage,
     CPP_OT_enable_all_cameras,
     CPP_OT_import_cameras_csv,
-    CPP_OT_import_cameras_xml,
 
     # Enter context
     CPP_OT_io_fbx,
