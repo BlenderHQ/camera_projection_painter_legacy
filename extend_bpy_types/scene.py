@@ -92,6 +92,9 @@ class SceneProperties(PropertyGroup):
         self.id_data.camera = self.id_data.objects[value]
         camera_object = self.id_data.camera
         camera_object.initial_visible = True
+        image = camera_object.data.cpp.image
+        if image and image.cpp.valid:
+            self.id_data.tool_settings.image_paint.clone_image = image
         if bpy.context.mode == 'OBJECT':
             bpy.ops.object.select_all(action='DESELECT')
             camera_object.select_set(True)
