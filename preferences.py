@@ -199,7 +199,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         is_valid_env = True
         bver = bpy.app.version
         sbver = SUPPORTED_BLENDER_VERSION
-        if not (bver[0] == sbver[0] and bver[1] == sbver[1]):
+        if not (bver[0] >= sbver[0] and bver[1] >= sbver[1]):
             is_valid_env = False
             layout.label(text=f"""Required Blender version min: "{sbver[0]}.{sbver[1]}" """, icon='FILE_BLEND')
         if sys.platform not in SUPPORTED_PLATFORMS:

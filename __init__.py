@@ -14,7 +14,7 @@ sbver = preferences.SUPPORTED_BLENDER_VERSION
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin (ssh4), Ivan Perevala (vanyOk)",
-    "version": (0, 1, 4, "a"),
+    "version": (0, 1, 4, "b"),
     "blender": (2, 83, 0),
     "description": "Expanding the capabilities of clone brush for working with photo scans (alpha)",
     "location": "Tool settings > Camera Painter",
@@ -77,7 +77,7 @@ def register():
     import sys
     bpy.utils.register_class(preferences.CppPreferences)
     bver = bpy.app.version
-    if sys.platform in preferences.SUPPORTED_PLATFORMS and (bver[0] == sbver[0] and bver[1] == sbver[1]):
+    if sys.platform in preferences.SUPPORTED_PLATFORMS and (bver[0] >= sbver[0] and bver[1] >= sbver[1]):
         bpy.app.handlers.load_post.append(load_post_register)
 
 
