@@ -14,15 +14,14 @@ sbver = preferences.SUPPORTED_BLENDER_VERSION
 bl_info = {
     "name": "Camera Projection Painter",
     "author": "Vlad Kuzmin (ssh4), Ivan Perevala (vanyOk)",
-    "version": (0, 1, 4, "b"),
+    "version": (0, 1, 5),
     "blender": (2, 83, 0),
-    "description": "Expanding the capabilities of clone brush for working with photo scans (alpha)",
+    "description": "Expanding the capabilities of clone brush for working with photo scans",
     "location": "Tool settings > Camera Painter",
     "support": 'COMMUNITY',
     "category": "Paint",
+    "doc_url": "https://github.com/BlenderHQ/camera_projection_painter",
 }
-
-
 
 if "bpy" in locals():
     unregister()

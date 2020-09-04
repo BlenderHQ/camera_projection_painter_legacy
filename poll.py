@@ -63,12 +63,7 @@ def full_poll(context: bpy.types.Context):
     canvas = image_paint.canvas
     if not canvas:
         return False
-    if canvas.source == 'TILED':  # Blender version 2.82a
-        file_path = canvas.filepath
-        if not file_path:
-            return False
-        elif not os.path.isfile(bpy.path.abspath(file_path)):
-            return False
+
     if not canvas.cpp.valid:
         return False
 
