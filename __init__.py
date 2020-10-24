@@ -1,3 +1,20 @@
+# Camera Projection Painter addon (Blender 2.83 +)
+# Copyright (C) 2020  Vlad Kuzmin (ssh4), Ivan Perevala (ivpe)
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
 # pep8 ignore=E402,W503
 
 from . import preferences
@@ -13,8 +30,8 @@ sbver = preferences.SUPPORTED_BLENDER_VERSION
 
 bl_info = {
     "name": "Camera Projection Painter",
-    "author": "Vlad Kuzmin (ssh4), Ivan Perevala (vanyOk)",
-    "version": (0, 1, 5),
+    "author": "Vlad Kuzmin (ssh4), Ivan Perevala (ivpe)",
+    "version": (0, 1, 6),
     "blender": (2, 83, 0),
     "description": "Expanding the capabilities of clone brush for working with photo scans",
     "location": "Tool settings > Camera Painter",
