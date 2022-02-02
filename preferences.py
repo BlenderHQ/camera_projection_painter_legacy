@@ -87,7 +87,7 @@ class CppPreferences(bpy.types.AddonPreferences):
         size=4,
         min=0.0,
         max=1.0,
-        description="Color of empty space arround undistorted image")
+        description="Color of empty space around undistorted image")
 
     normal_highlight_color: FloatVectorProperty(
         name="Normal Highlight",
